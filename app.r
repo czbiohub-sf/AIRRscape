@@ -77,8 +77,8 @@ toshiny.hivcov2sarsmersc <- read.delim("toshiny_hivcov2sarsmersc.tab")
 toshiny.fewhivmabsnih45rd1214 <- read.delim("toshiny_mabsnih45rd1214.tab")
 toshiny.fewhivmabsnih45rd1214c <- read.delim("toshiny_mabsnih45rd1214c.tab")
 
-toshiny.dengueall <- read.delim("toshiny_dengueall.tab")
-toshiny.dengueallc <- read.delim("toshiny_dengueallc.tab")
+# toshiny.dengueall <- read.delim("toshiny_dengueall.tab")
+# toshiny.dengueallc <- read.delim("toshiny_dengueallc.tab")
 
 # toshiny.dengueallandmice <- read.delim("toshiny_dengueallandmice.tab")
 # toshiny.dengueallandmicec <- read.delim("toshiny_dengueallandmicec.tab")
@@ -139,10 +139,10 @@ toshiny.fewhivmabsnih45rd1214$JUNCTIONAA <- as.character(toshiny.fewhivmabsnih45
 toshiny.fewhivmabsnih45rd1214c$SEQUENCE_ID <- as.character(toshiny.fewhivmabsnih45rd1214c$SEQUENCE_ID)
 toshiny.fewhivmabsnih45rd1214c$JUNCTIONAA <- as.character(toshiny.fewhivmabsnih45rd1214c$JUNCTIONAA)
 
-toshiny.dengueall$SEQUENCE_ID <- as.character(toshiny.dengueall$SEQUENCE_ID)
-toshiny.dengueall$JUNCTIONAA <- as.character(toshiny.dengueall$JUNCTIONAA)
-toshiny.dengueallc$SEQUENCE_ID <- as.character(toshiny.dengueallc$SEQUENCE_ID)
-toshiny.dengueallc$JUNCTIONAA <- as.character(toshiny.dengueallc$JUNCTIONAA)
+# toshiny.dengueall$SEQUENCE_ID <- as.character(toshiny.dengueall$SEQUENCE_ID)
+# toshiny.dengueall$JUNCTIONAA <- as.character(toshiny.dengueall$JUNCTIONAA)
+# toshiny.dengueallc$SEQUENCE_ID <- as.character(toshiny.dengueallc$SEQUENCE_ID)
+# toshiny.dengueallc$JUNCTIONAA <- as.character(toshiny.dengueallc$JUNCTIONAA)
 
 # toshiny.dengueallandmicec$SEQUENCE_ID <- as.character(toshiny.dengueallandmicec$SEQUENCE_ID)
 # toshiny.dengueallandmicec$JUNCTIONAA <- as.character(toshiny.dengueallandmicec$JUNCTIONAA)
@@ -158,7 +158,7 @@ toshiny.fluhcmabsc$JUNCTIONAA <- as.character(toshiny.fluhcmabsc$JUNCTIONAA)
 toshiny.hivcov2sarsmers$id <- factor(toshiny.hivcov2sarsmers$id, levels = c("anti-CoV2 mAbs", "anti-SARS mAbs", "anti-MERS mAbs", "anti-HIV mAbs"))
 toshiny.cov2sarsmers$id <- factor(toshiny.cov2sarsmers$id, levels = c("anti-CoV2 mAbs", "anti-SARS mAbs", "anti-MERS mAbs"))
 toshiny.fewhivmabsnih45rd1214$id <- factor(toshiny.fewhivmabsnih45rd1214$id, levels = c("HIV+ patient AD1214", "HIV+ patient NIH45", "anti-HIV mAbs"))
-toshiny.dengueall$id <- factor(toshiny.dengueall$id, levels = c("DEN plasmablasts", "DEN patient 13", "DEN patient 20", "DEN patients OAS data"))
+# toshiny.dengueall$id <- factor(toshiny.dengueall$id, levels = c("DEN plasmablasts", "DEN patient 13", "DEN patient 20", "DEN patients OAS data"))
 # toshiny.dengueallandmice$id <- factor(toshiny.dengueallandmice$id, levels = c("DEN plasmablasts", "DEN patient 13", "DEN patient 20", "DEN patients OAS data","DEN vaccinated humanized mice"))
 
 ui <- fluidPage(
@@ -180,8 +180,8 @@ ui <- fluidPage(
                     "COVID mAbs vs. SARS vs. MERS vs. HIV mAbs - IgH combined",
                     "HIV mAbs vs. HIV+ patient NIH45 vs. HIV+ patient AD1214 - IgH",
                     "HIV mAbs vs. HIV+ patient NIH45 vs. HIV+ patient AD1214 - IgH combined",
-                    "Dengue mAbs vs. DEN patient d13 vs. DEN patient d20 vs. DEN patients via OAS - IgH",
-                    "Dengue mAbs vs. DEN patient d13 vs. DEN patient d20 vs. DEN patients via OAS - IgH combined",
+                    # "Dengue mAbs vs. DEN patient d13 vs. DEN patient d20 vs. DEN patients via OAS - IgH",
+                    # "Dengue mAbs vs. DEN patient d13 vs. DEN patient d20 vs. DEN patients via OAS - IgH combined",
                     # "Dengue mAbs vs. DEN patient d13 vs. DEN patient d20 vs. DEN patients via OAS vs. 2 humanized mice - IgH",
                     # "Dengue mAbs vs. DEN patient d13 vs. DEN patient d20 vs. DEN patients via OAS vs. 2 humanized mice - IgH combined",
                     "anti-flu mAbs vs. 3 healthy vaccinated controls - IgH",
