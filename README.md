@@ -1,4 +1,4 @@
-# AIRscape
+# AIRRscape
 R Shiny tool to visualize antibody lists or repertoires
 
 The code is currently in 2 components: repertoire_visualizations.R & app.R
