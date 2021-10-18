@@ -93,7 +93,7 @@ ui <- fluidPage(
       br(),
       p("Alternately if you want to see more than a bin you can create a box and all antibodies within will appear in the top table."),
       br(),
-      p("From the lower table you can download all or selected antibodies in the chosen bin, download the distance matrix of all antibodies, or create networks of selected antibodies. The last network options are to find the nearest sequences (up to 500) of a single selected antibody, with 4 possible distance thresholds. Note that you can change the window size of the network using the slider."),
+      p("From the lower table you can download all or selected antibodies in the chosen bin, download the distance matrix of all antibodies, or create topologies of selected antibodies. The last topology options are to find the nearest sequences (up to 500) of a single selected antibody, with 4 possible distance thresholds. Note that you can change the window size of the topology using the slider."),
       br(),
       p("Finally make sure to check all antibodies in the table have the same CDR3 length or the distance matrix/tree building will fail."),
       width = 2
@@ -109,11 +109,11 @@ ui <- fluidPage(
 ## new datatable if double-clicked
       DT::dataTableOutput("brush_info"),
       DT::dataTableOutput("click_info"),
-      actionButton("go", "Make network of selected CDR3 AA motifs"), 
+      actionButton("go", "Make topology of selected CDR3 AA motifs"), 
       downloadButton("downloadfilter","Download all data in the clicked bin"),
       downloadButton("downloadfilter2","Download only selected rows"),
       downloadButton("downloadfilter3","Download distance matrix of all data in the clicked bin"),
-      selectInput("plottab", "Network:",
+      selectInput("plottab", "Topology:",
             c("NJ",
               "Parsimony",
               "up to 500 nearest sequences to a single selected mAb - Parsimony; 100% CDR3 identity (Briney 2019)",
@@ -121,9 +121,9 @@ ui <- fluidPage(
               "up to 500 nearest sequences to a single selected mAb - Parsimony; 75% CDR3 identity",
               "up to 500 nearest sequences to a single selected mAb - Parsimony; 50% CDR3 identity"), selectize = FALSE),
       div(style="display: inline-block; width: 300px;",
-          sliderInput("height", "Network height", min = 200, max = 4200, value = 1000)),
+          sliderInput("height", "Topology height", min = 200, max = 4200, value = 1000)),
       div(style="display: inline-block; width: 300px;",
-          sliderInput("width", "Network width", min = 1000, max = 3000, value = 1600)),
+          sliderInput("width", "Topology width", min = 1000, max = 3000, value = 1600)),
       div(HTML("<br>")),br(),
       plotOutput("phyloPlot", inline = TRUE),
 #plotOutput("phyloPlot", width = "120%", height = "1700px", inline = FALSE),
@@ -274,7 +274,6 @@ server <- function(input, output, session) {
     )
   })
   
-
 ### second plot code    NOW ONLY PLOT
     output$ggplot1 <- renderPlot({
       ## first line for picking among different graphs
@@ -295,9 +294,7 @@ server <- function(input, output, session) {
       toplot
     }, width = 1200, height = "auto")
 
-#      output$click_info <- renderPrint({   # instead line below
 
-    
 ### datatable under second plot 
       output$click_info <- DT::renderDataTable({
           
@@ -366,9 +363,7 @@ server <- function(input, output, session) {
       )          
 #    }
 
-
-      
-      ## 9/14 dueling (NJ vs parsimony) phylogeny of CDR3 motifs of selected sequences from datatable
+      ## 9/14 dueling phylogenies of CDR3 motifs of selected sequences from datatable
       v <- reactiveValues(doPlot = FALSE)
       
       observeEvent(input$go, {
@@ -557,7 +552,7 @@ server <- function(input, output, session) {
           gjcdr3.title <- filteredData
           gjcdr3.title$cdr3length_imgt <- as.numeric(gjcdr3.title$cdr3length_imgt)
           # gjcdr3.title$G_J_CDR3 <- paste(gjcdr3.title$gf_jgene,gjcdr3.title$cdr3length_imgt,sep="_")
-          gjcdr3.title$G_J_CDR3 <- paste("Network of selected CDR3 motifs:", gjcdr3.title$gf_jgene, gjcdr3.title$cdr3length_imgt, "aa", sep=" ")
+          gjcdr3.title$G_J_CDR3 <- paste("Topology of selected CDR3 motifs:", gjcdr3.title$gf_jgene, gjcdr3.title$cdr3length_imgt, "aa", sep=" ")
           gjcdr3.title <- gjcdr3.title %>%
             select(G_J_CDR3)
           gjcdr3.titleID <- gjcdr3.title$G_J_CDR3[1]
