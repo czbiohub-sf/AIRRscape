@@ -13,7 +13,7 @@ library(ape)
 
 ##########
 
-## dataset loading:
+## datasets to load
 toshiny.cov2.abdab <- read.delim("toshiny_cov2_abdab.tab")
 toshiny.cov2.abdab.h <- read.delim("toshiny_cov2_abdab_h.tab")
 
@@ -29,6 +29,7 @@ toshiny.hiv.allc <- read.delim("toshiny_hiv_allc.tab")
 toshiny.den.all <- read.delim("toshiny_den_all.tab")
 toshiny.den.allc <- read.delim("toshiny_den_allc.tab")
 
+## then need to force these 2 columns characters
 toshiny.cov2.abdab$sequence_id <- as.character(toshiny.cov2.abdab$sequence_id)
 toshiny.cov2.abdab$cdr3_aa_imgt <- as.character(toshiny.cov2.abdab$cdr3_aa_imgt)
 toshiny.cov2.abdab.h$sequence_id <- as.character(toshiny.cov2.abdab.h$sequence_id)
@@ -58,7 +59,6 @@ toshiny.den.allc$cdr3_aa_imgt <- as.character(toshiny.den.allc$cdr3_aa_imgt)
 # toshiny.hcsle <- read.delim("toshiny_hcsle.tsv")
 # toshiny.hcsle$sequence_id <- as.character(toshiny.hcsle$sequence_id)
 # toshiny.hcsle$cdr3_aa_imgt <- as.character(toshiny.hcsle$cdr3_aa_imgt)
-# 
 
 ## to re-order any rows for plotting re-run here
 toshiny.cov2.abdab.h$binding <- factor(toshiny.cov2.abdab.h$binding, levels = c("RBD", "non-RBD"))
@@ -67,9 +67,6 @@ toshiny.cov2hiv$id <- factor(toshiny.cov2hiv$id, levels = c("SARS-CoV2 mAbs", "H
 toshiny.den.all$id <- factor(toshiny.den.all$id, levels = c("Dengue plasmablasts", "Dengue patient d13 bulk repertoire", "Dengue Parameswaran 2013 patient bulk repertoires"))
 
 
-## 4 COVID-19 patients vs. Healthy control                                       4 COVID-19 patient bulk repertoires vs. Healthy control bulk repertoire
-## HIV mAbs vs. HIV patient MT1214 vs. HIV patient NIH45                         HIV mAbs vs. HIV patient MT1214 bulk repertoire vs. HIV patient NIH45 bulk repertoire
-## Dengue mAbs vs. Dengue patient d13 vs. Dengue Parameswaran 2013 patients      Dengue mAbs vs. Dengue patient d13 bulk repertoire vs. Dengue Parameswaran 2013 patient bulk repertoires
 ui <- fluidPage(
   
   sidebarLayout(
@@ -215,11 +212,6 @@ server <- function(input, output, session) {
       partial2id$sequence_id <- paste(partial2id$sequence_id,partial2id$gene,partial2id$cdr3_aa_imgt,sep="_")
       ## error here because I really only want a string from this output
       partial2id$sequence_id
-      # partial2id$cdr3_aa_imgt <- NULL
-      # partial2id$gene <- NULL
-      # partial2id$gf_jgene <- NULL
-      # partial2id$cdr3length_imgt <- NULL
-      # partial2id
     })
 
 ### ADDING NOV 2020 NEW VARIABLE SEPARATELY CALCULATING DISTANCE MATRIX AS I HAD BEEN BELOW BUT WITHIN TREE-PLOTTING STEP
