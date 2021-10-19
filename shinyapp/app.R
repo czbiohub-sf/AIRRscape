@@ -415,7 +415,7 @@ server <- function(input, output, session) {
             dmall = dist.ml(seqsall, model="WAG")
             ## now sort this matrix by single selected sequence (just the sequence_id, so it is filteredDSpartial2id from above)
             filteredData1ID <- isolate({filteredDSpartial2id()})
-            dmall.matrix <- as.matrix(dmall) %>% as.data.frame() %>% arrange(across(filteredData1ID))   ## was arrange_at(1) but this is superceded by arrange(across(1))
+            dmall.matrix <- as.matrix(dmall) %>% as.data.frame() %>% arrange(across(all_of(filteredData1ID)))   ## was arrange_at(1) but this is superceded by arrange(across(1))
             dmall.matrix <- rownames_to_column(dmall.matrix, var = "sequence_id")
             ### for distance thresholding
             ## MAR 2021 INSTEAD TRY THESE LINES - THESE WORK:
@@ -448,7 +448,7 @@ server <- function(input, output, session) {
             dmall = dist.ml(seqsall, model="WAG")
             ## now sort this matrix by single selected sequence (just the sequence_id, so it is filteredDSpartial2id from above)
             filteredData1ID <- isolate({filteredDSpartial2id()})
-            dmall.matrix <- as.matrix(dmall) %>% as.data.frame() %>% arrange(across(filteredData1ID))
+            dmall.matrix <- as.matrix(dmall) %>% as.data.frame() %>% arrange(across(all_of(filteredData1ID)))
             dmall.matrix <- rownames_to_column(dmall.matrix, var = "sequence_id")
             ### for distance thresholding
             ## MAR 2021 INSTEAD TRY THESE LINES - THESE WORK:
@@ -481,7 +481,7 @@ server <- function(input, output, session) {
             dmall = dist.ml(seqsall, model="WAG")
             ## now sort this matrix by single selected sequence (just the sequence_id, so it is filteredDSpartial2id from above)
             filteredData1ID <- isolate({filteredDSpartial2id()})
-            dmall.matrix <- as.matrix(dmall) %>% as.data.frame() %>% arrange(across(filteredData1ID))
+            dmall.matrix <- as.matrix(dmall) %>% as.data.frame() %>% arrange(across(all_of(filteredData1ID)))
             dmall.matrix <- rownames_to_column(dmall.matrix, var = "sequence_id")
             ### for distance thresholding
             ## MAR 2021 INSTEAD TRY THESE LINES - THESE WORK:
@@ -514,7 +514,7 @@ server <- function(input, output, session) {
             dmall = dist.ml(seqsall, model="WAG")
             ## now sort this matrix by single selected sequence (just the sequence_id, so it is filteredDSpartial2id from above)
             filteredData1ID <- isolate({filteredDSpartial2id()})
-            dmall.matrix <- as.matrix(dmall) %>% as.data.frame() %>% arrange(across(filteredData1ID))
+            dmall.matrix <- as.matrix(dmall) %>% as.data.frame() %>% arrange(across(all_of(filteredData1ID)))
             dmall.matrix <- rownames_to_column(dmall.matrix, var = "sequence_id")
             ### for distance thresholding
             ## MAR 2021 INSTEAD TRY THESE LINES - THESE WORK:
