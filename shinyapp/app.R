@@ -170,7 +170,6 @@ server <- function(input, output, session) {
     ### notes on how to do this:
     # Thanks to @yihui this is now possible using the DT package and input$tableId_rows_all 
     # where tableID is the id assigned to your table. See the link below for details.
-    # 
     # http://rstudio.github.io/DT/shiny.html
     
  #   filteredDS()[input[["click_info_rows_all"]], ]
@@ -211,7 +210,7 @@ server <- function(input, output, session) {
     })
 
 ### ADDING NOV 2020 NEW VARIABLE SEPARATELY CALCULATING DISTANCE MATRIX AS I HAD BEEN BELOW BUT WITHIN TREE-PLOTTING STEP
-    ## THIS WOULD BE TO SEPARATELY HAVE AVAILABLE FOR DOWNLOADING...
+    ## THIS SHOULD SEPARATELY BE AVAILABLE FOR DOWNLOADING...
     matrixDSall2 <- reactive({
     filteredDataall <- filteredDSall2()
     # filteredDataall <- isolate({filteredDSall2()})
