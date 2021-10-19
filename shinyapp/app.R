@@ -185,10 +185,6 @@ server <- function(input, output, session) {
     })
 
 ## then rename sequence_id (note will be same if I rename HC & comet ids beforehand)
-#    filteredDSpartial$sequence_id <- paste(filteredDSpartial$sequence_id,filteredDSpartial$cdr3_aa_imgt,filteredDSpartial$gene,sep="_") 
-#    filteredDSall$sequence_id <- paste(filteredDSall$sequence_id,filteredDSall$cdr3_aa_imgt,filteredDSall$gene,sep="_") 
-
-    ## these 2 are not working correctly - trying slightly different 8/31 THIS NOW WORKS...
     ## EXCEPT 9/1/2020  the as.character part seems to be catching in the plot function steps below...SOLVED BY RUNNING AS.CHARACTER AT VERY START
     filteredDSpartial2 <- reactive({
       partial2 <- filteredDSpartial() %>% select(sequence_id,cdr3_aa_imgt,gene,gf_jgene,cdr3length_imgt)
@@ -263,7 +259,7 @@ server <- function(input, output, session) {
                     "left:", left_px / 2 - 20, "px; top:", top_px / 1.8, "px;")
     
     # actual tooltip created as wellPanel
-    ## NOTE I THOUGHT I WAS GETTING COUNT BUT THAT WAS JUST ROW NUMBER - TO ACTUALLY GET COUNTS NEED TO SOMEHOW GET FROM STAT_BIN ANALYSIS...
+    ## NOTE I THOUGHT I WAS GETTING COUNT BUT THAT WAS JUST ROW NUMBER - TO ACTUALLY GET COUNTS NEED TO GET FROM STAT_BIN ANALYSIS...
     wellPanel(
       style = style,
       p(HTML(paste0("<b> V-gene & J-gene: </b>", point$gf_jgene, "<br/>",
