@@ -24,17 +24,6 @@ library(plotly)
 library(rlang)
 library(tidyverse)
 
-# pkgs = c("alakazam", "igraph", "dplyr","RColorBrewer", "hexbin", "scales","grid", "lattice", "gdata","gridExtra", "ape", "shazam","limma", "reshape2", "DT","ggplot2", "seqinr", "phangorn","shiny", "tidyverse") # package names
-
-pkgs = c("alakazam", "igraph", "dplyr","RColorBrewer", "hexbin", "scales","grid", "lattice", "gdata","gridExtra", "ape", "shazam","reshape2", "DT","ggplot2", "seqinr", "phangorn","shiny", "tidyverse") # package names
-# install.packages(pkgs)
-#   inst = lapply(pkgs, library, character.only = TRUE) # load them
-
-  ## Warning in install.packages :
-  # package ‘grid’ is a base package, and should not be updated
-  # Warning in install.packages :
-  #   package ‘limma’ is not available for this version of R
-  
 Mode <- function(x) {
   ux <- unique(x)
   ux[which.max(tabulate(match(x, ux)))]
@@ -48,7 +37,7 @@ is.wholenumber <- function(x, tol = .Machine$double.eps^0.5) {
 
 #dir.create("~/code")
 ## this works ONLY IF YOU HAVE CREATED THE DIRECTORY FIRST...
-setwd("/Users/eric.waltari/data_carpentry/AIRRScape")
+# setwd("/Users/eric.waltari/data_carpentry/AIRRScape")
 
 
 ##################################################################################################################
@@ -57,6 +46,7 @@ setwd("/Users/eric.waltari/data_carpentry/AIRRScape")
 ######### solution is to use only AIRR datasets, fixed as of Sept 2021
 ###### particularly note that 1) junction MAY NOT NEED TO BE TRIMMED 1 AA ON EACH END TO BE KABAT CDR3
 ######                        2) v_identity MAY BE BETWEEN 0-1 NOT 0-100, AND THUS shm FORMULA NEEDS TO CHANGE
+### updated function below now addresses both points 1 & 2
 ##################################################################################################################
 
 ### SEPT 2021 DATASETS
@@ -97,9 +87,6 @@ head(cov2.bulk.binder.p11)
 head(cov2.bulk.nielsen.p7450)
 head(cov2.bulk.galson.p1)
 head(cov2.bulk.kc.m5.rep1)
-
-
-sle.tipton.p1 <- read_tsv("Tipton_sle1_germ-pass.tsv")
 
 ### AIRR-COMPLIANT TSV FILES NEED THE FOLLOWING MODIFICATIONS
 # CHANGING RELEVANT HEADERS FROM LOWERCASE TO UPPER CASE
@@ -156,10 +143,10 @@ shinyprocess <- function(x, filter_columns = TRUE, renumber_sequences = TRUE, fi
     filter(vj_in_frame != "F")
   x <- x[ grep("\\*", x$junction_aa, invert = TRUE) , ]
   x <- x[ grep("\\X", x$junction_aa, invert = TRUE) , ]  ## USE ONLY FOR KC DATASET - OCT21 USING FOR ALL
-  # x <- x[ grep("NNNN", x$sequence, invert = TRUE) , ]   # REMOVE FOR KC DATASET...NO LONGER USING
+  # x <- x[ grep("NNNN", x$sequence, invert = TRUE) , ]   # ...NO LONGER USING
   ### removing all sequences with IMGT CDR3 less than 3
   x <- x %>% filter(cdr3length_imgt > 2.8)  
-  ## next lines create Vgene V gene family, J gene columns
+  ## next lines create V gene family, J gene columns
   x$gene <- getGene(x$v_call, first=TRUE, strip_d=TRUE)
   x$gf <- substring(x$gene, 1,5)
   x$jgene <- getGene(x$j_call, first=TRUE, strip_d=TRUE)
@@ -194,7 +181,7 @@ shinyprocess <- function(x, filter_columns = TRUE, renumber_sequences = TRUE, fi
   if (filter_columns) {
     x <- x %>% select(any_of(vars2))
   }
-  ## this will remove all redundant sequences with same gf/gene & cdr3 motif...note we count above so fine to collapse here!!
+  ## this will remove all redundant sequences with same gf/gene & cdr3 motif...note we count above so okay to collapse here!!
   if (filter_after_counting) {
     x <- x %>%
       group_by(cdr3_aa_imgt,gf_jgene) %>%
@@ -250,7 +237,7 @@ shinyprocess <- function(x, filter_columns = TRUE, renumber_sequences = TRUE, fi
 test.den.bulk.d13enrich <- shinyprocess(den.bulk.d13enrich, renumber_sequences = FALSE, filter_columns = FALSE)
 test.den.bulk.d13enrich <- shinyprocess(den.bulk.d13enrich, renumber_sequences = FALSE)
 
-## NOW IT WORKS WITH THE 1 ARGUMENT!!
+## NOW IT WORKS WITH THE SINGLE ARGUMENT!!
 test.den.bulk.d13enrich <- shinyprocess(den.bulk.d13enrich)
 
 
@@ -283,10 +270,9 @@ toshiny.cov2.bulk.nielsen.p7450 <- shinyprocess(cov2.bulk.nielsen.p7450)
 
 toshiny.cov2.bulk.kc.m5.allreps <- shinyprocess(cov2.bulk.kc.m5.allreps)  ## need to run without the NNNN removing...will remove all!! ALSO INSTEAD REMOVE X'S
 
-toshiny.sle.tipton.p1 <- shinyprocess(sle.tipton.p1)
 
-
-
+#######################################
+#######################################
 ## one off commands...
 toshiny.hiv.bulk.mt1214$cregion <- toshiny.hiv.bulk.mt1214$cregion %>% replace_na("IgH")
 toshiny.hiv.bulk.nih45 <- toshiny.hiv.bulk.nih45[ grep("IgK", toshiny.hiv.bulk.nih45$cregion, invert = TRUE) , ]
@@ -376,12 +362,6 @@ toshiny.cov2.abdab$sequence_id <- NULL
 toshiny.cov2.abdab$dataset <- "SARS-CoV2-mAb"
 toshiny.cov2.abdab <- toshiny.cov2.abdab %>% unite(sequence_id, dataset, sequence_id0, sep = "-", remove = TRUE, na.rm = TRUE)
 
-
-### TO DO OCT 2021
-## NEED TO MAKE CREGION0 AND ALSO CHANGE CREGION TO IGH FOR ALL COMBINED .H DATASETS...
-## LOOK INTO WHY HIV DATASETS ARE MISSING CDR3_AA (VS CDR3_AA_IMGT
-## ISSUE IS TOSHINY.HIV.MABS - NEED TO CHANGE CDR3_AA TO CDR3_AA_IMGT
-
 ## first part changed very early 
 toshiny.cov2.abdab$cdr3_aa_imgt <- toshiny.cov2.abdab$cdr3_aa
 toshiny.cov2.abdab$cdr3_aa <- NULL
@@ -438,6 +418,7 @@ toshiny.den.mabs <- toshiny.den.mabs %>%
   mutate(across(shm, round, 2)) %>% 
   mutate(across(shm_max, round, 2)) %>% 
   mutate(across(shm_mean, round, 2))
+
 ## anything with no cregion?
 ## any with LC? if so need to make separate hc only file
 ## which files need renaming
@@ -497,6 +478,9 @@ toshiny.den.bulk.d13 <- toshiny.den.bulk.d13[ grep("ARQDRNWFDT", toshiny.den.bul
 
 write.table(toshiny.den.bulk.d13, "toshiny_den_bulk_d13.tab", sep = "\t", row.names = FALSE, quote = FALSE)
 
+
+#######################################
+#######################################
 ## NEXT generic CODE TO COMBINE 2-6 DATASETS INTO A SINGLE FILE FOR SHINY VISUALIZATION (BOTH SEPARATE & COMBINED)
 
 
@@ -783,15 +767,12 @@ toshiny.den.allc
 # [1] "Dengue plasmablasts"               "Dengue patient d13"                "Dengue Parameswaran 2013 patients"
 # > 
 
-
-ggplot(toshiny.cov2.abdab, aes(gf_jgene,cdr3length_imgt)) + geom_tile(aes(fill = shm_mean)) + scale_y_continuous(limits = c(3, 42)) + theme_bw() + ylab("CDRH3 Length (aa)") + xlab("V-gene & J-gene") + facet_wrap(~ cregion, ncol=1, scales = "free_x") + scale_fill_viridis_c(name = "Mean \nSomatic \nHypermutation (%)", option = "C") + theme(axis.text.x = element_text(angle=45, hjust=1, size=5))
-ggplot(toshiny.cov2.abdab, aes(gf_jgene,cdr3length_imgt)) + geom_bin2d(aes(fill=log10(..count..))) + scale_y_continuous(limits = c(3, 42)) + theme_bw() + ylab("CDRH/L3 Length (aa)") + xlab("V-gene & J-gene") + facet_wrap(~ cregion, ncol=1, scales = "free_x") + scale_fill_viridis_c(name = "# of \nReads", option = "C", breaks = c(0, 1, 2, 3, 4), labels = c(1, 10, 100, 1000, 10000)) + theme(axis.text.x = element_text(angle=45, hjust=1, size=5))
-
-ggplot(toshiny.sle.tipton.p1, aes(gf_jgene,cdr3length_imgt)) + geom_bin2d(aes(fill= (..count..)*100/tapply(..count..,..PANEL..,sum)[..PANEL..])) + scale_y_continuous(limits = c(3, 42)) + theme_bw() + ylab("CDRH/L3 Length (aa)") + xlab("V-gene & J-gene") + facet_wrap(~ cregion, ncol=1, scales = "free_x") + scale_fill_viridis_c(name = "% of \nReads  ", option = "C") + theme(axis.text.x = element_text(angle=45, hjust=1, size=5))
-ggplot(toshiny.hc.BXmay.10mstim, aes(gf_jgene,cdr3length_imgt)) + geom_bin2d(aes(fill= (..count..)*100/tapply(..count..,..PANEL..,sum)[..PANEL..])) + scale_y_continuous(limits = c(3, 42)) + theme_bw() + ylab("CDRH/L3 Length (aa)") + xlab("V-gene & J-gene") + scale_fill_viridis_c(name = "% of \nReads  ", option = "C") + theme(axis.text.x = element_text(angle=45, hjust=1, size=5))
-
-
-ggplot(toshiny.hc.BXmay.10mstim, aes(gf_jgene,cdr3length_imgt)) + geom_bin2d(aes(fill=log10(..count..))) + scale_y_continuous(limits = c(3, 42)) + theme_bw() + ylab("CDRH/L3 Length (aa)") + xlab("V-gene & J-gene") + scale_fill_viridis_c(name = "# of \nReads", option = "C", breaks = c(0, 1, 2, 3, 4), labels = c(1, 10, 100, 1000, 10000)) + theme(axis.text.x = element_text(angle=45, hjust=1, size=5))
+## to test plots 
+# ggplot(toshiny.cov2.abdab, aes(gf_jgene,cdr3length_imgt)) + geom_tile(aes(fill = shm_mean)) + scale_y_continuous(limits = c(3, 42)) + theme_bw() + ylab("CDRH3 Length (aa)") + xlab("V-gene & J-gene") + facet_wrap(~ cregion, ncol=1, scales = "free_x") + scale_fill_viridis_c(name = "Mean \nSomatic \nHypermutation (%)", option = "C") + theme(axis.text.x = element_text(angle=45, hjust=1, size=5))
+# ggplot(toshiny.cov2.abdab, aes(gf_jgene,cdr3length_imgt)) + geom_bin2d(aes(fill=log10(..count..))) + scale_y_continuous(limits = c(3, 42)) + theme_bw() + ylab("CDRH/L3 Length (aa)") + xlab("V-gene & J-gene") + facet_wrap(~ cregion, ncol=1, scales = "free_x") + scale_fill_viridis_c(name = "# of \nReads", option = "C", breaks = c(0, 1, 2, 3, 4), labels = c(1, 10, 100, 1000, 10000)) + theme(axis.text.x = element_text(angle=45, hjust=1, size=5))
+# 
+# ggplot(toshiny.hc.BXmay.10mstim, aes(gf_jgene,cdr3length_imgt)) + geom_bin2d(aes(fill= (..count..)*100/tapply(..count..,..PANEL..,sum)[..PANEL..])) + scale_y_continuous(limits = c(3, 42)) + theme_bw() + ylab("CDRH/L3 Length (aa)") + xlab("V-gene & J-gene") + scale_fill_viridis_c(name = "% of \nReads  ", option = "C") + theme(axis.text.x = element_text(angle=45, hjust=1, size=5))
+# ggplot(toshiny.hc.BXmay.10mstim, aes(gf_jgene,cdr3length_imgt)) + geom_bin2d(aes(fill=log10(..count..))) + scale_y_continuous(limits = c(3, 42)) + theme_bw() + ylab("CDRH/L3 Length (aa)") + xlab("V-gene & J-gene") + scale_fill_viridis_c(name = "# of \nReads", option = "C", breaks = c(0, 1, 2, 3, 4), labels = c(1, 10, 100, 1000, 10000)) + theme(axis.text.x = element_text(angle=45, hjust=1, size=5))
 
 
 ## STILL GETTING TREE ERRORS IN MAKING 50 OR 300 CLOSEST...
@@ -811,930 +792,11 @@ rsconnect::deployApp('/Users/eric.waltari/data_carpentry/wikipathways/App-7')
 # ℹ See <https://tidyselect.r-lib.org/reference/faq-external-vector.html>.
 # This message is displayed once per session.
 
-## might not need ANYTHING BELOW...
-############################################################################################################################################################
-############################################################################################################################################################
-
-### IDEA - TO GET MEAN SHM & NCOUNT, BUT THEN SELECT ONLY ONE PER GROUP...WILL KEEP THE ORIGINAL NCOUNT (of cdr3 length, but think ok for the plot)
-# THEN GROUP BY V CALL JCALL AND junction_aa, SELECT ONLY ONE PER GROUP
-toshiny.den.bulk.d13stim.few <- toshiny.den.bulk.d13stim %>%
-  group_by(cdr3_aa_imgt,gf_jgene) %>%
-  summarize_all(first)
-
-
-## next HC only? any need to filter more for larger datasets?
-## THEN GROUP BY V CALL JCALL AND junction_aa, SELECT ONLY ONE PER GROUP
-# 
-# BX.clusters.rd1214fewest <- BX.clusters.rd1214fewer %>%
-#   group_by(junction_aa,gf_jgene) %>%
-#   summarize_all(first)
-
-## more filters
-#toshiny.fewhiv <- toshiny.fewhiv[ grep("Kappa|Lambda|IGKJ|__", toshiny.fewhiv$jgene, invert = TRUE) , ]
-
-BX.clusters.rd1214$cregion <- str_sub(BX.clusters.rd1214$v_call, end=3)
-
-## ALSO NO *
-BX.clusters.rd1214fewer <- BX.clusters.rd1214fewer[ grep("\\*", BX.clusters.rd1214fewer$cdr3_aa_imgt, invert = TRUE) , ]
-
-## some IGK & IGL
-BX.clusters.rd1214fewer <- BX.clusters.rd1214fewer[ grep("IGK|IGL", BX.clusters.rd1214fewer$gf_jgene, invert = TRUE) , ]
-BX.clusters.rd1214fewer <- BX.clusters.rd1214fewer[ grep("kappa|lambda", BX.clusters.rd1214fewer$PRIMER, invert = TRUE) , ]
-
-BX.clusters.rd1214 <- BX.clusters.rd1214 %>% filter(FUNCTIONAL == "T") %>%
-  filter(IN_FRAME == "T") %>%
-  filter(STOP == "F")
-#filter(source != "Augmenta")
-cov2.bulk.kc.m5.rep1b <- cov2.bulk.kc.m5.rep1 %>% filter(productive != "FALSE") %>%
-  filter(vj_in_frame != "FALSE") %>%
-  filter(productive != "F") %>%
-  filter(vj_in_frame != "F")
-
-cov2.bulk.kc.m5.rep1b <- cov2.bulk.kc.m5.rep1b[ grep("\\*", cov2.bulk.kc.m5.rep1b$cdr3_aa_imgt, invert = TRUE) , ]
-
-# productive = col_logical(),
-# stop_codon = col_logical(),
-# vj_in_frame = col_logical(),
-
-## DO ANY OF THESE DATASETS INCLUDE LIGHT CHAINS? IF SO NEED TO EXTRACT ONLY IGH...
-
-## renumbering
-x$dataset <- paste0(x)
-x$obs <- 1:nrow(x) 
-x <- x %>% unite(sequence_id, dataset, obs, sep = "_", remove = TRUE, na.rm = TRUE)
-file <- paste0(x, ".csv")
-
-BX.clusters.test
-
-test <- paste0(BX.clusters.test)
-
-BX.clusters.test$dataset <- deparse(quote(BX.clusters.test))
-
-BX.clusters.test$dataset <- deparse(substitute(BX.clusters.test))
-BX.clusters.test$dataset <- gsub("\\.","\\_",BX.clusters.test$dataset)
-
-BX.clusters.test$obs <- 1:nrow(BX.clusters.test) 
-BX.clusters.test <- BX.clusters.test %>% unite(sequence_id, dataset, obs, sep = "_", remove = TRUE, na.rm = TRUE)
-# file <- paste0(x, ".csv")
-BX.clusters.test <- BX.clusters.test %>%
-  add_count(gf_jgene,cdr3length_imgt) %>% 
-  rename(ncount = n) %>% 
-  group_by(gf_jgene,cdr3length_imgt) %>% 
-  mutate(shm_mean = mean(shm, na.rm = TRUE)) %>% 
-  mutate(across(shm, round, 2)) %>% 
-  mutate(across(shm_mean, round, 2))
-
-BX.clusters.test <- BX.clusters.test %>% add_count(clone_id) %>%
-  rename(reads_per_clone = n)
-
-clone_id_var <- c("clone_id")
-BX.clusters.test <- BX.clusters.test %>% add_count(any_of(clone_id_var))
-  
-
-## then need to combine - first all cov2, hiv, den datasets
-
-
-# str_sub(BX.clusters.test$junction_aa, 1, 1) <- ""
-# str_sub(BX.clusters.test$junction_aa, -1, -1) <- ""
-# BX.clusters.mabs$cdr3length_imgt <- ((BX.clusters.mabs$junction_length) / 3) - 2
-
-## convert sequence names if not already...
-
-BX.clusters.rd1214e$junction_aatrim <- BX.clusters.rd1214e$junction_aa
-str_sub(BX.clusters.rd1214e$junction_aatrim, -1, -1) <- ""
-str_sub(BX.clusters.rd1214e$junction_aatrim, 1, 1) <- ""
-
-if (mean(BX.clusters.momseqexample$v_identity) < 1) {
-  BX.clusters.momseqexample$shm <- (100 - (BX.clusters.momseqexample$v_identity * 100))
-} else {
-  BX.clusters.momseqexample$shm <- (100 - BX.clusters.momseqexample$v_identity)
-}
-
-
-######################################################################
-BX.clusters.test <- read_tsv("/Users/eric.waltari/data_carpentry/wikipathways/bcells_1M_germ-pass.tsv")
-
-BX.clusters.test$junction_aa <- as.character(BX.clusters.test$junction_aa)
-BX.clusters.test$cdr3length_imgt <- nchar(BX.clusters.test$junction_aa)
-
-BX.clusters.test$gene <- getGene(BX.clusters.test$germline_v_call, first=TRUE, strip_d=TRUE)
-BX.clusters.test$gf <- substring(BX.clusters.test$gene, 1,5)
-BX.clusters.test$jgene <- getGene(BX.clusters.test$germline_j_call, first=TRUE, strip_d=TRUE)
-BX.clusters.test$jgf <- substring(BX.clusters.test$jgene, 1,5)
-
-BX.clusters.test <- BX.clusters.test %>% add_count(clone_id) %>%
-  rename(reads_per_clone = n)
-
-if (mean(BX.clusters.test$v_identity) < 1) {
-  BX.clusters.test$shm <- (100 - (BX.clusters.test$v_identity * 100))
-} else {
-  BX.clusters.test$shm <- (100 - BX.clusters.test$v_identity)
-}
-
-BX.clusters.test <- BX.clusters.test %>% unite(gf_jgene, gf, jgene, sep = "_", remove = FALSE, na.rm = TRUE)
-
-## MAY NOT ALWAYS WANT TO DO THIS - also note IgD in here (could also remove??)
-BX.clusters.test$cregion <- gsub("IgA","IgH",BX.clusters.test$cregion)
-BX.clusters.test$cregion <- gsub("IgG","IgH",BX.clusters.test$cregion)
-BX.clusters.test$cregion <- gsub("IgM","IgH",BX.clusters.test$cregion)
-BX.clusters.test$cregion <- gsub("IgD","IgH",BX.clusters.test$cregion)
-
-BX.clusters.test2 <- BX.clusters.test %>%
-  add_count(gf_jgene,cdr3length_imgt) %>%
-  rename(ncount = n) %>%
-  group_by(gf_jgene,cdr3length_imgt) %>%
-  mutate(shm_mean = mean(shm, na.rm = TRUE)) %>%
-  mutate(across(shm_mean, round, 2)) %>%
-  rename(sequence_id = sequence_id) %>%
-  rename(cregion = cregion)
-
-
-BX.clusters.test2 <- BX.clusters.test %>%
-  group_by(gf_jgene,cdr3length_imgt) %>%
-  mutate(shm_mean = mean(shm, na.rm = TRUE)) %>%
-  mutate(across(shm_mean, round, 2)) 
-
-
-## all of these mutate_at(vars(shm_mean), #funs(round(., 2)))
-## are now mutate(across(shm_mean, round, 2)) 
-
-
-BX.clusters.test <- BX.clusters.test %>% filter(cdr3length_imgt > 3.8)  
-##
-
-## mutate_at has been superseded by across()
-## also funs() is deprecated, use a list
-#df %>% mutate(across(cols, round, 3)) 
-
-toshiny.test <- BX.clusters.test %>% select(sequence_id,cregion,junction_aa,gene,gf_jgene,gf,jgene,jgf,cdr3length_imgt,shm,ncount,shm_mean,reads_per_clone) %>% 
-  filter(!is.na(cdr3length_imgt)) %>% 
-  filter(is.wholenumber(cdr3length_imgt)) %>% 
-  mutate(across(shm, round, 2)) %>% 
-  mutate(across(shm_mean, round, 2))
-
-rm(BX.clusters.test)
-
-toshiny.test.h <- subset(toshiny.test, cregion %in% c("IgH"))
-
-#write.table(toshiny.test, "toshiny_test.tab", sep = "\t", row.names = FALSE, quote = FALSE)
-#write.table(toshiny.test.h, "toshiny_test_h.tab", sep = "\t", row.names = FALSE, quote = FALSE)
-
-# ggplot(toshiny.test.h, aes(gf_jgene,cdr3length_imgt)) + geom_tile(aes(fill = shm_mean)) + scale_y_continuous(limits = c(3, 42)) + theme_bw() + ylab("CDRH3 Length (aa)") + xlab("V-gene & J-gene") + facet_wrap(~ cregion, ncol=1, scales = "fixed") + scale_fill_viridis_c(name = "Mean \nSomatic \nHypermutation (%)", option = "C") + theme(axis.text.x = element_text(angle=45, hjust=1, size=5))
-# ggplot(toshiny.test.h, aes(gf_jgene,cdr3length_imgt)) + geom_bin2d(aes(fill=log10(..count..))) + scale_y_continuous(limits = c(3, 42)) + theme_bw() + ylab("CDRH/L3 Length (aa)") + xlab("V-gene & J-gene") + facet_wrap(~ cregion, ncol=1, scales = "free_x") + scale_fill_viridis_c(name = "# of \nReads", option = "C", breaks = c(0, 1, 2, 3, 4), labels = c(1, 10, 100, 1000, 10000)) + theme(axis.text.x = element_text(angle=45, hjust=1, size=5))
-
-## columns used in app:
-# sequence_id,junction_aa,gene,gf_jgene,cdr3length_imgt, cregion, shm_mean, shm
-
-
-## NEXT geneRIC CODE TO COMBINE 2-6 DATASETS INTO A SINGLE FILE FOR SHINY VISUALIZATION (BOTH SEPARATE & COMBINED)
-
-toshiny.test.many <- bind_rows(toshiny.test.h, toshiny.test2.h, toshiny.test3.h, toshiny.test4.h, .id = "id")
-
-toshiny.test.many$id <- gsub("1","test1",toshiny.fewhcbg$id)
-toshiny.test.many$id <- gsub("2","test2",toshiny.fewhcbg$id)
-toshiny.test.many$id <- gsub("3","test3",toshiny.fewhcbg$id)
-toshiny.test.many$id <- gsub("4","test4",toshiny.fewhcbg$id)
-
-## for combined need to recalculate ncount and shm_mean
-toshiny.test.manyc <- toshiny.test.many
-toshiny.test.manyc$ncount <- NULL
-toshiny.test.manyc$shm_mean <- NULL
-
-toshiny.test.manyc <- toshiny.fewhcbgc %>%
-  add_count(gf_jgene,cdr3length_imgt) %>%
-  rename(ncount = n) %>%
-  group_by(gf_jgene,cdr3length_imgt) %>%
-  mutate(shm_mean = mean(shm, na.rm = TRUE)) %>%
-  mutate(across(shm_mean, round, 2))
-
-#write.table(toshiny.test.many, "toshiny_testmany.tab", sep = "\t", row.names = FALSE, quote = FALSE)
-#write.table(toshiny.test.manyc, "toshiny_testmanyc.tab", sep = "\t", row.names = FALSE, quote = FALSE)
-
-
-##################################################################################################################
-### END COMMANDS FOR READING IN AIRR-COMPLIANT DATASETS FOR SHINY APP
-
-
-#################################
-### COMMANDS FOR UPDATING COVID ABDAB DATABASE BY JUST GRABBING RAW DATA...
-
-
-#### NEED TO RELOAD ALL TAB FILES BEFORE UPDATING
-toshiny.few1 <- read_tsv("/Users/eric.waltari/data_carpentry/wikipathways/App-6/toshiny_few1.tab")
-## old 
-toshiny.few1 <- read_tsv("/Users/eric.waltari/data_carpentry/wikipathways/app6_fromjan2021/toshiny_few1.tab")
-
-toshiny.few <- read_tsv("toshiny_few.tab")
-toshiny.few1 <- read_tsv("toshiny_few1.tab")
-toshiny.few1.h <- read_tsv("toshiny_few1_h.tab")
-## realoading few2 - will want to combine COMET for internal comparisons (moving to app_test in _2 folder)
-toshiny.few2 <- read_tsv("toshiny_few2b.tab")
-
-toshiny.few3 <- read_tsv("toshiny_few3.tab")
-# toshiny.few3b <- read_tsv("toshiny_few3b.tab")
-toshiny.fewhcbg <- read_tsv("toshiny_fewhcbg.tab")
-toshiny.fewhcbgc <- read_tsv("toshiny_fewhcbgc.tab")
-# toshiny.natalia4 <- read_tsv("toshiny_natalia.tab")
-toshiny.cov2sarsmers <- read_tsv("toshiny_cov2sarsmers.tab")
-toshiny.cov2sarsmersc <- read_tsv("toshiny_cov2sarsmersc.tab")
-
-toshiny.hivcov2sarsmers <- read_tsv("toshiny_hivcov2sarsmers.tab")
-toshiny.hivcov2sarsmersc <- read_tsv("toshiny_hivcov2sarsmersc.tab")
-
-toshiny.fewhivmabsnih45rd1214 <- read_tsv("toshiny_mabsnih45rd1214.tab")
-toshiny.fewhivmabsnih45rd1214c <- read_tsv("toshiny_mabsnih45rd1214c.tab")
-
-toshiny.dengueall <- read_tsv("toshiny_dengueall.tab")
-toshiny.dengueallc <- read_tsv("toshiny_dengueallc.tab")
-
-toshiny.fluhcmabs <- read_tsv("toshiny_fluhcmabs.tab")
-toshiny.fluhcmabsc <- read_tsv("toshiny_fluhcmabsc.tab")
-
-toshiny.fewg1 <- read_tsv("toshiny_fewg1.tab")
-toshiny.fewb1 <- read_tsv("toshiny_fewb1.tab")
-toshiny.few3.h <- subset(toshiny.few3, cregion %in% c("IgH"))
-
-
-
-## FIRST TAKE DATA AND ADD TO GOOGLE DRIVE SPREADSHEET
-## THEN RUN A JOIN COMMAND - better yet an rbind if all columns are fixed
-
-### latest version of this is from end of October - starting in early November adding directly to toshiny
-
-#BX.clusters.mabs.toadd.h <- read_tsv("/users/eric.waltari/immcantation_pipeline/COVID_mabs/galson_data/COVID_mablist_111020add.tab")
-#BX.clusters.mabs.toadd.h <- read_tsv("/users/eric.waltari/immcantation_pipeline/COVID_mabs/galson_data/COVID_mablist_251120add.tab")
-# BX.clusters.mabs.toadd.h <- read_tsv("/users/eric.waltari/immcantation_pipeline/COVID_mabs/galson_data/COVID_mablist_060121add.tab")
-# BX.clusters.mabs.toadd.l <- read_tsv("/users/eric.waltari/immcantation_pipeline/COVID_mabs/galson_data/COVID_mablist_060121add.tab")
-
-BX.clusters.mabs.toadd.h <- read_tsv("/users/eric.waltari/immcantation_pipeline/COVID_mabs/galson_data/COVID_mablist_090721add.tab")
-BX.clusters.mabs.toadd.l <- read_tsv("/users/eric.waltari/immcantation_pipeline/COVID_mabs/galson_data/COVID_mablist_090721add.tab")
-
-
-
-BX.clusters.mabs.toadd.h$binding <- gsub("S; ","",BX.clusters.mabs.toadd.h$binding)
-BX.clusters.mabs.toadd.h$neutralization <- gsub("non-neutralizingunknown","non-neutralizing or unknown",BX.clusters.mabs.toadd.h$neutralization)
-
-BX.clusters.mabs.toadd.h$sequence_idLC <- NULL
-BX.clusters.mabs.toadd.h$geneLC <- NULL
-BX.clusters.mabs.toadd.h$jgeneLC <- NULL
-
-BX.clusters.mabs.toadd.h$junction_aaLC <- NULL
-BX.clusters.mabs.toadd.h$v_identityLC <- NULL
-
-#BX.clusters.mabs.toadd.h$FULLV_LC <- NULL
-
-BX.clusters.mabs.toadd.h$gene <- gsub(" [(]Human[)]","",BX.clusters.mabs.toadd.h$gene)
-BX.clusters.mabs.toadd.h$jgene <- gsub(" [(]Human[)]","",BX.clusters.mabs.toadd.h$jgene)
-
-
-
-BX.clusters.mabs.toadd.l$binding <- gsub("S; ","",BX.clusters.mabs.toadd.l$binding)
-BX.clusters.mabs.toadd.h$neutralization <- gsub("non-neutralizingunknown","non-neutralizing or unknown",BX.clusters.mabs.toadd.h$neutralization)
-
-BX.clusters.mabs.toadd.l$sequence_id <- NULL
-BX.clusters.mabs.toadd.l <- rename(BX.clusters.mabs.toadd.l, sequence_id = sequence_idLC)
-
-
-BX.clusters.mabs.toadd.l$gene <- NULL
-BX.clusters.mabs.toadd.l <- rename(BX.clusters.mabs.toadd.l, gene = geneLC)
-BX.clusters.mabs.toadd.l$jgene <- NULL
-BX.clusters.mabs.toadd.l <- rename(BX.clusters.mabs.toadd.l, jgene = jgeneLC)
-
-# BX.clusters.mabs.toadd.l$FULLV <- NULL
-# BX.clusters.mabs.toadd.l <- rename(BX.clusters.mabs.toadd.l, FULLV = FULLV_LC)
-
-
-BX.clusters.mabs.toadd.l$junction_aa <- NULL
-BX.clusters.mabs.toadd.l <- rename(BX.clusters.mabs.toadd.l, junction_aa = junction_aaLC)
-BX.clusters.mabs.toadd.l$v_identity <- NULL
-BX.clusters.mabs.toadd.l <- rename(BX.clusters.mabs.toadd.l, v_identity = v_identityLC)
-
-BX.clusters.mabs.toadd.l$gene <- gsub(" [(]Human[)]","",BX.clusters.mabs.toadd.l$gene)
-BX.clusters.mabs.toadd.l$jgene <- gsub(" [(]Human[)]","",BX.clusters.mabs.toadd.l$jgene)
-
-BX.clusters.mabs.toadd <- rbind(BX.clusters.mabs.toadd.h, BX.clusters.mabs.toadd.l)
-
-## THIS NEXT COMMAND MIGHT NOT BE THE CASE FOR ALL - SHOULD CHANGE IN .TAB FILE
-#BX.clusters.mabs.toadd$neutralization <- "neutralizing"
-
-
-#### #### #### #### #### #### #### #### #### #### #### #### 
-## IN JULY 2021 ADDING ALL MABS OVER AGAIN, BUT THEN GRABBING shm IF IT EXISTS...THEN WILL GO THROUGH MISSING TO FIND ANY WITH COMPLETE VgeneS
-#### THEN SEARCH IN geneIOUS FOR MATCHES TO GET MORE shms
-
-
-toshiny.few3 <- read_tsv("toshiny_few3.tab")
-toshiny.few3.h <- subset(toshiny.few3, cregion %in% c("IgH"))
-
-toshiny.fewg1 <- read_tsv("toshiny_fewg1.tab")
-toshiny.fewb1 <- read_tsv("toshiny_fewb1.tab")
-
-
-toshiny.few1.old <- toshiny.few1 %>% select(sequence_id,shm)
-
-BX.clusters.mabs.toadd2 <- left_join(BX.clusters.mabs.toadd, toshiny.few1.old)
-#write.table(BX.clusters.mabs.toadd2, "BX_clusters_mabs_toadd2.tab", sep = "\t", row.names = FALSE, quote = FALSE)
-
-## next in Geneious ran tblastn searches to find 100% matching nucleotide sequences, then internal IgBlasts to get shm
-
-BX.clusters.mabs.toadd3 <- read_tsv("/users/eric.waltari/immcantation_pipeline/COVID_mabs/galson_data/BX_clusters_mabs_toadd3.tab")
-
-BX.clusters.mabs.toadd2b <- left_join(BX.clusters.mabs.toadd2, BX.clusters.mabs.toadd3, by = "sequence_id")
-BX.clusters.mabs.toadd2b <- BX.clusters.mabs.toadd2b %>% unite(shm, shm.x, shm.y, na.rm = TRUE, remove = TRUE)
-BX.clusters.mabs.toadd2b$shm <- as.numeric(BX.clusters.mabs.toadd2b$shm)
-BX.clusters.mabs.toadd2b$FULLV <- NULL
-BX.clusters.mabs.toadd2b$v_identity <- NULL
-
-BX.clusters.mabs.toadd <- BX.clusters.mabs.toadd2b
-## NOW CONTINUTE WITH CODE BELOW....EXCEPT NOT shm CALCULATION, ALREADY HAVE IT!
-
-rm(BX.clusters.mabs.toadd2)
-rm(BX.clusters.mabs.toadd2b)
-rm(BX.clusters.mabs.toadd3)
-
-#### #### #### #### #### #### #### #### #### #### #### #### #### #### 
-
-##########
-
-BX.clusters.mabs.toadd$junction_aa <- as.character(BX.clusters.mabs.toadd$junction_aa)
-BX.clusters.mabs.toadd$sequence_id <- as.character(BX.clusters.mabs.toadd$sequence_id)
-
-BX.clusters.mabs.toadd$cdr3length_imgt <- nchar(BX.clusters.mabs.toadd$junction_aa)
-
-BX.clusters.mabs.toadd$junction_length <- (3 * (BX.clusters.mabs.toadd$cdr3length_imgt)) + 6
-BX.clusters.mabs.toadd$jgf <- BX.clusters.mabs.toadd$jgene
-BX.clusters.mabs.toadd$gf <- str_sub(BX.clusters.mabs.toadd$gene, end=5)
-### note updated str_sub for substring (think both work)
-# BX.clusters.mabs.toadd$gf <- substring(BX.clusters.mabs.toadd$gene, 1,5)
-# BX.clusters.mabs.toadd$jgf <- substring(BX.clusters.mabs.toadd$jgene, 1,5)
-BX.clusters.mabs.toadd$vj_junction_pattern <- paste(BX.clusters.mabs.toadd$gf,BX.clusters.mabs.toadd$jgf,BX.clusters.mabs.toadd$junction_length,sep="_") 
-
-### check v_identity IF 0-100 OR 0-1 - WE WANT shm TO BE BETWEEN 0-100
-BX.clusters.mabs.toadd$shm <- (100 - (BX.clusters.mabs.toadd$v_identity))
-# BX.clusters.mabs.toadd$shm <- (100 - (BX.clusters.mabs.toadd$v_identity * 100))
-BX.clusters.mabs.toadd <- BX.clusters.mabs.toadd %>% unite(gf_jgene, gf, jgene, sep = "_", remove = FALSE, na.rm = TRUE)
-
-BX.clusters.mabs.toadd$junction_length <- NULL
-BX.clusters.mabs.toadd$v_identity <- NULL
-
-## ADDING cregion BY WAY OF gf...
-BX.clusters.mabs.toadd$cregion <- str_sub(BX.clusters.mabs.toadd$gf, end=3)
-BX.clusters.mabs.toadd$cregion <- gsub("IGK","Kappa",BX.clusters.mabs.toadd$cregion)
-BX.clusters.mabs.toadd$cregion <- gsub("IGL","Lambda",BX.clusters.mabs.toadd$cregion)
-BX.clusters.mabs.toadd$cregion <- gsub("IGH","IgH",BX.clusters.mabs.toadd$cregion)
-
-
-
-### ALSO JUNE 2021 - NEED TO REMOVE BAD shm DATA FROM CVXXX MABS IN toshiny.few1, then recalculate all of the datasets...
-### also manually removing from first tab file
-
-toshiny.few1 <- read_tsv("toshiny_few1.tab")
-
-BX.clusters.mabs.alladded <- full_join(toshiny.few1, BX.clusters.mabs.toadd)
-### now this can replace toshiny.few1 
-rm(BX.clusters.mabs.toadd)
-rm(BX.clusters.mabs.toadd.h)
-rm(BX.clusters.mabs.toadd.l)
-
-#BX.clusters.fewermabs <- BX.clusters.mabs %>% filter(source != "Augmenta")
-
-toshiny.few1$binding <- gsub("Unk","unknown",toshiny.few1$binding)
-
-toshiny.few1 <- BX.clusters.mabs.alladded %>% select(sequence_id,binding,neutralization,cregion,junction_aa,gene,gf_jgene,gf,jgene,jgf,cdr3length_imgt,shm,ncount,shm_mean,reads_per_clone) %>% filter(!is.na(cdr3length_imgt)) %>% filter(is.wholenumber(cdr3length_imgt)) %>% mutate(across(shm, round, 2)) %>% mutate(across(shm_mean, round, 2))
-## ONLY JULY 2021 RE-RUN
-#toshiny.few1 <- BX.clusters.mabs.toadd %>% select(sequence_id,binding,neutralization,cregion,junction_aa,gene,gf_jgene,gf,jgene,jgf,cdr3length_imgt,shm) %>% filter(!is.na(cdr3length_imgt)) %>% mutate(across(shm, round, 2))
-
-
-### finding some errors in the file jul27
-## C215 has lost gene family also IG
-## 2 mabs have for binding "NTD" and "non-S1" - should be changed to "non-RBD"
-#toshiny.few1 <- read_tsv("toshiny_few1.tab")
-
-
-## NOW NEED TO RECALCULATE NCOUNT AND shm_mean
-toshiny.few1$ncount <- NULL
-toshiny.few1$shm_mean <- NULL
-
-toshiny.few1 <- toshiny.few1 %>%
-  add_count(gf_jgene,cdr3length_imgt) %>%
-  rename(ncount = n) %>%
-  group_by(gf_jgene,cdr3length_imgt) %>%
-  mutate(shm_mean = mean(shm, na.rm = TRUE)) %>%
-  mutate(across(shm_mean, round, 2))
-
-toshiny.few1.h <- subset(toshiny.few1, cregion %in% c("IgH"))
-# toshiny.few1.h$binding <- gsub("Unk","unknown",toshiny.few1.h$binding)
-
-#write.table(toshiny.few1, "toshiny_few1.tab", sep = "\t", row.names = FALSE, quote = FALSE)
-#write.table(toshiny.few1.h, "toshiny_few1_h.tab", sep = "\t", row.names = FALSE, quote = FALSE)
-
-rm(BX.clusters.mabs.alladded)
-
-## NOTE THAT THIS WILL NOT HAVE shm DATA (UNLESS FOUND IN A PAPER) - WOULD HAVE TO SEPARATELY GO BACK AND FIND RAW NUCLEOTIDE SEQUENCE IN NCBI TO CALCULATE shm...
-
-
-
-#######################################
-### NEXT: re-calculating all of the combinations...
-
-### 1 toshiny.few
-## note HC only is few3 aka .hc - few3b is HC but all reads not just clones
-toshiny.few3.h <- subset(toshiny.few3, cregion %in% c("IgH"))
-
-toshiny.few <- bind_rows(toshiny.few1.h, toshiny.few3.h, .id = "id")
-
-toshiny.few$id <- gsub("2","Healthy control bulk repertoire",toshiny.few$id)
-toshiny.few$id <- gsub("1","anti-CoV2 mAbs",toshiny.few$id)
-
-#write.table(toshiny.few, "toshiny_few.tab", sep = "\t", row.names = FALSE, quote = FALSE)
-
-### 2
-
-
-BX.clusters.hcvsboydvsgalsonmabs <- bind_rows(toshiny.few3.h, toshiny.fewb1, toshiny.fewg1, toshiny.few1.h, .id = "id")
-#toshiny.fewhcbg <- subset(BX.clusters.hcvsboydvsgalsonmabs, cregion %in% c("IgH"))
-toshiny.fewhcbg <- BX.clusters.hcvsboydvsgalsonmabs[ grep("Kappa|Lambda", BX.clusters.hcvsboydvsgalsonmabs$cregion, invert = TRUE) , ] %>% filter(!is.na(cdr3length_imgt)) %>% filter(is.integer(cdr3length_imgt)) %>% mutate(across(shm, round, 2)) %>% mutate(across(shm_mean, round, 2))
-#rm(BX.clusters.hcvsboydvsgalsonmabs)
-
-toshiny.fewhcbg$id <- gsub("1","Healthy control",toshiny.fewhcbg$id)
-## be careful with 1 in name here....
-toshiny.fewhcbg$id <- gsub("4","anti-CoVII mAbs",toshiny.fewhcbg$id)
-toshiny.fewhcbg$id <- gsub("2","Boyd7450",toshiny.fewhcbg$id)
-toshiny.fewhcbg$id <- gsub("3","Galson1",toshiny.fewhcbg$id)
-toshiny.fewhcbg$id <- gsub("anti-CoVII mAbs","anti-CoV2 mAbs",toshiny.fewhcbg$id)
-
-## for combined need to recalculate ncount and shm_mean
-toshiny.fewhcbgc <- toshiny.fewhcbg
-toshiny.fewhcbgc$ncount <- NULL
-toshiny.fewhcbgc$shm_mean <- NULL
-
-toshiny.fewhcbgc <- toshiny.fewhcbgc %>%
-  add_count(gf_jgene,cdr3length_imgt) %>%
-  rename(ncount = n) %>%
-  group_by(gf_jgene,cdr3length_imgt) %>%
-  mutate(shm_mean = mean(shm, na.rm = TRUE)) %>%
-  mutate(across(shm_mean, round, 2))
-
-#write.table(toshiny.fewhcbg, "toshiny_fewhcbg.tab", sep = "\t", row.names = FALSE, quote = FALSE)
-#write.table(toshiny.fewhcbgc, "toshiny_fewhcbgc.tab", sep = "\t", row.names = FALSE, quote = FALSE)
-
-
-
-### 3
-
-## need to also load these:
-#toshiny.sars.h, toshiny.mers.h, toshiny.fewhivmabs.h, toshiny.fewhiv
-
-toshiny.fewhiv <- read_tsv("toshiny_fewhiv.tab")
-
-toshiny.fewhivmabs <- read_tsv("toshiny_fewhivmabs.tab")
-
-toshiny.fewhivmabs.h <- subset(toshiny.fewhivmabs, cregion %in% c("IgH"))
-#toshiny.fewhivmabs.h <- read_tsv("toshiny_fewhivmabs_h.tab")
-#toshiny.fewhiv <- read_tsv("toshiny_fewhiv.tab")
-
-toshiny.sarsmers.h <- read_tsv("toshiny_sarsmers_h.tab")
-list2env(x = split(x = toshiny.sarsmers.h,
-                   f = toshiny.sarsmers.h$source),
-         envir = globalenv())
-
-toshiny.sars.h <- SARS
-toshiny.mers.h <- MERS
-
-
-BX.clusters.hcvsboydvsgalsonmabshiv <- bind_rows(toshiny.few3.h, toshiny.fewb1, toshiny.fewg1, toshiny.few1.h, toshiny.fewhiv, .id = "id")
-#toshiny.fewhcbghiv <- subset(BX.clusters.hcvsboydvsgalsonmabshiv, cregion %in% c("IgH"))
-toshiny.fewhcbghiv <- BX.clusters.hcvsboydvsgalsonmabshiv[ grep("Kappa|Lambda", BX.clusters.hcvsboydvsgalsonmabshiv$cregion, invert = TRUE) , ] %>% filter(!is.na(cdr3length_imgt)) %>% filter(is.integer(cdr3length_imgt)) %>% mutate(across(shm, round, 2)) %>% mutate(across(shm_mean, round, 2))
-#rm(BX.clusters.hcvsboydvsgalsonmabshiv)
-
-toshiny.fewhcbghiv$id <- gsub("1","Healthy control",toshiny.fewhcbghiv$id)
-## be careful with 1 in name here....
-toshiny.fewhcbghiv$id <- gsub("4","anti-CoVII mAbs",toshiny.fewhcbghiv$id)
-toshiny.fewhcbghiv$id <- gsub("2","Boyd7450",toshiny.fewhcbghiv$id)
-toshiny.fewhcbghiv$id <- gsub("3","Galson1",toshiny.fewhcbghiv$id)
-toshiny.fewhcbghiv$id <- gsub("anti-CoVII mAbs","anti-CoV2 mAbs",toshiny.fewhcbghiv$id)
-toshiny.fewhcbghiv$id <- gsub("Boyd7450","Boyd74s0",toshiny.fewhcbghiv$id)
-toshiny.fewhcbghiv$id <- gsub("5","HIV+ patient",toshiny.fewhcbghiv$id)
-toshiny.fewhcbghiv$id <- gsub("Boyd74s0","Boyd7450",toshiny.fewhcbghiv$id)
-
-## for combined need to recalculate ncount and shm_mean
-toshiny.fewhcbghivc <- toshiny.fewhcbghiv
-toshiny.fewhcbghivc$ncount <- NULL
-toshiny.fewhcbghivc$shm_mean <- NULL
-
-toshiny.fewhcbghivc <- toshiny.fewhcbghivc %>%
-  add_count(gf_jgene,cdr3length_imgt) %>%
-  rename(ncount = n) %>%
-  group_by(gf_jgene,cdr3length_imgt) %>%
-  mutate(shm_mean = mean(shm, na.rm = TRUE)) %>%
-  mutate(across(shm_mean, round, 2))
-
-## updaating HIV+ patient to HIV+ patient MT1214
-toshiny.fewhcbghiv$id <- gsub("HIV+ patient","HIV+ patient MT1214", toshiny.fewhcbghiv$id)
-toshiny.fewhcbghivc$id <- gsub("HIV+ patient","HIV+ patient MT1214", toshiny.fewhcbghivc$id)
-
-
-#write.table(toshiny.fewhcbghiv, "toshiny_fewhcbghiv.tab", sep = "\t", row.names = FALSE, quote = FALSE)
-#write.table(toshiny.fewhcbghivc, "toshiny_fewhcbghivc.tab", sep = "\t", row.names = FALSE, quote = FALSE)
-
-rm(toshiny.fewhcbghiv)
-rm(toshiny.fewhcbghivc)
-rm(toshiny.fewhcbg)
-rm(toshiny.fewhcbgc)
-### 4
-
-toshiny.cov2sarsmers <- bind_rows(toshiny.few1.h, toshiny.sars.h, toshiny.mers.h, .id = "id")
-
-toshiny.cov2sarsmers$id <- gsub("2","anti-SARS mAbs",toshiny.cov2sarsmers$id)
-toshiny.cov2sarsmers$id <- gsub("3","anti-MERS mAbs",toshiny.cov2sarsmers$id)
-## because has 2 needs to be last
-toshiny.cov2sarsmers$id <- gsub("1","anti-CoV2 mAbs",toshiny.cov2sarsmers$id)
-
-toshiny.cov2sarsmers$id <- factor(toshiny.cov2sarsmers$id, levels = c("anti-CoV2 mAbs", "anti-SARS mAbs", "anti-MERS mAbs"))
-toshiny.cov2sarsmers$source <- NULL
-
-## for combined need to recalculate ncount and shm_mean
-toshiny.cov2sarsmersc <- toshiny.cov2sarsmers
-toshiny.cov2sarsmersc$ncount <- NULL
-toshiny.cov2sarsmersc$shm_mean <- NULL
-
-toshiny.cov2sarsmersc <- toshiny.cov2sarsmersc %>%
-  add_count(gf_jgene,cdr3length_imgt) %>%
-  rename(ncount = n) %>%
-  group_by(gf_jgene,cdr3length_imgt) %>%
-  mutate(shm_mean = mean(shm, na.rm = TRUE)) %>%
-  mutate(across(shm_mean, round, 2))
-
-#write.table(toshiny.cov2sarsmers, "toshiny_cov2sarsmers.tab", sep = "\t", row.names = FALSE, quote = FALSE)
-#write.table(toshiny.cov2sarsmersc, "toshiny_cov2sarsmersc.tab", sep = "\t", row.names = FALSE, quote = FALSE)
-
-### 5
-
-toshiny.hivcov2sarsmers <- bind_rows(toshiny.few1.h, toshiny.sars.h, toshiny.mers.h, toshiny.fewhivmabs.h, .id = "id")
-
-toshiny.hivcov2sarsmers$id <- gsub("2","anti-SARS mAbs",toshiny.hivcov2sarsmers$id)
-toshiny.hivcov2sarsmers$id <- gsub("3","anti-MERS mAbs",toshiny.hivcov2sarsmers$id)
-toshiny.hivcov2sarsmers$id <- gsub("4","anti-HIV mAbs",toshiny.hivcov2sarsmers$id)
-## because has 2 needs to be last
-toshiny.hivcov2sarsmers$id <- gsub("1","anti-CoV2 mAbs",toshiny.hivcov2sarsmers$id)
-
-toshiny.hivcov2sarsmers$id <- factor(toshiny.hivcov2sarsmers$id, levels = c("anti-CoV2 mAbs", "anti-SARS mAbs", "anti-MERS mAbs", "anti-HIV mAbs"))
-toshiny.hivcov2sarsmers$source <- NULL
-
-## for combined need to recalculate ncount and shm_mean
-toshiny.hivcov2sarsmersc <- toshiny.hivcov2sarsmers
-toshiny.hivcov2sarsmersc$ncount <- NULL
-toshiny.hivcov2sarsmersc$shm_mean <- NULL
-
-toshiny.hivcov2sarsmersc <- toshiny.hivcov2sarsmersc %>%
-  add_count(gf_jgene,cdr3length_imgt) %>%
-  rename(ncount = n) %>%
-  group_by(gf_jgene,cdr3length_imgt) %>%
-  mutate(shm_mean = mean(shm, na.rm = TRUE)) %>%
-  mutate(across(shm_mean, round, 2))
-
-#write.table(toshiny.hivcov2sarsmers, "toshiny_hivcov2sarsmers.tab", sep = "\t", row.names = FALSE, quote = FALSE)
-#write.table(toshiny.hivcov2sarsmersc, "toshiny_hivcov2sarsmersc.tab", sep = "\t", row.names = FALSE, quote = FALSE)
-
-## then putting into app-6
-
-#install.packages("rsconnect")
-library(rsconnect)
-rsconnect::deployApp('/Users/eric.waltari/data_carpentry/wikipathways/App-6')
-
-###################################################################################################
-###################################################################################################
-###################################################################################################
-###################################################################################################
-
-#### jan 2021 ideas:
-## change plot title to name of V+J+CDR3length?? key is here:
-#filteredData <- isolate({filteredDSpartial2()}) - note this line is in 2 of 3 options, would need to add to third
-## then near bottom of plot code something similar to this line to add to actual title:
-# gjcdr3.title <- filteredData %>% separate(sequence_id, into = c("gf_jgene", "cdr3length_imgt"), sep = "_", remove = FALSE, convert = TRUE, extra = "merge", fill = "left") %>%
-#   select(sequence_id)
-
-filteredData$cdr3length_imgt <- as.numeric(filteredData$cdr3length_imgt)
-filteredData$G_J_CDR3 <- paste(filteredData$gf_jgene,filteredData$cdr3length_imgt,sep="_")
-gjcdr3.title <- filteredData %>%
-  select(G_J_CDR3)
-gjcdr3.titleID <- gjcdr3.title$G_J_CDR3[1]
-## then use gjcdr3.titleID to replace current title in " "
-
-#################################
-### END COMMANDS FOR UPDATING COVID ABDAB DATABASE BY JUST GRABBING RAW DATA...
-
-
-##################################################################################################################
-##################################################################################################################
-##################################################################################################################
-
-########
-## reading in previous healthy germ-pass samples to get clonalclusters
-
-################################################################################################################################
-#######################################################################################################################################
-
-
-
-#### to reload all correct tab files per app-2 and app-5
-toshiny.few <- read_tsv("toshiny_few.tab")
-toshiny.few1 <- read_tsv("toshiny_few1.tab")
-toshiny.few1.h <- read_tsv("toshiny_few1_h.tab")
-toshiny.few2 <- read_tsv("toshiny_few2.tab")
-toshiny.few3 <- read_tsv("toshiny_few3.tab")
-toshiny.few3b <- read_tsv("toshiny_few3b.tab")
-toshiny.fewhcbg <- read_tsv("toshiny_fewhcbg.tab")
-toshiny.fewhcbgc <- read_tsv("toshiny_fewhcbgc.tab")
-toshiny.fewhcbghiv <- read_tsv("toshiny_fewhcbghiv.tab")
-toshiny.fewhcbghivc <- read_tsv("toshiny_fewhcbghivc.tab")
-toshiny.natalia4 <- read_tsv("toshiny_natalia.tab")
-
-toshiny.fewer <- read_tsv("toshiny_fewer.tab")
-toshiny.fewer1 <- read_tsv("toshiny_fewer1.tab")
-toshiny.fewer1.h <- read_tsv("toshiny_fewer1_h.tab")
-# toshiny.few2 <- read_tsv("toshiny_few2.tab")
-# toshiny.few3 <- read_tsv("toshiny_few3.tab")
-toshiny.fewerhcbg <- read_tsv("toshiny_fewerhcbg.tab")
-toshiny.fewerhcbgc <- read_tsv("toshiny_fewerhcbgc.tab")
-
-
-########################################## RD1214 HIV dataset
-
-BX.clusters.hiv <- read_tsv("/users/eric.waltari/immcantation_pipeline/COVID_mabs/binder_data/MT1214HC_germ-pass_clones.tab")
-
-## unique to this dataset
-BX.clusters.hiv <- BX.clusters.hiv %>% filter(junction_length > 4)
-
-BX.clusters.hiv$v_call <- as.character(BX.clusters.hiv$v_call)
-BX.clusters.hiv$j_call <- as.character(BX.clusters.hiv$j_call)
-
-BX.clusters.hiv$gene <- getGene(BX.clusters.hiv$v_call, first=TRUE, strip_d=TRUE)
-BX.clusters.hiv$gf <- substring(BX.clusters.hiv$gene, 1,5)
-BX.clusters.hiv$jgene <- getGene(BX.clusters.hiv$j_call, first=TRUE, strip_d=TRUE)
-BX.clusters.hiv$jgf <- substring(BX.clusters.hiv$jgene, 1,5)
-BX.clusters.hiv$vj_junction_pattern <- paste(BX.clusters.hiv$gf,BX.clusters.hiv$jgf,BX.clusters.hiv$junction_length,sep="_") 
-
-BX.clusters.hiv$cdr3length_imgt <- ((BX.clusters.hiv$junction_length) / 3) - 2
-#BX.clusters.hiv$jgene[BX.clusters.hiv$jgene==""]<-NA
-BX.clusters.hiv$shm <- (100 - (BX.clusters.hiv$v_identity * 100))
-BX.clusters.hiv$junction_aa <- translateDNA(BX.clusters.hiv$junction, trim=TRUE)
-
-BX.clusters.hiv <- BX.clusters.hiv %>% filter(cdr3length_imgt > 4.8)
-#write.table(BX.clusters.hiv, "MT1214HC_germ-pass_clones2.tab", sep = "\t", row.names = FALSE, quote = FALSE)
-
-#BX.clusters.hiv <- BX.clusters.hiv[ grep("*", BX.clusters.hiv$junction_aa, invert = TRUE) , ]
-#BX.clusters.hiv$jgene[BX.clusters.hiv$jgene==""]<-NA
-#BX.clusters.hiv <- read_tsv("/users/eric.waltari/immcantation_pipeline/COVID_mabs/binder_data/MT1214HC_germ-pass_clones2.tab")
-
-BX.clusters.hiv <- BX.clusters.hiv %>% unite(gf_jgene, gf, jgene, sep = "_", remove = FALSE, na.rm = TRUE) %>%
-  add_count(gf_jgene,cdr3length_imgt) %>%
-  rename(ncount = n) %>%
-  group_by(gf_jgene,cdr3length_imgt) %>%
-  mutate(shm_mean = mean(shm, na.rm = TRUE))
-
-BX.clusters.hiv <- BX.clusters.hiv %>% filter(is.wholenumber(cdr3length_imgt))
-BX.clusters.hiv$cregion <- "IgH"
-
-
-toshiny.fewhiv <- BX.clusters.hiv %>% select(sequence_id,cregion,junction_aa,gene,gf_jgene,gf,jgene,jgf,vj_junction_pattern,cdr3length_imgt,shm,ncount,shm_mean) %>% filter(!is.na(cdr3length_imgt)) %>% filter(is.wholenumber(cdr3length_imgt)) %>% mutate(across(shm, round, 2)) %>% mutate(across(shm_mean, round, 2))
-
-toshiny.fewhiv <- toshiny.fewhiv[ grep("Kappa|Lambda|IGKJ|__", toshiny.fewhiv$jgene, invert = TRUE) , ]
-#write.table(toshiny.fewhiv, "toshiny_fewhiv.tab", sep = "\t", row.names = FALSE, quote = FALSE)
-
-
-## combining this hiv instead of previous hiv run...actually add both!
-toshiny.fewhiv1 <- read_tsv("toshiny_fewhiv1.tab")
-toshiny.fewhiv1$ncount <- NULL
-toshiny.fewhiv1$shm_mean <- NULL
-
-toshiny.fewhiv1 <- toshiny.fewhiv1 %>%
-  add_count(gf_jgene,cdr3length_imgt) %>%
-  rename(ncount = n) %>%
-  group_by(gf_jgene,cdr3length_imgt) %>%
-  mutate(shm_mean = mean(shm, na.rm = TRUE)) %>%
-  mutate(across(shm_mean, round, 2))
-
-
-########################################
-### sept2021 going back to raw dataset - instead of taking 1 sequence per clone, removing all singleton clones
-BX.clusters.rd1214 <- read_tsv("/Users/eric.waltari/immcantation_pipeline/COVID_mabs/MT1214HC_germ-pass.tab")
-
-# BX.clusters.rd1214 <- BX.clusters.rd1214 %>% filter(FUNCTIONAL == "T") %>% 
-#   filter(IN_FRAME == "T") %>% 
-#   filter(STOP == "F")
-#toshiny.fewhiv <- toshiny.fewhiv[ grep("Kappa|Lambda|IGKJ|__", toshiny.fewhiv$jgene, invert = TRUE) , ]
-
-BX.clusters.rd1214$cregion <- str_sub(BX.clusters.rd1214$v_call, end=3)
-BX.clusters.rd1214 <- subset(BX.clusters.rd1214, cregion %in% c("IgH"))
-
-BX.clusters.rd1214fewer <- BX.clusters.rd1214 %>% add_count(clone_id) %>%
-  rename(clonecount = n) %>%
-  filter(clonecount > 1)
-
-## THIS IS A ONE-OFF BECAUSE NOT USING LATEST AIRR FORMAT
-## but will need similar code for all datasets Sept 2021
-BX.clusters.rd1214fewer$junction_aa <- translateDNA(BX.clusters.rd1214fewer$junction, trim=TRUE)
-# str_sub(BX.clusters.rd1214fewer$junction_aa, 1, 1) <- ""
-# str_sub(BX.clusters.rd1214fewer$junction_aa, -1, -1) <- ""
-BX.clusters.rd1214fewer$cdr3length_imgt <- nchar(BX.clusters.rd1214fewer$junction_aa)
-
-BX.clusters.rd1214fewer$junction_length_CHECK <- BX.clusters.rd1214fewer$junction_length / 3
-BX.clusters.rd1214fewer <- BX.clusters.rd1214fewer %>% filter(is.wholenumber(junction_length_CHECK))
-
-## FILTER junction_aa > 3 & NO NAs...
-BX.clusters.rd1214fewer <- BX.clusters.rd1214fewer %>% filter(!is.na(junction_aa)) %>% filter(cdr3length_imgt > 2)
-## ALSO NO *
-BX.clusters.rd1214fewer <- BX.clusters.rd1214fewer[ grep("\\*", BX.clusters.rd1214fewer$junction_aa, invert = TRUE) , ]
-
-
-BX.clusters.rd1214fewer$gene <- getGene(BX.clusters.rd1214fewer$GERMLINE_v_call, first=TRUE, strip_d=TRUE)
-BX.clusters.rd1214fewer$gf <- substring(BX.clusters.rd1214fewer$gene, 1,5)
-BX.clusters.rd1214fewer$jgene <- getGene(BX.clusters.rd1214fewer$GERMLINE_j_call, first=TRUE, strip_d=TRUE)
-BX.clusters.rd1214fewer <- BX.clusters.rd1214fewer %>% unite(gf_jgene, gf, jgene, sep = "_", remove = FALSE, na.rm = TRUE)
-## some IGK & IGL
-BX.clusters.rd1214fewer <- BX.clusters.rd1214fewer[ grep("IGK|IGL", BX.clusters.rd1214fewer$gf_jgene, invert = TRUE) , ]
-BX.clusters.rd1214fewer <- BX.clusters.rd1214fewer[ grep("kappa|lambda", BX.clusters.rd1214fewer$PRIMER, invert = TRUE) , ]
-
-
-## THEN GROUP BY V CALL JCALL AND junction_aa, SELECT ONLY ONE PER GROUP
-
-BX.clusters.rd1214fewest <- BX.clusters.rd1214fewer %>%
-  group_by(junction_aa,gf_jgene) %>%
-  summarize_all(first)
-## should be the same! note updating superceded summarize_all per dplyr help...
-# BX.clusters.rd1214fewest <- BX.clusters.rd1214fewer %>%
-#   group_by(junction_aa,gf_jgene) %>%
-#   summarize(first)
-
-h3.hc <- ggplot(BX.clusters.rd1214fewest, aes(gf_jgene,cdr3length_imgt))
-
-BX.clusters.rd1214fewest.viridis <- h3.hc + geom_bin2d(aes(fill=log10(..count..))) + theme_bw() + ylab("CDRH3 Length (aa)") + xlab("V-gene & J-gene") + facet_wrap(~ cregion, ncol=1, scales = "free") + scale_fill_viridis_c(name = "# of \nReads", option = "D",  breaks = c(0, 1, 2, 3, 4), labels = c(1, 10, 100, 1000, 10000)) + theme(axis.text.x = element_text(angle=45, hjust=1, size=5))
-BX.clusters.rd1214fewest.viridis
-#write.table(BX.clusters.rd1214fewest, "BX_clusters_rd1214fewest.tab", sep = "\t", row.names = FALSE, quote = FALSE)
-
-### I THEN CHANGED HEADERS TO MATCH AIRR FORMAT, ALSO CHANGED NAME TO RD1214HC_germ-pass2.tab
-
-### sept 13 trying to recapitulate RD1214 from OAS download:
-# first need to remove first line from every file, then import into R
-
-BX.clusters.rd1214a <- read.csv("/Users/eric.waltari/immcantation_pipeline/COVID_mabs/sept21/SRR5811762_Heavy_IGHAn.csv")
-BX.clusters.rd1214a$ANARCI_numbering <- NULL
-BX.clusters.rd1214a$ANARCI_status <- NULL
-BX.clusters.rd1214a <- BX.clusters.rd1214a %>% filter(Redundancy > 1)
-
-
-BX.clusters.rd1214d <- read.csv("/Users/eric.waltari/immcantation_pipeline/COVID_mabs/sept21/SRR5811762_Heavy_IGHDn.csv")
-BX.clusters.rd1214e <- read.csv("/Users/eric.waltari/immcantation_pipeline/COVID_mabs/sept21/SRR5811762_Heavy_IGHEn.csv")
-BX.clusters.rd1214g <- read.csv("/Users/eric.waltari/immcantation_pipeline/COVID_mabs/sept21/SRR5811762_Heavy_IGHGn.csv")
-
-BX.clusters.rd1214d$ANARCI_numbering <- NULL
-BX.clusters.rd1214d$ANARCI_status <- NULL
-BX.clusters.rd1214d <- BX.clusters.rd1214d %>% filter(Redundancy > 1)
-
-BX.clusters.rd1214e$ANARCI_numbering <- NULL
-BX.clusters.rd1214e$ANARCI_status <- NULL
-BX.clusters.rd1214e <- BX.clusters.rd1214e %>% filter(Redundancy > 1)
-
-
-BX.clusters.rd1214g$ANARCI_numbering <- NULL
-BX.clusters.rd1214g$ANARCI_status <- NULL
-BX.clusters.rd1214g <- BX.clusters.rd1214g %>% filter(Redundancy > 1)
-
-
-BX.clusters.rd1214m <- read.csv("/Users/eric.waltari/immcantation_pipeline/COVID_mabs/sept21/SRR5811762_Heavy_IGHMn.csv")
-BX.clusters.rd1214m$ANARCI_numbering <- NULL
-BX.clusters.rd1214m$ANARCI_status <- NULL
-BX.clusters.rd1214m <- BX.clusters.rd1214m %>% filter(Redundancy > 1)
-
-BX.clusters.rd1214b <- read.csv("/Users/eric.waltari/immcantation_pipeline/COVID_mabs/sept21/SRR5811762_Heavy_Bulkn.csv")
-BX.clusters.rd1214b$ANARCI_numbering <- NULL
-BX.clusters.rd1214b$ANARCI_status <- NULL
-BX.clusters.rd1214b <- BX.clusters.rd1214b %>% filter(Redundancy > 1)
-
-
-BX.clusters.rd1214a$cregion <- "IgA"
-BX.clusters.rd1214g$cregion <- "IgG"
-BX.clusters.rd1214m$cregion <- "IgM"
-
-## combine, then locus IGH
-BX.clusters.rd1214agm <- rbind(BX.clusters.rd1214a, BX.clusters.rd1214g, BX.clusters.rd1214m)
-BX.clusters.rd1214all <- full_join(BX.clusters.rd1214agm, BX.clusters.rd1214b)
-BX.clusters.rd1214all$locus <- "IGH"
-
-## RUN THESE ON ALL DATASETS TO BE USED - ALSO LOOK INTO RENUMBERING WITHIN R
-BX.clusters.rd1214all$junction_length_check <- BX.clusters.rd1214all$junction_length / 3
-BX.clusters.rd1214all <- BX.clusters.rd1214all %>% filter(is.wholenumber(junction_length_check))
-
-BX.clusters.rd1214all$dataset <- "RD1214"
-BX.clusters.rd1214all$obs <- 1:nrow(BX.clusters.rd1214all) 
-BX.clusters.rd1214all <- BX.clusters.rd1214all %>% unite(sequence_id, dataset, obs, sep = "_", remove = TRUE, na.rm = TRUE)
-  
-#write.table(BX.clusters.rd1214all, "BX_clusters_rd1214downloaded.tab", sep = "\t", row.names = FALSE, quote = FALSE)
-
-### code to thin OAS & BXmay hc datasets:
-
-BX.clusters.OASo <- read_tsv("/Users/eric.waltari/immcantation_pipeline/COVID_mabs/OAS_sept21_db-pass.tsv")
-
-## filter productive = FALSE, * in junction_aa
-BX.clusters.OAS <- BX.clusters.OASo %>% filter(productive == TRUE) %>% filter(productive == TRUE)
-BX.clusters.OAS <- BX.clusters.OAS[ grep("\\*", BX.clusters.OAS$junction_aa, invert = TRUE) , ]
-## 700k to 363k 
-#write.table(BX.clusters.OAS, "OAS_sept21_db-pass2.tsv", sep = "\t", row.names = FALSE, quote = FALSE)
-rm(BX.clusters.OASo)
-
-
-### NEW CODE FOR IMPORTING NEW OAS DENGUE DATA
-## SEE AT VERY BOTTOM
-
-## final concatenate command
-OAS.clusters.all <- rbind(OAS.clusters.p148,OAS.clusters.p172,OAS.clusters.p194,OAS.clusters.p199,OAS.clusters.p203,OAS.clusters.p208,OAS.clusters.p232,OAS.clusters.p237,OAS.clusters.p238,OAS.clusters.p240,OAS.clusters.p249,OAS.clusters.p252,OAS.clusters.p255,OAS.clusters.p265,OAS.clusters.p275,OAS.clusters.p276,OAS.clusters.p287,OAS.clusters.p289,OAS.clusters.p299,OAS.clusters.p301,OAS.clusters.p307,OAS.clusters.p311,OAS.clusters.p320,OAS.clusters.p346,OAS.clusters.p376,OAS.clusters.p391,OAS.clusters.p422,OAS.clusters.p444,OAS.clusters.p455,OAS.clusters.p479,OAS.clusters.p481,OAS.clusters.p489,OAS.clusters.p500,OAS.clusters.p514,OAS.clusters.p515,OAS.clusters.p517,OAS.clusters.p520,OAS.clusters.p524,OAS.clusters.p529,OAS.clusters.p543,OAS.clusters.p551,OAS.clusters.p555,OAS.clusters.p558,OAS.clusters.p563,OAS.clusters.p569)
-OAS.clusters.all$ANARCI_numbering <- NULL
-OAS.clusters.all$ANARCI_status <- NULL
-
-#write.table(OAS.clusters.all, "OAS_sept21_germ-pass2.tsv", sep = "\t", row.names = FALSE, quote = FALSE)
-
-###
-
-BX.clusters.BXmayo <- read_tsv("/Users/eric.waltari/immcantation_pipeline/COVID_mabs/BXmay10mstim_db-passHC.tsv")
-
-BX.clusters.BXmay <- BX.clusters.BXmayo %>% filter(consensus_count > 2)
-## 353k to 89k
-
-#write.table(BX.clusters.BXmay, "BXmay10mstim_db-pass2HC.tsv", sep = "\t", row.names = FALSE, quote = FALSE)
-
-
-
-### end sept2021
-
-# dengue
-### LATE NOV 2020 - NEED TO COLLAPSE IDENTICAL junction_aa FIRST (ALSO FOR OAS), OTHERWISE TOO MANY SEQUENCES...
-# distinct_at() will be superseded by use of across() inside distinct() from version 1.0.0 (dplyr.tidyverse.org/news/index.html#across). 
-# The equivalent pattern for your answer would be dat %>% distinct(across(-z)) but distinct_at() will still be available for several years. 
-## to make sure it keeps largest consensus_count though - group_by(consensus_count) %>%
-BX.clusters.dengue.d13.2$junction_aa <- translateDNA(BX.clusters.dengue.d13.2$junction, trim=TRUE)
-# BX.clusters.dengue.d13.2 <- BX.clusters.dengue.d13.2 %>% distinct(across(junction_aa), .keep_all = TRUE)
-
-
-## MAR 2021 - BEFORE COMBINING BELOW, LOOK AT THE DATASETS SEPARATELY...
-
-## NEXT FIND THE CONVERGENT SEQUENCES AND REMOVE...
-BX.clusters.dengue.d13.2 <- BX.clusters.dengue.d13.2[ grep("ARALFGLVAVASPFDN", BX.clusters.dengue.d13.2$junction_aa, invert = TRUE) , ]
-BX.clusters.dengue.d13.2 <- BX.clusters.dengue.d13.2[ grep("ITPPLYLMVGGVSRAMAV", BX.clusters.dengue.d13.2$junction_aa, invert = TRUE) , ]
-BX.clusters.dengue.d13.2 <- BX.clusters.dengue.d13.2[ grep("ARQDRNWFDT", BX.clusters.dengue.d13.2$junction_aa, invert = TRUE) , ]
-
-BX.clusters.dengue.d20.2 <- BX.clusters.dengue.d20.2[ grep("ARGPGGTSTSCYHCWFDP", BX.clusters.dengue.d20.2$junction_aa, invert = TRUE) , ]
-BX.clusters.dengue.d20.2 <- BX.clusters.dengue.d20.2[ grep("AKNYGSGTLNWFDS", BX.clusters.dengue.d20.2$junction_aa, invert = TRUE) , ]
-
-
-BX.clusters.dengue.d13.2stim <- BX.clusters.dengue.d13.2stim[ grep("DC38", BX.clusters.dengue.d13.2stim$sequence_id, invert = TRUE) , ]
-BX.clusters.dengue.d20.2stim <- BX.clusters.dengue.d20.2stim[ grep("DC38", BX.clusters.dengue.d20.2stim$sequence_id, invert = TRUE) , ]
-BX.clusters.dengue.d20.2stim <- BX.clusters.dengue.d20.2stim[ grep("ARADEMATVQgfYAFDI", BX.clusters.dengue.d20.2stim$junction_aa, invert = TRUE) , ]
-BX.clusters.dengue.d20.2stim <- BX.clusters.dengue.d20.2stim[ grep("ARADEMATIEgfYAFDI", BX.clusters.dengue.d20.2stim$junction_aa, invert = TRUE) , ]
-BX.clusters.dengue.d20.2stim <- BX.clusters.dengue.d20.2stim[ grep("ARADEMATIEgfYAFGI", BX.clusters.dengue.d20.2stim$junction_aa, invert = TRUE) , ]
-
-BX.clusters.dengue.d20.2stim <- BX.clusters.dengue.d20.2stim[ grep("ARGPGGTTTSCYHCWFDP", BX.clusters.dengue.d20.2stim$junction_aa, invert = TRUE) , ]
-BX.clusters.dengue.d20.2stim <- BX.clusters.dengue.d20.2stim[ grep("ARGPGGTSSSCYQCWFDP", BX.clusters.dengue.d20.2stim$junction_aa, invert = TRUE) , ]
-BX.clusters.dengue.d20.2stim <- BX.clusters.dengue.d20.2stim[ grep("AKNYGSGTLNWFDS", BX.clusters.dengue.d20.2stim$junction_aa, invert = TRUE) , ]
-
-BX.clusters.dengue.d20.2stim <- BX.clusters.dengue.d20.2stim[ grep("ARgfATTQWQGHNWFDP", BX.clusters.dengue.d20.2stim$junction_aa, invert = TRUE) , ]
-BX.clusters.dengue.d20.2stim <- BX.clusters.dengue.d20.2stim[ grep("AKDVGECSGGNCFSGYFYYMDA", BX.clusters.dengue.d20.2stim$junction_aa, invert = TRUE) , ]
-
-######################
-
-## getting CF10 & CF7 (also CF4) extractions
-
-#toshiny.dengue.cf10 <- subset(toshiny.dengue.mabs, cregion %in% c("IgG"))
-toshiny.dengue.cf10 <- toshiny.dengueallmore %>% filter(gf_jgene == "IGHV4_IGHJ5" & cdr3length_imgt == "10")
-toshiny.dengue.cf7 <- toshiny.dengueallmore %>% filter(gf_jgene == "IGHV1_IGHJ5" & cdr3length_imgt == "16")
-
-#write.table(toshiny.dengue.cf10, "toshiny_dengue_cf10.tab", sep = "\t", row.names = FALSE, quote = FALSE)
-#write.table(toshiny.dengue.cf7, "toshiny_dengue_cf4andcf7.tab", sep = "\t", row.names = FALSE, quote = FALSE)
-
-#starwars <- starwars %>% filter(hair_color == "none" & eye_color == "black")
-
-
-
-
-## NEED TO THIN TO SMALLER SUBSET THOUGH...inner join with subset from Geneious
-##  dengue_CF10_list.tsv
-CF10mergedwithOAS.list <- read_tsv("dengue_CF10_list.tsv")
-
-## next run some sort of join...semi-join semi_join() return all rows from x with a match in y.
-
-CF10mergedwithOASfewer <- semi_join(toshiny.dengue.cf10, CF10mergedwithOAS.list)
-
-CF4mergedwithOAS.list <- read_tsv("dengue_CF4_list.tsv")
-
-CF4mergedwithOASfewer <- semi_join(toshiny.dengue.cf7, CF4mergedwithOAS.list)
-
-### networks of dengue cf10 & cf 7 - see far below 
-
 
 ##############################################################################################################################
 ##############################################################################################################################
 
-### NEW CODE FOR IMPORTING NEW OAS DENGUE DATA
+### CODE FOR IMPORTING NEW OAS DENGUE DATA
 
 OAS.clusters.p148a <- read.csv("/Users/eric.waltari/immcantation_pipeline/COVID_mabs/sept21/oas/SRR2150126_Heavy_Bulk.csv", skip =1)
 OAS.clusters.p148b <- read.csv("/Users/eric.waltari/immcantation_pipeline/COVID_mabs/sept21/oas/SRR2150229_Heavy_Bulk.csv", skip =1)
