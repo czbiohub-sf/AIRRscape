@@ -51,7 +51,7 @@ is.wholenumber <- function(x, tol = .Machine$double.eps^0.5) {
 
 ### SEPT 2021 DATASETS
 
-toshiny.cov2.abdab <- read_tsv("toshiny_cov2abdab.tab")
+toshiny.cov2.abdab <- read_tsv("toshiny_cov2_abdab.tab")
 
 cov2.bulk.binder.p11 <- read_tsv("Binder_p11_germ-pass.tsv")   # v_identity between 0.60 and 1, sequences renamed, have clone_id & germline_alignment_d_mask, NOT cdr3_aa
 cov2.bulk.nielsen.p7450 <- read_tsv("Nielsen_7450_airr-covid-19.tsv")   # v_identity between 60 and 100, has cdr3_aa
@@ -59,7 +59,8 @@ cov2.bulk.galson.p1 <- read_tsv("Galson_p1_germ-pass.tsv")   # v_identity betwee
 #cov2.bulk.kc.m5.rep1 <- read_tsv("Kuri-Cervantes_M5-rep1_airr-covid-19.tsv")   # v_identity between 0.60 and 1, NOT cdr3_aa
 cov2.bulk.kc.m5.allreps <- read_tsv("Kuri-Cervantes_M5-reps1to4_airr-covid-19.tsv")   # v_identity between 0.60 and 1, NOT cdr3_aa
 
-toshiny.hiv.mabs <- read_tsv("toshiny_hivmabs.tab")
+## combining hiv & catnap
+toshiny.hiv.mabs.all <- read_tsv("toshiny_hivmabs_all.tab")
 hiv.bulk.nih45 <- read_tsv("hivnih45_vdjserver.tsv")   # v_identity between 
 hiv.bulk.mt1214 <- read_tsv("MT1214downloaded.tab")   # v_identity between 
 
@@ -323,7 +324,7 @@ unique(toshiny.cov2.bulk.kc.m5.allreps$gf)
 
 unique(toshiny.cov2.abdab$jgene)
 unique(toshiny.den.mabs$jgene)
-unique(toshiny.hiv.mabs$jgene)
+# unique(toshiny.hiv.mabs$jgene)
 
 unique(toshiny.den.bulk.d13stim$jgene)
 unique(toshiny.den.bulk.d13enrich$jgene)
@@ -337,7 +338,7 @@ unique(toshiny.cov2.bulk.galson.p1$jgene)
 unique(toshiny.cov2.bulk.kc.m5.allreps$jgene)
 unique(toshiny.cov2.abdab$jgene)
 unique(toshiny.den.mabs$jgene)
-unique(toshiny.hiv.mabs$jgene)
+# unique(toshiny.hiv.mabs$jgene)
 
 
 
@@ -352,10 +353,11 @@ unique(toshiny.hiv.mabs$jgene)
 # SARS-CoV2-mAb
 # HIV-mAb
 ## BUT ALSO WILL WANT TO CHANGE THE NAME OF EACH SEQUENCE!!! DONE HERE...
-toshiny.hiv.mabs$sequence_id0 <- toshiny.hiv.mabs$sequence_id
-toshiny.hiv.mabs$sequence_id <- NULL
-toshiny.hiv.mabs$dataset <- "HIV-mAb"
-toshiny.hiv.mabs <- toshiny.hiv.mabs %>% unite(sequence_id, dataset, sequence_id0, sep = "-", remove = TRUE, na.rm = TRUE)
+## renamed whether source is IEDB or CATNAP
+# toshiny.hiv.mabs$sequence_id0 <- toshiny.hiv.mabs$sequence_id
+# toshiny.hiv.mabs$sequence_id <- NULL
+# toshiny.hiv.mabs$dataset <- "HIV-mAb"
+# toshiny.hiv.mabs <- toshiny.hiv.mabs %>% unite(sequence_id, dataset, sequence_id0, sep = "-", remove = TRUE, na.rm = TRUE)
 
 toshiny.cov2.abdab$sequence_id0 <- toshiny.cov2.abdab$sequence_id
 toshiny.cov2.abdab$sequence_id <- NULL
@@ -366,14 +368,16 @@ toshiny.cov2.abdab <- toshiny.cov2.abdab %>% unite(sequence_id, dataset, sequenc
 toshiny.cov2.abdab$cdr3_aa_imgt <- toshiny.cov2.abdab$cdr3_aa
 toshiny.cov2.abdab$cdr3_aa <- NULL
 
-toshiny.hiv.mabs$cdr3_aa_imgt <- toshiny.hiv.mabs$cdr3_aa
-toshiny.hiv.mabs$cdr3_aa <- NULL
 
 toshiny.den.mabs$cdr3_aa_imgt <- toshiny.den.mabs$cdr3_aa
 toshiny.den.mabs$cdr3_aa <- NULL
 
-toshiny.hiv.mabs$ncount <- NULL
-toshiny.hiv.mabs$shm.mean <- NULL
+## hiv.mabs are changed Nov 2021
+# toshiny.hiv.mabs$cdr3_aa_imgt <- toshiny.hiv.mabs$cdr3_aa
+# toshiny.hiv.mabs$cdr3_aa <- NULL
+
+# toshiny.hiv.mabs$ncount <- NULL
+# toshiny.hiv.mabs$shm.mean <- NULL
 toshiny.den.mabs$ncount <- NULL
 toshiny.den.mabs$shm.mean <- NULL
 toshiny.cov2.abdab$ncount <- NULL
@@ -393,18 +397,18 @@ toshiny.cov2.abdab <- toshiny.cov2.abdab %>%
   mutate(across(shm_max, round, 2)) %>% 
   mutate(across(shm_mean, round, 2))
 
-toshiny.hiv.mabs <- toshiny.hiv.mabs %>%
-  add_count(gf_jgene,cdr3length_imgt) %>%
-  rename(ncount = n) %>%
-  group_by(gf_jgene,cdr3length_imgt) %>%
-  mutate(shm_mean = mean(shm, na.rm = TRUE)) %>%
-  # ADD MAX SHM AS WELL..
-  mutate(shm_max = max(shm, na.rm = TRUE)) %>% 
-  mutate(shm_mean = na_if(shm_mean, "NaN")) %>% 
-  mutate(shm_max = na_if(shm_max, "-Inf")) %>% 
-  mutate(across(shm, round, 2)) %>% 
-  mutate(across(shm_max, round, 2)) %>% 
-  mutate(across(shm_mean, round, 2))
+# toshiny.hiv.mabs <- toshiny.hiv.mabs %>%
+#   add_count(gf_jgene,cdr3length_imgt) %>%
+#   rename(ncount = n) %>%
+#   group_by(gf_jgene,cdr3length_imgt) %>%
+#   mutate(shm_mean = mean(shm, na.rm = TRUE)) %>%
+#   # ADD MAX SHM AS WELL..
+#   mutate(shm_max = max(shm, na.rm = TRUE)) %>% 
+#   mutate(shm_mean = na_if(shm_mean, "NaN")) %>% 
+#   mutate(shm_max = na_if(shm_max, "-Inf")) %>% 
+#   mutate(across(shm, round, 2)) %>% 
+#   mutate(across(shm_max, round, 2)) %>% 
+#   mutate(across(shm_mean, round, 2))
 
 toshiny.den.mabs <- toshiny.den.mabs %>%
   add_count(gf_jgene,cdr3length_imgt) %>%
@@ -436,17 +440,17 @@ toshiny.den.mabs <- toshiny.den.mabs %>%
 
 ## ALSO NEED TO MAKE SURE SEQUENCE ID IS FIRST FOR MABS...AND CDR3 AFTER CREGION
 toshiny.cov2.abdab <- toshiny.cov2.abdab %>% relocate(sequence_id)
-toshiny.hiv.mabs <- toshiny.hiv.mabs %>% relocate(sequence_id)
-
 toshiny.cov2.abdab <- toshiny.cov2.abdab %>% relocate(cdr3_aa_imgt, .after = cregion)
-toshiny.hiv.mabs <- toshiny.hiv.mabs %>% relocate(cdr3_aa_imgt, .after = cregion)
+
+# toshiny.hiv.mabs <- toshiny.hiv.mabs %>% relocate(sequence_id)
+# toshiny.hiv.mabs <- toshiny.hiv.mabs %>% relocate(cdr3_aa_imgt, .after = cregion)
 
 toshiny.cov2.abdab <- toshiny.cov2.abdab %>% relocate(neutralization, .after = cdr3_aa_imgt)
 toshiny.cov2.abdab <- toshiny.cov2.abdab %>% relocate(binding, .after = cdr3_aa_imgt)
 
 
 toshiny.cov2.abdab.h <- subset(toshiny.cov2.abdab, cregion %in% c("IgH"))
-toshiny.hiv.mabs.h <- subset(toshiny.hiv.mabs, cregion %in% c("IgH"))
+toshiny.hiv.mabs.all.h <- subset(toshiny.hiv.mabs.all, cregion %in% c("IgH"))
 ## END ONE-OFF COMMANDS FOR MAB DATASETS
 
 
@@ -466,8 +470,8 @@ write.table(toshiny.cov2.bulk.kc.m5.allreps, "toshiny_cov2_bulk_kc.m5_allreps.ta
 write.table(toshiny.cov2.abdab, "toshiny_cov2_abdab.tab", sep = "\t", row.names = FALSE, quote = FALSE)
 write.table(toshiny.cov2.abdab.h, "toshiny_cov2_abdab_h.tab", sep = "\t", row.names = FALSE, quote = FALSE)
 write.table(toshiny.den.mabs, "toshiny_den_mabs.tab", sep = "\t", row.names = FALSE, quote = FALSE)
-write.table(toshiny.hiv.mabs, "toshiny_hiv_mabs.tab", sep = "\t", row.names = FALSE, quote = FALSE)
-write.table(toshiny.hiv.mabs.h, "toshiny_hiv_mabs_h.tab", sep = "\t", row.names = FALSE, quote = FALSE)
+write.table(toshiny.hiv.mabs.all, "toshiny_hiv_mabs.tab", sep = "\t", row.names = FALSE, quote = FALSE)
+write.table(toshiny.hiv.mabs.all.h, "toshiny_hiv_mabs_h.tab", sep = "\t", row.names = FALSE, quote = FALSE)
 
 
 ## combine d13 enrich & d 13 stim, also one-off potential contamination removed...
@@ -584,7 +588,7 @@ write.table(toshiny.cov2.allc, "toshiny_cov2_allc.tab", sep = "\t", row.names = 
 #c("anti-CoV2 mAbs", "anti-HIV mAbs"))
 # #"SARS-CoV2 mAbs vs. HIV mAbs - IgH",
 
-toshiny.cov2hiv <- bind_rows(toshiny.cov2.abdab.h, toshiny.hiv.mabs.h, .id = "id")
+toshiny.cov2hiv <- bind_rows(toshiny.cov2.abdab.h, toshiny.hiv.mabs.all.h, .id = "id")
 
 toshiny.cov2hiv$id <- gsub("2","HIV mAbs",toshiny.cov2hiv$id)
 toshiny.cov2hiv$id <- gsub("1","SARS-CoV2 mAbs",toshiny.cov2hiv$id)
@@ -630,7 +634,7 @@ write.table(toshiny.cov2hivc, "toshiny_cov2hivc.tab", sep = "\t", row.names = FA
 
 #c("HIV mAbs", "HIV patient MT1214", "HIV patient NIH45"))  #"SARS-CoV2 mAbs vs. HIV mAbs - IgH",
 
-toshiny.hiv.all <- bind_rows(toshiny.hiv.mabs.h, toshiny.hiv.bulk.mt1214, toshiny.hiv.bulk.nih45, .id = "id")
+toshiny.hiv.all <- bind_rows(toshiny.hiv.mabs.all.h, toshiny.hiv.bulk.mt1214, toshiny.hiv.bulk.nih45, .id = "id")
 
 toshiny.hiv.all$id <- gsub("1","HIV mAbs",toshiny.hiv.all$id)
 toshiny.hiv.all$id <- gsub("3","HIV patient NIH45 bulk repertoire",toshiny.hiv.all$id)
@@ -1134,3 +1138,66 @@ OAS.clusters.all <- rbind(OAS.clusters.p148,OAS.clusters.p172,OAS.clusters.p194,
 OAS.clusters.all$ANARCI_numbering <- NULL
 OAS.clusters.all$ANARCI_status <- NULL
 write.table(OAS.clusters.all, "OAS_sept21_germ-pass2.tsv", sep = "\t", row.names = FALSE, quote = FALSE)
+
+##############################################################################################################################
+##############################################################################################################################
+
+### CODE FOR IMPORTING WALTARI 2018 HIV DATA
+
+### mt1214 from OAS download:
+# first need to remove first line from every file, then import into R
+
+BX.clusters.mt1214a <- read.csv("/Users/eric.waltari/immcantation_pipeline/COVID_mabs/sept21/SRR5811762_Heavy_IGHAn.csv")
+BX.clusters.mt1214a$ANARCI_numbering <- NULL
+BX.clusters.mt1214a$ANARCI_status <- NULL
+BX.clusters.mt1214a <- BX.clusters.mt1214a %>% filter(Redundancy > 1)
+
+
+BX.clusters.mt1214d <- read.csv("/Users/eric.waltari/immcantation_pipeline/COVID_mabs/sept21/SRR5811762_Heavy_IGHDn.csv")
+BX.clusters.mt1214e <- read.csv("/Users/eric.waltari/immcantation_pipeline/COVID_mabs/sept21/SRR5811762_Heavy_IGHEn.csv")
+BX.clusters.mt1214g <- read.csv("/Users/eric.waltari/immcantation_pipeline/COVID_mabs/sept21/SRR5811762_Heavy_IGHGn.csv")
+
+BX.clusters.mt1214d$ANARCI_numbering <- NULL
+BX.clusters.mt1214d$ANARCI_status <- NULL
+BX.clusters.mt1214d <- BX.clusters.mt1214d %>% filter(Redundancy > 1)
+
+BX.clusters.mt1214e$ANARCI_numbering <- NULL
+BX.clusters.mt1214e$ANARCI_status <- NULL
+BX.clusters.mt1214e <- BX.clusters.mt1214e %>% filter(Redundancy > 1)
+
+
+BX.clusters.mt1214g$ANARCI_numbering <- NULL
+BX.clusters.mt1214g$ANARCI_status <- NULL
+BX.clusters.mt1214g <- BX.clusters.mt1214g %>% filter(Redundancy > 1)
+
+
+BX.clusters.mt1214m <- read.csv("/Users/eric.waltari/immcantation_pipeline/COVID_mabs/sept21/SRR5811762_Heavy_IGHMn.csv")
+BX.clusters.mt1214m$ANARCI_numbering <- NULL
+BX.clusters.mt1214m$ANARCI_status <- NULL
+BX.clusters.mt1214m <- BX.clusters.mt1214m %>% filter(Redundancy > 1)
+
+BX.clusters.mt1214b <- read.csv("/Users/eric.waltari/immcantation_pipeline/COVID_mabs/sept21/SRR5811762_Heavy_Bulkn.csv")
+BX.clusters.mt1214b$ANARCI_numbering <- NULL
+BX.clusters.mt1214b$ANARCI_status <- NULL
+BX.clusters.mt1214b <- BX.clusters.mt1214b %>% filter(Redundancy > 1)
+
+
+BX.clusters.mt1214a$cregion <- "IgA"
+BX.clusters.mt1214g$cregion <- "IgG"
+BX.clusters.mt1214m$cregion <- "IgM"
+
+## combine, then locus IGH
+BX.clusters.mt1214agm <- rbind(BX.clusters.mt1214a, BX.clusters.mt1214g, BX.clusters.mt1214m)
+BX.clusters.mt1214all <- full_join(BX.clusters.mt1214agm, BX.clusters.mt1214b)
+BX.clusters.mt1214all$locus <- "IGH"
+
+## RUN THESE ON ALL DATASETS TO BE USED - ALSO LOOK INTO RENUMBERING WITHIN R
+BX.clusters.mt1214all$junction_length_check <- BX.clusters.mt1214all$junction_length / 3
+BX.clusters.mt1214all <- BX.clusters.mt1214all %>% filter(is.wholenumber(junction_length_check))
+
+BX.clusters.mt1214all$dataset <- "mt1214"
+BX.clusters.mt1214all$obs <- 1:nrow(BX.clusters.mt1214all) 
+BX.clusters.mt1214all <- BX.clusters.mt1214all %>% unite(sequence_id, dataset, obs, sep = "_", remove = TRUE, na.rm = TRUE)
+
+#write.table(BX.clusters.mt1214all, "MT1214downloaded.tab", sep = "\t", row.names = FALSE, quote = FALSE)
+
