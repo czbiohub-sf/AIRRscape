@@ -88,7 +88,7 @@ ui <- fluidPage(
       selectInput("plotcolors", "Plot Colors:",
                   c("Average SHM",
                     "Maximum SHM",
-                    "Percentage of total reads"), selectize = FALSE), 
+                    "Percentage of total antibody sequences"), selectize = FALSE), 
       p("When plots appear, click on a bin to get a list of antibodies in the lower table. Hovering over a bin will also show some basic stats."),
       br(),
       p("Alternately if you want to see more than a bin you can create a box and all antibodies within will appear in the top table."),
@@ -283,7 +283,7 @@ server <- function(input, output, session) {
       } else if (input$plotcolors == "Maximum SHM") {
         toplot <- ggplot(dat, aes(gf_jgene,cdr3length_imgt)) + geom_tile(aes(fill = shm_max)) + scale_y_continuous(limits = c(3, 42)) + theme_bw(base_size = 12) + ylab("CDR3 Length (aa)") + xlab("V-gene & J-gene") + facet_wrap(facet_formula, ncol = 1, scales = facetvar2()) + scale_fill_viridis_c(name = "Max \nSHM (%)", option = "C") + theme(axis.text.x = element_text(angle=45, hjust=1, size=8)) + ggtitle("Bins of V+J gene families vs. CDR3 length, with Maximum Somatic Hypermutation as fill color") + theme(plot.title = element_text(size = 16, face = "bold"))
       } else {
-        toplot <- ggplot(dat, aes(gf_jgene,cdr3length_imgt)) + geom_bin2d(bins = 40, aes(fill= (..count..)*100/tapply(..count..,..PANEL..,sum)[..PANEL..])) + scale_y_continuous(limits = c(3, 42)) + theme_bw(base_size = 12) + ylab("CDR3 Length (aa)") + xlab("V-gene & J-gene") + facet_wrap(facet_formula, ncol = 1, scales = facetvar2()) + scale_fill_viridis_c(name = "% of \nReads  ", option = "C") + theme(axis.text.x = element_text(angle=45, hjust=1, size=8)) + ggtitle("Bins of V+J gene families vs. CDR3 length, with Percentage of Total Reads as fill color") + theme(plot.title = element_text(size = 16, face = "bold"))
+        toplot <- ggplot(dat, aes(gf_jgene,cdr3length_imgt)) + geom_bin2d(bins = 40, aes(fill= (..count..)*100/tapply(..count..,..PANEL..,sum)[..PANEL..])) + scale_y_continuous(limits = c(3, 42)) + theme_bw(base_size = 12) + ylab("CDR3 Length (aa)") + xlab("V-gene & J-gene") + facet_wrap(facet_formula, ncol = 1, scales = facetvar2()) + scale_fill_viridis_c(name = "% of \nReads  ", option = "C") + theme(axis.text.x = element_text(angle=45, hjust=1, size=8)) + ggtitle("Bins of V+J gene families vs. CDR3 length, with Percentage of total antibody sequences as fill color") + theme(plot.title = element_text(size = 16, face = "bold"))
       }     
 #      })
       toplot
@@ -537,7 +537,7 @@ server <- function(input, output, session) {
           # par(family = "mono", mar=c(2, 1, 2, 0) + 0.5) most recently mar=c(2, 0.0, 2, 0) + 0.8) ## think I need to remove the + bit
           # par(family = "mono", mai=c(1.02, 0.82, 0.82, 0.82))  ## moving to start of command
           ### this changes the colors of all 'controls' to gray but leaves covid mabs black
-          tipcolors <- def(tree$tip.label, "hc" = "gray70", "nielsen" = "coral", "galson" = "indianred", "binder" = "orange", "kc" = "sienna", "mt1214" = "plum", "nih45" = "pink", "d13" = "blue", "Parameswaran" = "gold", "SARS-CoV2-mAb" = "orchid", "plasmablasts" = "orchid", "denmab" = "orchid","HIV-mAb" = "orchid", default = "black", regexp = TRUE)
+          tipcolors <- def(tree$tip.label, "hc" = "gray70", "nielsen" = "coral", "galson" = "indianred", "binder" = "orange", "kc" = "sienna", "mt1214" = "plum", "nih45" = "pink", "d13" = "blue", "Parameswaran" = "gold", "SARS-CoV2-mAb" = "orchid", "plasmablasts" = "orchid", "denmab" = "orchid", "HIV-IEDBmAb" = "orchid", "HIV-CATNAPmAb" = "orchid", default = "black", regexp = TRUE)
           # plot(bird.orders, tip.color = co2)
           ### below changing to midpoint of tree Aug 2021
           plot(midpoint(tree), lab4ut="axial",
