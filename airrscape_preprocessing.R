@@ -11,7 +11,6 @@ library(gdata)
 library(gridExtra)
 library(ape)
 library(shazam)
-# library(limma)
 library(reshape2)
 library(DT)
 
@@ -793,10 +792,12 @@ toshiny.den.allc
 # MOVE cdr3_aa_imgt JUST AFTER CREGION
 # 
 
-## to deploy app on ShinyApps.io  at: ewaltari.shinyapps.io
-## MAKE SURE THAT THE TAB INPUT FILES ARE IN THE APP-2 FOLDER
+## to deploy app on ShinyApps.io
+## MAKE SURE THAT THE TAB INPUT FILES ARE IN THE APP FOLDER
 library(rsconnect)
-rsconnect::deployApp('/Users/eric.waltari/data_carpentry/wikipathways/App-7')
+#rsconnect::deployApp('/Users/eric.waltari/data_carpentry/wikipathways/App-7')
+rsconnect::deployApp('/Users/eric.waltari/data_carpentry/AIRRscape/shinyapp')
+
 
 ### fyi got this alert when starting shiny app
 # Note: Using an external vector in selections is ambiguous.
