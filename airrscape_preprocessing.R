@@ -38,6 +38,7 @@ is.wholenumber <- function(x, tol = .Machine$double.eps^0.5) {
 #dir.create("~/code")
 ## this works ONLY IF YOU HAVE CREATED THE DIRECTORY FIRST...
 # setwd("/Users/eric.waltari/data_carpentry/AIRRScape")
+# setwd("/Users/eric.waltari/immcantation_pipeline/AIRRScape0")
 
 
 ##################################################################################################################
@@ -64,7 +65,8 @@ toshiny.hiv.mabs.all <- read_tsv("toshiny_hivmabs_all.tab")
 hiv.bulk.nih45 <- read_tsv("hivnih45_vdjserver.tsv")   # v_identity between 
 hiv.bulk.mt1214 <- read_tsv("MT1214downloaded.tab")   # v_identity between 
 
-toshiny.den.mabs <- read_tsv("toshiny_denmabs.tab")
+# toshiny.den.mabs <- read_tsv("toshiny_denmabs.tab")  now updated to get directly from Zanini SOM
+den.mabs <- read_tsv("toshiny_den_mabs0_germ-pass.tsv")
 
 den.bulk.OAS <- read_tsv("OAS_sept21_germ-pass2.tsv")
 den.bulk.d13enrich <- read_tsv("d13_2enrichHC_germ-pass.tsv")
@@ -260,6 +262,7 @@ hc.BXmay.10mstim$sequence_id[1]
 toshiny.den.bulk.d13enrich <- shinyprocess(den.bulk.d13enrich)
 toshiny.den.bulk.d13stim <- shinyprocess(den.bulk.d13stim)
 toshiny.den.bulk.OAS <- shinyprocess(den.bulk.OAS, renumber_sequences = FALSE)
+toshiny.den.mabs <- shinyprocess(den.mabs, renumber_sequences = FALSE, filter_after_counting = FALSE)
 
 toshiny.hiv.bulk.mt1214 <- shinyprocess(hiv.bulk.mt1214)
 toshiny.hiv.bulk.nih45 <- shinyprocess(hiv.bulk.nih45)
@@ -368,9 +371,12 @@ toshiny.cov2.abdab <- toshiny.cov2.abdab %>% unite(sequence_id, dataset, sequenc
 toshiny.cov2.abdab$cdr3_aa_imgt <- toshiny.cov2.abdab$cdr3_aa
 toshiny.cov2.abdab$cdr3_aa <- NULL
 
+## den.mabs are changed Nov 2021
 
-toshiny.den.mabs$cdr3_aa_imgt <- toshiny.den.mabs$cdr3_aa
-toshiny.den.mabs$cdr3_aa <- NULL
+# toshiny.den.mabs$cdr3_aa_imgt <- toshiny.den.mabs$cdr3_aa
+# toshiny.den.mabs$cdr3_aa <- NULL
+# toshiny.den.mabs$ncount <- NULL
+# toshiny.den.mabs$shm.mean <- NULL
 
 ## hiv.mabs are changed Nov 2021
 # toshiny.hiv.mabs$cdr3_aa_imgt <- toshiny.hiv.mabs$cdr3_aa
@@ -378,8 +384,7 @@ toshiny.den.mabs$cdr3_aa <- NULL
 
 # toshiny.hiv.mabs$ncount <- NULL
 # toshiny.hiv.mabs$shm.mean <- NULL
-toshiny.den.mabs$ncount <- NULL
-toshiny.den.mabs$shm.mean <- NULL
+
 toshiny.cov2.abdab$ncount <- NULL
 toshiny.cov2.abdab$shm.mean <- NULL
 
@@ -410,18 +415,18 @@ toshiny.cov2.abdab <- toshiny.cov2.abdab %>%
 #   mutate(across(shm_max, round, 2)) %>% 
 #   mutate(across(shm_mean, round, 2))
 
-toshiny.den.mabs <- toshiny.den.mabs %>%
-  add_count(gf_jgene,cdr3length_imgt) %>%
-  rename(ncount = n) %>%
-  group_by(gf_jgene,cdr3length_imgt) %>%
-  mutate(shm_mean = mean(shm, na.rm = TRUE)) %>%
-  # ADD MAX SHM AS WELL..
-  mutate(shm_max = max(shm, na.rm = TRUE)) %>% 
-  mutate(shm_mean = na_if(shm_mean, "NaN")) %>% 
-  mutate(shm_max = na_if(shm_max, "-Inf")) %>% 
-  mutate(across(shm, round, 2)) %>% 
-  mutate(across(shm_max, round, 2)) %>% 
-  mutate(across(shm_mean, round, 2))
+# toshiny.den.mabs <- toshiny.den.mabs %>%
+#   add_count(gf_jgene,cdr3length_imgt) %>%
+#   rename(ncount = n) %>%
+#   group_by(gf_jgene,cdr3length_imgt) %>%
+#   mutate(shm_mean = mean(shm, na.rm = TRUE)) %>%
+#   # ADD MAX SHM AS WELL..
+#   mutate(shm_max = max(shm, na.rm = TRUE)) %>% 
+#   mutate(shm_mean = na_if(shm_mean, "NaN")) %>% 
+#   mutate(shm_max = na_if(shm_max, "-Inf")) %>% 
+#   mutate(across(shm, round, 2)) %>% 
+#   mutate(across(shm_max, round, 2)) %>% 
+#   mutate(across(shm_mean, round, 2))
 
 ## anything with no cregion?
 ## any with LC? if so need to make separate hc only file
@@ -449,6 +454,8 @@ toshiny.cov2.abdab <- toshiny.cov2.abdab %>% relocate(neutralization, .after = c
 toshiny.cov2.abdab <- toshiny.cov2.abdab %>% relocate(binding, .after = cdr3_aa_imgt)
 
 
+toshiny.den.mabs.h <- subset(toshiny.den.mabs, cregion %in% c("IgH"))
+
 toshiny.cov2.abdab.h <- subset(toshiny.cov2.abdab, cregion %in% c("IgH"))
 toshiny.hiv.mabs.all.h <- subset(toshiny.hiv.mabs.all, cregion %in% c("IgH"))
 ## END ONE-OFF COMMANDS FOR MAB DATASETS
@@ -470,6 +477,7 @@ write.table(toshiny.cov2.bulk.kc.m5.allreps, "toshiny_cov2_bulk_kc.m5_allreps.ta
 write.table(toshiny.cov2.abdab, "toshiny_cov2_abdab.tab", sep = "\t", row.names = FALSE, quote = FALSE)
 write.table(toshiny.cov2.abdab.h, "toshiny_cov2_abdab_h.tab", sep = "\t", row.names = FALSE, quote = FALSE)
 write.table(toshiny.den.mabs, "toshiny_den_mabs.tab", sep = "\t", row.names = FALSE, quote = FALSE)
+write.table(toshiny.den.mabs.h, "toshiny_den_mabs_h.tab", sep = "\t", row.names = FALSE, quote = FALSE)
 write.table(toshiny.hiv.mabs.all, "toshiny_hiv_mabs.tab", sep = "\t", row.names = FALSE, quote = FALSE)
 write.table(toshiny.hiv.mabs.all.h, "toshiny_hiv_mabs_h.tab", sep = "\t", row.names = FALSE, quote = FALSE)
 
@@ -679,7 +687,7 @@ write.table(toshiny.hiv.allc, "toshiny_hiv_allc.tab", sep = "\t", row.names = FA
 
 #c("Dengue plasmablasts", "Dengue patient d13", "Dengue Parameswaran 2013 patients"))  
 
-toshiny.den.all <- bind_rows(toshiny.den.mabs, toshiny.den.bulk.d13, toshiny.den.bulk.OAS, .id = "id")
+toshiny.den.all <- bind_rows(toshiny.den.mabs.h, toshiny.den.bulk.d13, toshiny.den.bulk.OAS, .id = "id")
 
 toshiny.den.all$id <- gsub("1","Dengue plasmablasts",toshiny.den.all$id)
 toshiny.den.all$id <- gsub("2","Dengue patient dthirteen",toshiny.den.all$id)
