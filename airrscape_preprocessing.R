@@ -34,10 +34,8 @@ is.wholenumber <- function(x, tol = .Machine$double.eps^0.5) {
 }
 
 
-#dir.create("~/code")
 ## this works ONLY IF YOU HAVE CREATED THE DIRECTORY FIRST...
-# setwd("/Users/eric.waltari/data_carpentry/AIRRScape")
-# setwd("/Users/eric.waltari/immcantation_pipeline/AIRRScape0")
+setwd("~/data_carpentry/AIRRscape")
 
 
 ##################################################################################################################
@@ -49,28 +47,27 @@ is.wholenumber <- function(x, tol = .Machine$double.eps^0.5) {
 ### updated function below now addresses both points 1 & 2
 ##################################################################################################################
 
-### SEPT 2021 DATASETS
+### LOADING AND CONVERTING INTERMEDIATE DATASETS
 
-toshiny.cov2.abdab <- read_tsv("toshiny_cov2_abdab.tab")
+toshiny.cov2.abdab <- read_tsv("~/data_carpentry/AIRRscape/shinyapp/toshiny_cov2_abdab.tab")
 
-cov2.bulk.binder.p11 <- read_tsv("Binder_p11_germ-pass.tsv")   # v_identity between 0.60 and 1, sequences renamed, have clone_id & germline_alignment_d_mask, NOT cdr3_aa
-cov2.bulk.nielsen.p7450 <- read_tsv("Nielsen_7450_airr-covid-19.tsv")   # v_identity between 60 and 100, has cdr3_aa
-cov2.bulk.galson.p1 <- read_tsv("Galson_p1_germ-pass.tsv")   # v_identity between 0.60 and 1, sequences renamed, have clone_id & germline_alignment_d_mask, NOT cdr3_aa
-#cov2.bulk.kc.m5.rep1 <- read_tsv("Kuri-Cervantes_M5-rep1_airr-covid-19.tsv")   # v_identity between 0.60 and 1, NOT cdr3_aa
-cov2.bulk.kc.m5.allreps <- read_tsv("Kuri-Cervantes_M5-reps1to4_airr-covid-19.tsv")   # v_identity between 0.60 and 1, NOT cdr3_aa
+cov2.bulk.binder.p11 <- read_tsv("~/data_carpentry/AIRRscape/intermediate_files/Binder_p11_germ-pass.tsv.gz")   # v_identity between 0.60 and 1, sequences renamed, have clone_id & germline_alignment_d_mask, NOT cdr3_aa
+cov2.bulk.nielsen.p7450 <- read_tsv("~/data_carpentry/AIRRscape/intermediate_files/Nielsen_7450_airr-covid-19.tsv.gz")   # v_identity between 60 and 100, has cdr3_aa
+cov2.bulk.galson.p1 <- read_tsv("~/data_carpentry/AIRRscape/intermediate_files/Galson_p1_germ-pass.tsv.gz")   # v_identity between 0.60 and 1, sequences renamed, have clone_id & germline_alignment_d_mask, NOT cdr3_aa
+cov2.bulk.kc.m5.allreps <- read_tsv("~/data_carpentry/AIRRscape/intermediate_files/Kuri-Cervantes_M5-reps1to4_airr-covid-19.tsv.gz")   # v_identity between 0.60 and 1, NOT cdr3_aa
 
 ## combining hiv & catnap
-toshiny.hiv.mabs.all <- read_tsv("toshiny_hivmabs_all.tab")
-hiv.bulk.nih45 <- read_tsv("hivnih45_vdjserver.tsv")   # v_identity between 
-hiv.bulk.mt1214 <- read_tsv("MT1214downloaded.tab")   # v_identity between 
+toshiny.hiv.mabs.all <- read_tsv("~/data_carpentry/AIRRscape/shinyapp/toshiny_hivmabs_all.tab")
+hiv.bulk.nih45 <- read_tsv("~/data_carpentry/AIRRscape/intermediate_files/hivnih45_vdjserver.tsv.gz")   # v_identity between 
+hiv.bulk.mt1214 <- read_tsv("~/data_carpentry/AIRRscape/intermediate_files/MT1214downloaded.tab.gz")   # v_identity between 
 
 # toshiny.den.mabs <- read_tsv("toshiny_denmabs.tab")  now updated to get directly from Zanini SOM
-den.mabs <- read_tsv("toshiny_den_mabs0_germ-pass.tsv")
+den.mabs <- read_tsv("~/data_carpentry/AIRRscape/intermediate_files/toshiny_den_mabs0_germ-pass.tsv")
 
-den.bulk.OAS <- read_tsv("OAS_sept21_germ-pass2.tsv")
-den.bulk.d13enrich <- read_tsv("d13_2enrichHC_germ-pass.tsv")
-den.bulk.d13stim <- read_tsv("d13_2stimHC_germ-pass.tsv")
-hc.BXmay.10mstim <- read_tsv("BXmay10mstimHC_germ-pass.tsv")
+den.bulk.OAS <- read_tsv("~/data_carpentry/AIRRscape/intermediate_files/OAS_sept21_germ-pass2.tsv.gz")
+den.bulk.d13enrich <- read_tsv("~/data_carpentry/AIRRscape/intermediate_files/d13_2enrichHC_germ-pass.tsv.gz")
+den.bulk.d13stim <- read_tsv("~/data_carpentry/AIRRscape/intermediate_files/d13_2stimHC_germ-pass.tsv.gz")
+hc.BXmay.10mstim <- read_tsv("~/data_carpentry/AIRRscape/intermediate_files/BXmay10mstimHC_germ-pass.tsv.gz")
 
 ## one-off rennaming of sequence_id in OAS dataset...
 den.bulk.OAS$sequence_id <- gsub("\\_","\\-",den.bulk.OAS$sequence_id)
