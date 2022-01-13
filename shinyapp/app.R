@@ -255,7 +255,7 @@ server <- function(input, output, session) {
     # background color is set so tooltip is a bit transparent
     # z-index is set so we are sure are tooltip will be on top
     style <- paste0("position:absolute; z-index:100; background-color: rgba(245, 245, 245, 0.85); ",
-                    "left:", left_px / 2 - 20, "px; top:", top_px / 1.8, "px;")
+                    "left:", left_px / 1.1 + 80, "px; top:", top_px / 1.8 - 80, "px;")
     
     # actual tooltip created as wellPanel
     ## NOTE I THOUGHT I WAS GETTING COUNT BUT THAT WAS JUST ROW NUMBER - TO ACTUALLY GET COUNTS NEED TO GET FROM STAT_BIN ANALYSIS...
@@ -541,8 +541,8 @@ server <- function(input, output, session) {
           # plot(bird.orders, tip.color = co2)
           ### below changing to midpoint of tree Aug 2021
           plot(midpoint(tree), lab4ut="axial",
-               edge.width=2, label.offset = 0, cex = 0.95, align.tip.label = TRUE, adj = 1, no.margin = FALSE, font = 4, tip.color = tipcolors)  ## x.lim breaks parsimony and some NJ
-          add.scale.bar(cex = 1, font = 4, lwd = 2)  ## was x = 1, y = -0.1, not sure if this will always work or be meaningful  , x.lim = 15 can also try x.lim = 50 - seems to work only with nearest 50/500 not with NJ or parsimony
+               edge.width=2, label.offset = 0, cex = 1.2, align.tip.label = TRUE, adj = 1, no.margin = FALSE, font = 4, tip.color = tipcolors)  ## x.lim breaks parsimony and some NJ
+          add.scale.bar(cex = 1.2, font = 4, lwd = 2)  ## was x = 1, y = -0.1, not sure if this will always work or be meaningful  , x.lim = 15 can also try x.lim = 50 - seems to work only with nearest 50/500 not with NJ or parsimony
           #               edge.width=2, label.offset = 0, cex = 0.95, align.tip.label = TRUE, adj = 1, no.margin = FALSE, x.lim = 10, font = 4)
           gjcdr3.title <- filteredData
           gjcdr3.title$cdr3length_imgt <- as.numeric(gjcdr3.title$cdr3length_imgt)
