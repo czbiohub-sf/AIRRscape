@@ -1,4 +1,9 @@
 
+
+## if need to install
+# pkgs = c("alakazam", "igraph", "dplyr","RColorBrewer", "hexbin", "scales","grid", "lattice", "gdata","gridExtra", "ape", "shazam","reshape2", "DT","ggplot2", "seqinr", "phangorn","shiny","rlang", "tidyverse") # package names
+# install.packages(pkgs)
+
 library(alakazam)
 library(igraph)
 library(dplyr)
@@ -18,8 +23,6 @@ library(ggplot2)
 library(seqinr)
 library(phangorn)
 library(shiny)
-# install.packages("plotly")
-library(plotly)
 library(rlang)
 library(tidyverse)
 
@@ -61,6 +64,7 @@ den.bulk.OAS <- read_tsv("~/data_carpentry/AIRRscape/intermediate_files/OAS_sept
 den.bulk.d13enrich <- read_tsv("~/data_carpentry/AIRRscape/intermediate_files/d13_2enrichHC_germ-pass.tsv.gz")
 den.bulk.d13stim <- read_tsv("~/data_carpentry/AIRRscape/intermediate_files/d13_2stimHC_germ-pass.tsv.gz")
 hc.BXmay.10mstim <- read_tsv("~/data_carpentry/AIRRscape/intermediate_files/BXmay10mstimHC_germ-pass.tsv.gz")
+
 
 ### lists of mabs rather than repertoires...HAVE SEPARATE SECTION FOR PROCESSING THESE
 
@@ -737,7 +741,7 @@ rsconnect::deployApp('~/data_carpentry/AIRRscape/shinyapp')
 ##############################################################################################################################
 ##############################################################################################################################
 
-### CODE FOR IMPORTING NEW OAS DENGUE DATA
+### CODE FOR IMPORTING OAS DENGUE DATA
 OAS.clusters.p148a <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2150126_Heavy_Bulk.csv.gz", skip =1)
 OAS.clusters.p148b <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2150229_Heavy_Bulk.csv.gz", skip =1)
 OAS.clusters.p148c <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2150329_Heavy_Bulk.csv.gz", skip =1)
