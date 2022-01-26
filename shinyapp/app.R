@@ -68,7 +68,6 @@ ui <- fluidPage(
   sidebarLayout(
     
     sidebarPanel(
-      # 2 ways to define depending on reactive definitions below
       selectInput("dataset", "Dataset:",
                   c("SARS-CoV2 mAbs - heavy chains & light chains",
                     "SARS-CoV2 mAbs - IgH by binding",
@@ -97,11 +96,9 @@ ui <- fluidPage(
     ),
 
     mainPanel(
-      plotOutput("ggplot1", width = "120%", height = "800px", hover = hoverOpts(id = "plot_hover", delay = 100, delayType = c("debounce", "throttle")), click = "plot_click", brush = "plot_brush"),
+      plotOutput("ggplot1", width = "120%", height = "800px", hover = hoverOpts(id = "plot_hover", delay = 300, delayType = c("debounce", "throttle")), click = "plot_click", brush = "plot_brush"),
       uiOutput("hover_info"),
       # uiOutput("hover_info", style = "pointer-events: none"),
-      # plotOutput("ggplot2", height = "800px", click = "plot_click"),
-## new datatable if double-clicked
       DT::dataTableOutput("brush_info"),
       DT::dataTableOutput("click_info"),
       actionButton("go", "Make topology of selected CDR3 AA motifs"), 
@@ -148,16 +145,16 @@ server <- function(input, output, session) {
 
 ## isolating the hover x & y for highlighting - note works but makes hover pop up window very momentary
 ## tried to below within renderPlot, doesn't change (trying isolate - same issue, then observe & isolate - breaks)
-    # highlightedpointsDSx <- reactive({
-    #   dat <- inputdataset()
-    #   highlightedpoint <- nearPoints(dat, input$plot_hover, threshold = 5, maxpoints = 1, addDist = FALSE)
-    #   highlightedpoint$gf_jgene
-    # })
-    # highlightedpointsDSy <- reactive({
-    #   dat <- inputdataset()
-    #   highlightedpoint <- nearPoints(dat, input$plot_hover, threshold = 5, maxpoints = 1, addDist = FALSE)
-    #   highlightedpoint$cdr3length_imgt
-    # })
+    highlightedpointsDSx <- reactive({
+      dat <- inputdataset()
+      highlightedpoint <- nearPoints(dat, input$plot_hover, threshold = 5, maxpoints = 1, addDist = FALSE)
+      highlightedpoint$gf_jgene
+    })
+    highlightedpointsDSy <- reactive({
+      dat <- inputdataset()
+      highlightedpoint <- nearPoints(dat, input$plot_hover, threshold = 5, maxpoints = 1, addDist = FALSE)
+      highlightedpoint$cdr3length_imgt
+    })
 
 ### added code to allow for trees of subsetted data:
     # Thanks to @yihui this is now possible using the DT package and input$tableId_rows_all 
@@ -171,7 +168,7 @@ server <- function(input, output, session) {
       filteredDS()[ids,]
     })
 
-## then rename sequence_id (note will be same if I rename HC & comet ids beforehand)
+## then rename sequence_id
     filteredDSpartial2 <- reactive({
       partial2 <- filteredDSpartial() %>% select(sequence_id,cdr3_aa_imgt,gene,gf_jgene,cdr3length_imgt)
       partial2$sequence_id <- paste(partial2$sequence_id,partial2$gene,partial2$cdr3_aa_imgt,sep="_")
@@ -210,18 +207,20 @@ server <- function(input, output, session) {
     ## first line for picking among different graphs- NOTE CHANGE TO 'DAT'
     point <- nearPoints(dat, input$plot_hover, threshold = 5, maxpoints = 1, addDist = TRUE)
     if (nrow(point) == 0) return(NULL)
+    
     # tags$style( '#ggplot1 { cursor: pointer; }')
     ## new bit added to change cursor when hovering: (doesn't seem change the cursor though)
-       if (nrow(point) == 0){
-         css_string <- '
-        #ggplot1 {  
-        cursor: default; }'
-       } else {
-         css_string <- '
-      #ggplot1 {  
-      cursor: crosshair; }'
-       }
-       tags$style(HTML(css_string))
+       # if (nrow(point) == 0){
+       #   css_string <- '
+       #   #hover_info {
+       #   cursor: default !important; }'
+       # } else {
+       #   css_string <- '
+       #   #hover_info {
+       #   cursor: crosshair !important; }'
+       # }
+       # tags$style(HTML(css_string))
+    
     # # calculate point position INSIDE the image as percent of total dimensions
     # # from left (horizontal) and from top (vertical)
        ## simplifiying this per https://gitlab.com/-/snippets/16220
@@ -249,7 +248,7 @@ server <- function(input, output, session) {
       ## first line for picking among different graphs
       facet_formula <- as.formula(paste("~", facetvar1()))
       dat <- inputdataset()
-#    note at end of the 3 plot commands below has a final geom_point plotting step to add a green square under the hover, currently it disappears after a moment
+#    note at end of the 3 plot commands below has a final geom_point plotting step to add a green square under the hover, currently it disappears after a moment - tried adding an isolate command, didn't solve
       data2 <- if (input$plotcolors == "Average SHM") {
         toplot <- ggplot(dat, aes(gf_jgene,cdr3length_imgt)) + geom_tile(aes(fill = shm_mean)) + scale_y_continuous(limits = c(3, 42)) + theme_bw(base_size = 12) + ylab("CDR3 Length (aa)") + xlab("V-gene & J-gene") + facet_wrap(facet_formula, ncol = 1, scales = facetvar2()) + scale_fill_viridis_c(name = "Mean \nSHM (%)", option = "C") + theme(axis.text.x = element_text(angle=45, hjust=1, size=8)) + ggtitle("Bins of V+J gene families vs. CDR3 length, with Mean Somatic Hypermutation as fill color") + theme(plot.title = element_text(size = 16, face = "bold")) #+ geom_point(data=subset(dat, gf_jgene ==  highlightedpointsDSx() & cdr3length_imgt == highlightedpointsDSy()), color = "green", shape = "square", size = 4)
       } else if (input$plotcolors == "Maximum SHM") {
@@ -472,7 +471,7 @@ server <- function(input, output, session) {
             tree <- acctran(tree1, seqs) # added, adds edge lengths
             filteredData <- isolate({filteredDSpartial2()})  ### added because not in this option but now need for changing title below
           }
-          ### this changes the colors of all 'controls' to gray but leaves covid mabs black - note these are unique to the datasets...
+          ### this changes the colors based on source - note these are unique to the datasets...
           tipcolors <- def(tree$tip.label, "hc" = "gray70", "nielsen" = "coral", "galson" = "indianred", "binder" = "orange", "kc" = "sienna", "mt1214" = "plum", "nih45" = "pink", "d13" = "blue", "Parameswaran" = "gold", "SARS-CoV2-mAb" = "orchid", "plasmablasts" = "orchid", "denmab" = "orchid", "HIV-IEDBmAb" = "orchid", "HIV-CATNAPmAb" = "orchid", default = "black", regexp = TRUE)
           ### below changing to midpoint of tree
           plot(midpoint(tree), lab4ut="axial",

@@ -181,7 +181,7 @@ shinyprocess <- function(x, filter_columns = TRUE, renumber_sequences = TRUE, fi
   return(x)
 }
 
-##########################
+#################################################################
 ## checking names
 den.bulk.OAS$sequence_id[1]          #name ok
 den.bulk.d13enrich$sequence_id[1]
@@ -223,8 +223,8 @@ rm(cov2.bulk.kc.m5.allreps)
 rm(hc.BXmay.10mstim)
 
 
-#######################################
-#######################################
+##############################################################################
+##############################################################################
 
 ### checking datasets...
 unique(toshiny.den.bulk.d13stim$cregion)
@@ -422,10 +422,9 @@ toshiny.den.bulk.d13 <- toshiny.den.bulk.d13[ grep("ARQDRNWFDT", toshiny.den.bul
 write.table(toshiny.den.bulk.d13, "toshiny_den_bulk_d13.tab", sep = "\t", row.names = FALSE, quote = FALSE)
 
 
-#######################################
-#######################################
+#####################################################################################################################
 ## NEXT generic CODE TO COMBINE 2-6 DATASETS INTO A SINGLE FILE FOR SHINY VISUALIZATION (BOTH SEPARATE & COMBINED)
-
+#####################################################################################################################
 
 ## files to use
 # toshiny.cov2.abdab  # by cregion
@@ -455,6 +454,7 @@ toshiny.den.bulk.OAS
 toshiny.den.bulk.d13
 
 
+#####################################################
 # toshiny.cov2.all
 toshiny.cov2.all <- bind_rows(toshiny.cov2.abdab.h, toshiny.cov2.bulk.binder.p11, toshiny.cov2.bulk.galson.p1, toshiny.cov2.bulk.kc.m5.allreps, toshiny.cov2.bulk.nielsen.p7450, toshiny.hc.BXmay.10mstim, .id = "id")
 
@@ -519,7 +519,7 @@ toshiny.cov2.allc$cregion <- "IgH"
 write.table(toshiny.cov2.all, "toshiny_cov2_all.tab", sep = "\t", row.names = FALSE, quote = FALSE)
 write.table(toshiny.cov2.allc, "toshiny_cov2_allc.tab", sep = "\t", row.names = FALSE, quote = FALSE)
 
-##############
+#####################################################
 # toshiny.cov2hiv
 #    toshiny.cov2.abdab.h
 #     toshiny.hiv.mabs.h
@@ -565,7 +565,7 @@ toshiny.cov2hivc$cregion <- "IgH"
 write.table(toshiny.cov2hiv, "toshiny_cov2hiv.tab", sep = "\t", row.names = FALSE, quote = FALSE)
 write.table(toshiny.cov2hivc, "toshiny_cov2hivc.tab", sep = "\t", row.names = FALSE, quote = FALSE)
 
-###################
+##########################################################
 # toshiny.hiv.all
 #     toshiny.hiv.mabs.h
 #     toshiny.hiv.bulk.nih45
@@ -610,7 +610,8 @@ toshiny.hiv.allc$cregion <- "IgH"
 write.table(toshiny.hiv.all, "toshiny_hiv_all.tab", sep = "\t", row.names = FALSE, quote = FALSE)
 write.table(toshiny.hiv.allc, "toshiny_hiv_allc.tab", sep = "\t", row.names = FALSE, quote = FALSE)
 
-#################3
+
+########################################################
 # toshiny.den.all
 #    toshiny.den.mabs
 #    toshiny.den.bulk.d13
@@ -657,19 +658,8 @@ write.table(toshiny.den.all, "toshiny_den_all.tab", sep = "\t", row.names = FALS
 write.table(toshiny.den.allc, "toshiny_den_allc.tab", sep = "\t", row.names = FALSE, quote = FALSE)
 
 
-
-# c("SARS-CoV2 mAbs - heavy chains & light chains",
-#   "SARS-CoV2 mAbs - IgH by binding",
-#   "SARS-CoV2 mAbs - IgH by neutralization",
-#   "SARS-CoV2 mAbs vs. 4 COVID-19 patients vs. Healthy control - IgH",
-#   "SARS-CoV2 mAbs vs. 4 COVID-19 patients vs. Healthy control - IgH combined",
-#   "SARS-CoV2 mAbs vs. HIV mAbs - IgH",
-#   "SARS-CoV2 mAbs vs. HIV mAbs - IgH combined",
-#   "HIV mAbs vs. HIV patient MT1214 vs. HIV patient NIH45 - IgH",
-#   "HIV mAbs vs. HIV patient MT1214 vs. HIV patient NIH45 - IgH combined",
-#   "Dengue mAbs vs. Dengue patient d13 vs. Dengue Parameswaran 2013 patients - IgH",
-#   "Dengue mAbs vs. Dengue patient d13 vs. Dengue Parameswaran 2013 patients - IgH combined"), selectize = FALSE), 
-
+#####################################################
+#checks
 toshiny.cov2.abdab
 toshiny.cov2.abdab.h
 toshiny.cov2.abdab.h
@@ -710,38 +700,18 @@ toshiny.den.allc
 # [1] "Dengue plasmablasts"               "Dengue patient d13"                "Dengue Parameswaran 2013 patients"
 # > 
 
-## to test plots 
-# ggplot(toshiny.cov2.abdab, aes(gf_jgene,cdr3length_imgt)) + geom_tile(aes(fill = shm_mean)) + scale_y_continuous(limits = c(3, 42)) + theme_bw() + ylab("CDRH3 Length (aa)") + xlab("V-gene & J-gene") + facet_wrap(~ cregion, ncol=1, scales = "free_x") + scale_fill_viridis_c(name = "Mean \nSomatic \nHypermutation (%)", option = "C") + theme(axis.text.x = element_text(angle=45, hjust=1, size=5))
-# ggplot(toshiny.cov2.abdab, aes(gf_jgene,cdr3length_imgt)) + geom_bin2d(aes(fill=log10(..count..))) + scale_y_continuous(limits = c(3, 42)) + theme_bw() + ylab("CDRH/L3 Length (aa)") + xlab("V-gene & J-gene") + facet_wrap(~ cregion, ncol=1, scales = "free_x") + scale_fill_viridis_c(name = "# of \nReads", option = "C", breaks = c(0, 1, 2, 3, 4), labels = c(1, 10, 100, 1000, 10000)) + theme(axis.text.x = element_text(angle=45, hjust=1, size=5))
-# 
-# ggplot(toshiny.hc.BXmay.10mstim, aes(gf_jgene,cdr3length_imgt)) + geom_bin2d(aes(fill= (..count..)*100/tapply(..count..,..PANEL..,sum)[..PANEL..])) + scale_y_continuous(limits = c(3, 42)) + theme_bw() + ylab("CDRH/L3 Length (aa)") + xlab("V-gene & J-gene") + scale_fill_viridis_c(name = "% of \nReads  ", option = "C") + theme(axis.text.x = element_text(angle=45, hjust=1, size=5))
-# ggplot(toshiny.hc.BXmay.10mstim, aes(gf_jgene,cdr3length_imgt)) + geom_bin2d(aes(fill=log10(..count..))) + scale_y_continuous(limits = c(3, 42)) + theme_bw() + ylab("CDRH/L3 Length (aa)") + xlab("V-gene & J-gene") + scale_fill_viridis_c(name = "# of \nReads", option = "C", breaks = c(0, 1, 2, 3, 4), labels = c(1, 10, 100, 1000, 10000)) + theme(axis.text.x = element_text(angle=45, hjust=1, size=5))
-
-
-## STILL GETTING TREE ERRORS IN MAKING 50 OR 300 CLOSEST...
-## BECAUSE SEQUENCE_ID TOO LATE?
-# MOVE sequence_id	JUST BEFORE CREGION
-# MOVE cdr3_aa_imgt JUST AFTER CREGION
-# 
-
+##################################################################################
 ## to deploy app on ShinyApps.io
 ## MAKE SURE THAT THE TAB INPUT FILES ARE IN THE APP FOLDER
 library(rsconnect)
-#rsconnect::deployApp('~/data_carpentry/wikipathways/App-7')
 rsconnect::deployApp('~/data_carpentry/AIRRscape/shinyapp')
 
 
-### fyi got this alert when starting shiny app
-# Note: Using an external vector in selections is ambiguous.
-# ℹ Use `all_of(filteredData1ID)` instead of `filteredData1ID` to silence this message.
-# ℹ See <https://tidyselect.r-lib.org/reference/faq-external-vector.html>.
-# This message is displayed once per session.
-
 
 ##############################################################################################################################
 ##############################################################################################################################
 
-### CODE FOR IMPORTING OAS DENGUE DATA
+### CODE FOR IMPORTING Parameswaran_2013 DENGUE DATA FROM OAS
 OAS.clusters.p148a <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2150126_Heavy_Bulk.csv.gz", skip =1)
 OAS.clusters.p148b <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2150229_Heavy_Bulk.csv.gz", skip =1)
 OAS.clusters.p148c <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2150329_Heavy_Bulk.csv.gz", skip =1)
