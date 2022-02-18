@@ -1123,3 +1123,44 @@ hiv.bulk.mt1214t <- OAS.clusters.mt1214all
 #write.table(OAS.clusters.mt1214all, "MT1214downloaded.tab", sep = "\t", row.names = FALSE, quote = FALSE)
 rm(list=ls(pattern="OAS."))
 
+
+##############################################################################################################################
+
+### CODE FOR IMPORTING SETLIFF 2018 HIV DATA
+## TO GO FROM OAS PROCESSED DATA TO COMBINED DATASETS, SEE SEPARATE R SCRIPT
+
+hiv.bulk.cap287.3y <- read.delim("~/data_carpentry/AIRRscape/intermediate_files/hiv_bulk_cap287_3y.tab.gz")
+hiv.bulk.cap287.6m <- read.delim("~/data_carpentry/AIRRscape/intermediate_files/hiv_bulk_cap287_6m.tab.gz")
+hiv.bulk.cap301.3y <- read.delim("~/data_carpentry/AIRRscape/intermediate_files/hiv_bulk_cap301_3y.tab.gz")
+hiv.bulk.cap301.6m <- read.delim("~/data_carpentry/AIRRscape/intermediate_files/hiv_bulk_cap301_6m.tab.gz")
+hiv.bulk.cap312.3y <- read.delim("~/data_carpentry/AIRRscape/intermediate_files/hiv_bulk_cap312_3y.tab.gz")
+hiv.bulk.cap312.6m <- read.delim("~/data_carpentry/AIRRscape/intermediate_files/hiv_bulk_cap312_6m.tab.gz")
+
+hiv.bulk.cap322.3y <- read.delim("~/data_carpentry/AIRRscape/intermediate_files/hiv_bulk_cap322_3y.tab.gz")
+hiv.bulk.cap322.6m <- read.delim("~/data_carpentry/AIRRscape/intermediate_files/hiv_bulk_cap322_6m.tab.gz")
+hiv.bulk.cap335.3y <- read.delim("~/data_carpentry/AIRRscape/intermediate_files/hiv_bulk_cap335_3y.tab.gz")
+hiv.bulk.cap335.6m <- read.delim("~/data_carpentry/AIRRscape/intermediate_files/hiv_bulk_cap335_6m.tab.gz")
+hiv.bulk.cap351.3y <- read.delim("~/data_carpentry/AIRRscape/intermediate_files/hiv_bulk_cap351_3y.tab.gz")
+hiv.bulk.cap351.6m <- read.delim("~/data_carpentry/AIRRscape/intermediate_files/hiv_bulk_cap351_6m.tab.gz")
+
+## but after combining all of these, will need to recalculate count, shm_mean, shm_max
+toshiny.hiv.bulk.cap <- rbind(toshiny.hiv.bulk.cap287.3y,toshiny.hiv.bulk.cap287.6m,toshiny.hiv.bulk.cap301.3y,toshiny.hiv.bulk.cap301.6m,toshiny.hiv.bulk.cap312.3y,toshiny.hiv.bulk.cap312.6m,toshiny.hiv.bulk.cap322.3y,toshiny.hiv.bulk.cap322.6m,toshiny.hiv.bulk.cap335.3y,toshiny.hiv.bulk.cap335.6m,toshiny.hiv.bulk.cap351.3y,toshiny.hiv.bulk.cap351.6m)
+
+toshiny.hiv.bulk.cap$ncount <- NULL
+toshiny.hiv.bulk.cap$shm_mean <- NULL
+toshiny.hiv.bulk.cap$shm_max <- NULL
+toshiny.hiv.bulk.cap <- toshiny.hiv.bulk.cap %>%
+  add_count(gf_jgene,cdr3length_imgt) %>%
+  rename(ncount = n) %>%
+  group_by(gf_jgene,cdr3length_imgt) %>%
+  mutate(shm_mean = mean(shm, na.rm = TRUE)) %>%
+  # ADD MAX SHM AS WELL..
+  mutate(shm_max = max(shm, na.rm = TRUE)) %>% 
+  mutate(shm_mean = na_if(shm_mean, "NaN")) %>% 
+  mutate(shm_max = na_if(shm_max, "-Inf")) %>% 
+  mutate(across(shm, round, 2)) %>% 
+  mutate(across(shm_max, round, 2)) %>% 
+  mutate(across(shm_mean, round, 2))
+#write.table(toshiny.hiv.bulk.cap, "toshiny_hiv_bulk_cap.tab", sep = "\t", row.names = FALSE, quote = FALSE)
+
+## then to combining toshiny.hiv.bulk.cap  in commands above....
