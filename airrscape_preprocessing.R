@@ -44,7 +44,7 @@ setwd("~/data_carpentry/AIRRscape")
 ##################################################################################################################
 ### COMMANDS FOR READING IN AIRR-COMPLIANT DATASETS FOR SHINY APP
 ### note that for non-AIRR (e.g. older Immcantation data or databases like AbDab) datasets, column names will be different
-######### solution is to use only AIRR datasets, fixed as of Sept 2021
+######### solution is to use only AIRR datasets
 ###### particularly note that 1) junction MAY NOT NEED TO BE TRIMMED 1 AA ON EACH END TO BE KABAT CDR3
 ######                        2) v_identity MAY BE BETWEEN 0-1 NOT 0-100, AND THUS shm FORMULA NEEDS TO CHANGE
 ### updated function below now addresses both points 1 & 2
@@ -57,8 +57,8 @@ cov2.bulk.nielsen.p7450 <- read_tsv("~/data_carpentry/AIRRscape/intermediate_fil
 cov2.bulk.galson.p1 <- read_tsv("~/data_carpentry/AIRRscape/intermediate_files/Galson_p1_germ-pass.tsv.gz")   # v_identity between 0.60 and 1, sequences renamed, have clone_id & germline_alignment_d_mask, NOT cdr3_aa
 cov2.bulk.kc.m5.allreps <- read_tsv("~/data_carpentry/AIRRscape/intermediate_files/Kuri-Cervantes_M5-reps1to4_airr-covid-19.tsv.gz")   # v_identity between 0.60 and 1, NOT cdr3_aa
 
-hiv.bulk.nih45 <- read_tsv("~/data_carpentry/AIRRscape/intermediate_files/hivnih45_vdjserver.tsv.gz")   # v_identity between 
-hiv.bulk.mt1214 <- read_tsv("~/data_carpentry/AIRRscape/intermediate_files/MT1214downloaded.tab.gz")   # v_identity between 
+hiv.bulk.nih45 <- read_tsv("~/data_carpentry/AIRRscape/intermediate_files/hivnih45_vdjserver.tsv.gz")
+hiv.bulk.mt1214 <- read_tsv("~/data_carpentry/AIRRscape/intermediate_files/MT1214downloaded.tab.gz")
 
 den.bulk.OAS <- read_tsv("~/data_carpentry/AIRRscape/intermediate_files/OAS_sept21_germ-pass2.tsv.gz")
 den.bulk.d13enrich <- read_tsv("~/data_carpentry/AIRRscape/intermediate_files/d13_2enrichHC_germ-pass.tsv.gz")
@@ -70,13 +70,12 @@ hc.BXmay.10mstim <- read_tsv("~/data_carpentry/AIRRscape/intermediate_files/BXma
 
 toshiny.cov2.abdab <- read_tsv("~/data_carpentry/AIRRscape/shinyapp/toshiny_cov2_abdab.tab")
 ## combining hiv & catnap
-#toshiny.hiv.mabs.all <- read_tsv("~/data_carpentry/AIRRscape/shinyapp/toshiny_hivmabs_all.tab")
-
+#toshiny.hiv.mabs.all <- read_tsv("~/data_carpentry/AIRRscape/intermediate_files/toshiny_hiv_mabs.tab")
+#toshiny.hiv.mabs.all.h <- read_tsv("~/data_carpentry/AIRRscape/intermediate_files/toshiny_hiv_mabs_h.tab")
 #toshiny.den.mabs <- read_tsv("~/data_carpentry/AIRRscape/intermediate_files/toshiny_denmabs.tab")  # now updated to get directly from Zanini SOM
 den.mabs <- read_tsv("~/data_carpentry/AIRRscape/intermediate_files/toshiny_den_mabs0_germ-pass.tsv")
 
 #######################################################
-
 ### AIRR-COMPLIANT TSV FILES NEED THE FOLLOWING MODIFICATIONS
 # CHANGING RELEVANT HEADERS FROM LOWERCASE TO UPPER CASE
 # REMOVING FIRST AND LAST RESIDUES FROM junction
@@ -87,8 +86,8 @@ den.mabs <- read_tsv("~/data_carpentry/AIRRscape/intermediate_files/toshiny_den_
 ## also need to rename sequence_id's??
 ## required columns: v_identity, v_call, j_call
 
-## REMEMBER - FOR SHINY APP PROCESSING THERE CAN BE NO UNDERSCORES IN THE SEQUENCE_ID NAMES!!!
-## USE DASHES INSTEAD OF UNDERSCORES!!!
+## FOR SHINY APP PROCESSING THERE CAN BE NO UNDERSCORES IN THE SEQUENCE_ID NAMES - USE DASHES INSTEAD OF UNDERSCORES!!!
+## function has this conversion near end
 
 ### single function to do all pre-processing
 shinyprocess <- function(x, filter_columns = TRUE, renumber_sequences = TRUE, filter_after_counting = TRUE) {
@@ -300,14 +299,14 @@ toshiny.cov2.abdab <- toshiny.cov2.abdab %>% unite(sequence_id, dataset, sequenc
 toshiny.cov2.abdab$cdr3_aa_imgt <- toshiny.cov2.abdab$cdr3_aa
 toshiny.cov2.abdab$cdr3_aa <- NULL
 
-## den.mabs are changed Nov 2021
+## den.mabs are changed
 
 # toshiny.den.mabs$cdr3_aa_imgt <- toshiny.den.mabs$cdr3_aa
 # toshiny.den.mabs$cdr3_aa <- NULL
 # toshiny.den.mabs$ncount <- NULL
 # toshiny.den.mabs$shm.mean <- NULL
 
-## hiv.mabs are changed Nov 2021
+## hiv.mabs are changed
 # toshiny.hiv.mabs$cdr3_aa_imgt <- toshiny.hiv.mabs$cdr3_aa
 # toshiny.hiv.mabs$cdr3_aa <- NULL
 
@@ -570,20 +569,25 @@ write.table(toshiny.cov2hivc, "toshiny_cov2hivc.tab", sep = "\t", row.names = FA
 #     toshiny.hiv.mabs.h
 #     toshiny.hiv.bulk.nih45
 #     toshiny.hiv.bulk.mt1214
+#     toshiny.hiv.bulk.cap ## added feb 2022
 
 #c("HIV mAbs", "HIV patient MT1214", "HIV patient NIH45"))  #"SARS-CoV2 mAbs vs. HIV mAbs - IgH",
 
-toshiny.hiv.all <- bind_rows(toshiny.hiv.mabs.all.h, toshiny.hiv.bulk.mt1214, toshiny.hiv.bulk.nih45, .id = "id")
+toshiny.hiv.all <- bind_rows(toshiny.hiv.mabs.all.h, toshiny.hiv.bulk.mt1214, toshiny.hiv.bulk.nih45,toshiny.hiv.bulk.cap, .id = "id")
 
 toshiny.hiv.all$id <- gsub("1","HIV mAbs",toshiny.hiv.all$id)
+toshiny.hiv.all$id <- gsub("4","HIV Setliff twozerooneeight patient bulk repertoires",toshiny.hiv.all$id)
 toshiny.hiv.all$id <- gsub("3","HIV patient NIH45 bulk repertoire",toshiny.hiv.all$id)
 toshiny.hiv.all$id <- gsub("2","HIV patient MT1214 bulk repertoire",toshiny.hiv.all$id)
+toshiny.hiv.all$id <- gsub("HIV Setliff twozerooneeight patient bulk repertoires","HIV Setliff 2018 patient bulk repertoires",toshiny.hiv.all$id)
 
 ## check id columns!!
 unique(toshiny.hiv.all$id)
 head(toshiny.hiv.all$sequence_id)
 toshiny.hiv.all$vj_junction_pattern <- NULL
 
+unique(toshiny.hiv.all$cregion)
+#[1] "IgH" "IgM" "IgG" "IgA" NA    "IgK
 
 ## for all combined need to recalculate ncount and shm_mean
 toshiny.hiv.allc <- toshiny.hiv.all
@@ -712,142 +716,142 @@ rsconnect::deployApp('~/data_carpentry/AIRRscape/shinyapp')
 ##############################################################################################################################
 
 ### CODE FOR IMPORTING Parameswaran_2013 DENGUE DATA FROM OAS
-OAS.clusters.p148a <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2150126_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p148b <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2150229_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p148c <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2150329_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p172a <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2150457_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p172b <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2150481_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p172c <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2150504_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p194a <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2150549_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p194b <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2150573_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p194c <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2150597_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p199a <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2150643_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p199b <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2150668_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p199c <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2150692_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p203a <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2150715_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p203b <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2150734_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p203c <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2150753_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p208a <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2150802_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p208b <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2150816_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p208c <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2150838_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p232a <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2150935_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p232b <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2150947_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p232c <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2150972_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p237a <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151066_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p237b <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151089_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p237c <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151105_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p238a <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151162_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p238b <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151187_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p238c <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151211_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p240a <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151231_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p240b <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151247_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p240c <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151270_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p249a <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151293_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p249b <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151316_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p249c <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151330_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p252a <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151353_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p252b <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151376_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p252c <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151395_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p255a <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151414_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p255b <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151435_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p255c <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151450_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p265a <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151499_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p265b <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151523_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p148a <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2150126_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p148b <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2150229_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p148c <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2150329_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p172a <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2150457_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p172b <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2150481_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p172c <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2150504_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p194a <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2150549_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p194b <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2150573_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p194c <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2150597_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p199a <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2150643_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p199b <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2150668_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p199c <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2150692_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p203a <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2150715_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p203b <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2150734_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p203c <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2150753_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p208a <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2150802_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p208b <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2150816_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p208c <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2150838_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p232a <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2150935_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p232b <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2150947_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p232c <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2150972_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p237a <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151066_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p237b <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151089_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p237c <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151105_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p238a <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151162_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p238b <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151187_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p238c <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151211_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p240a <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151231_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p240b <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151247_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p240c <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151270_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p249a <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151293_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p249b <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151316_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p249c <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151330_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p252a <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151353_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p252b <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151376_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p252c <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151395_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p255a <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151414_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p255b <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151435_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p255c <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151450_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p265a <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151499_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p265b <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151523_Heavy_Bulk.csv.gz", skip =1)
 
-OAS.clusters.p275a <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151538_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p275b <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151562_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p275c <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151598_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p276a <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151713_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p276b <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151738_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p276c <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151761_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p287a <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153023_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p287b <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153024_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p287c <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153025_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p289a <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153026_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p289b <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153027_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p289c <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153028_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p299a <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153029_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p299b <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153030_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p299c <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153031_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p301a <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153032_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p301b <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153033_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p301c <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153034_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p307a <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153035_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p307b <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153036_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p275a <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151538_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p275b <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151562_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p275c <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151598_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p276a <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151713_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p276b <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151738_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p276c <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2151761_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p287a <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153023_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p287b <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153024_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p287c <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153025_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p289a <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153026_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p289b <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153027_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p289c <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153028_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p299a <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153029_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p299b <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153030_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p299c <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153031_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p301a <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153032_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p301b <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153033_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p301c <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153034_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p307a <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153035_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p307b <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153036_Heavy_Bulk.csv.gz", skip =1)
 
-OAS.clusters.p311a <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153037_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p311b <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153038_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p311a <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153037_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p311b <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153038_Heavy_Bulk.csv.gz", skip =1)
 
-OAS.clusters.p320a <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153039_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p320b <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153040_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p320a <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153039_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p320b <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153040_Heavy_Bulk.csv.gz", skip =1)
 
-OAS.clusters.p346a <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153045_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p346a <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153045_Heavy_Bulk.csv.gz", skip =1)
 
-OAS.clusters.p376a <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153046_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p376b <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153047_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p376c <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153048_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p391a <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153049_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p391b <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153050_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p376a <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153046_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p376b <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153047_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p376c <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153048_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p391a <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153049_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p391b <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153050_Heavy_Bulk.csv.gz", skip =1)
 
-OAS.clusters.p422a <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153052_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p422b <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153053_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p422c <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153054_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p444a <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153056_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p444b <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153057_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p444c <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153058_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p455a <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153060_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p455b <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153061_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p455c <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153062_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p479a <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153063_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p479b <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153064_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p479c <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153065_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p481a <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153066_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p481b <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153067_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p481c <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153068_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p489a <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153070_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p489b <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153071_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p489c <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153072_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p500a <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153073_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p500b <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153074_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p500c <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153075_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p514a <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153230_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p514b <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153231_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p514c <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153232_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p515a <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153233_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p515b <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153234_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p515c <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153235_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p517a <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153236_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p517b <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153237_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p517c <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153238_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p520a <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153239_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p520b <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153240_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p520c <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153241_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p524a <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153242_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p524b <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153243_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p524c <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153244_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p529a <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153245_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p529b <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153247_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p529c <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153248_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p543a <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153249_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p543b <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153250_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p543c <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153251_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p551a <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153252_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p551b <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153253_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p551c <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153254_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p555a <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153255_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p555b <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153256_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p555c <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153258_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p558a <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153261_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p558b <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153262_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p422a <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153052_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p422b <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153053_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p422c <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153054_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p444a <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153056_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p444b <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153057_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p444c <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153058_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p455a <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153060_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p455b <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153061_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p455c <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153062_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p479a <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153063_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p479b <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153064_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p479c <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153065_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p481a <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153066_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p481b <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153067_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p481c <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153068_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p489a <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153070_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p489b <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153071_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p489c <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153072_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p500a <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153073_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p500b <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153074_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p500c <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153075_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p514a <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153230_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p514b <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153231_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p514c <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153232_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p515a <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153233_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p515b <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153234_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p515c <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153235_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p517a <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153236_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p517b <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153237_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p517c <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153238_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p520a <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153239_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p520b <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153240_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p520c <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153241_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p524a <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153242_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p524b <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153243_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p524c <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153244_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p529a <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153245_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p529b <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153247_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p529c <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153248_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p543a <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153249_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p543b <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153250_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p543c <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153251_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p551a <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153252_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p551b <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153253_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p551c <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153254_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p555a <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153255_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p555b <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153256_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p555c <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153258_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p558a <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153261_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p558b <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153262_Heavy_Bulk.csv.gz", skip =1)
 
-OAS.clusters.p563a <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153263_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p563b <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153264_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p563c <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153265_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p569a <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153266_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p569b <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153267_Heavy_Bulk.csv.gz", skip =1)
-OAS.clusters.p569c <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153268_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p563a <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153263_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p563b <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153264_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p563c <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153265_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p569a <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153266_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p569b <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153267_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p569c <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153268_Heavy_Bulk.csv.gz", skip =1)
 
-OAS.clusters.p346 <- read.csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153045_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.p346 <- read_csv("~/data_carpentry/AIRRscape/intermediate_files/oas/SRR2153045_Heavy_Bulk.csv.gz", skip =1)
 #####
 
 OAS.clusters.p148 <- rbind(OAS.clusters.p148a,OAS.clusters.p148b,OAS.clusters.p148c)
@@ -1054,59 +1058,68 @@ rm(list=ls(pattern="OAS."))
 ### CODE FOR IMPORTING WALTARI 2018 HIV DATA
 
 ### mt1214 from OAS download:
-# first need to remove first line from every file, then import into R
+## can download, then load removing first line
+mt1214e_summaryurl <- paste0("http://opig.stats.ox.ac.uk/webapps/ngsdb/unpaired/Waltari_2018/csv/SRR5811762_Heavy_IGHE.csv.gz" )
+mt1214e_summarydest <- paste0("SRR5811762_Heavy_IGHE.csv.gz" )
+download.file(mt1214e_summaryurl, mt1214e_summarydest)
+OAS.clusters.mt1214d <- read_csv("SRR5811762_Heavy_IGHE.csv.gz", skip =1)
+OAS.clusters.mt1214e <- OAS.clusters.mt1214e %>% filter(Redundancy > 1)  ## none left!
+unlink("SRR5811762_Heavy_IGHE.csv.gz")
+mt1214d_summaryurl <- paste0("http://opig.stats.ox.ac.uk/webapps/ngsdb/unpaired/Waltari_2018/csv/SRR5811762_Heavy_IGHD.csv.gz" )
+mt1214d_summarydest <- paste0("SRR5811762_Heavy_IGHD.csv.gz" )
+download.file(mt1214d_summaryurl, mt1214d_summarydest)
+OAS.clusters.mt1214d <- read_csv("SRR5811762_Heavy_IGHD.csv.gz", skip =1)
+OAS.clusters.mt1214d <- OAS.clusters.mt1214d %>% filter(Redundancy > 1)  ## none left!
+unlink("SRR5811762_Heavy_IGHD.csv.gz")
 
-BX.clusters.mt1214a <- read.csv("~/immcantation_pipeline/COVID_mabs/sept21/SRR5811762_Heavy_IGHAn.csv.gz")
-BX.clusters.mt1214a$ANARCI_numbering <- NULL
-BX.clusters.mt1214a$ANARCI_status <- NULL
-BX.clusters.mt1214a <- BX.clusters.mt1214a %>% filter(Redundancy > 1)
+mt1214a_summaryurl <- paste0("http://opig.stats.ox.ac.uk/webapps/ngsdb/unpaired/Waltari_2018/csv/SRR5811762_Heavy_IGHA.csv.gz" )
+mt1214a_summarydest <- paste0("SRR5811762_Heavy_IGHA.csv.gz" )
+download.file(mt1214a_summaryurl, mt1214a_summarydest)
+OAS.clusters.mt1214a <- read_csv("SRR5811762_Heavy_IGHA.csv.gz", skip =1)
+OAS.clusters.mt1214a <- OAS.clusters.mt1214a %>% filter(Redundancy > 1)
+unlink("SRR5811762_Heavy_IGHA.csv.gz")
+
+mt1214g_summaryurl <- paste0("http://opig.stats.ox.ac.uk/webapps/ngsdb/unpaired/Waltari_2018/csv/SRR5811762_Heavy_IGHG.csv.gz" )
+mt1214g_summarydest <- paste0("SRR5811762_Heavy_IGHG.csv.gz" )
+download.file(mt1214g_summaryurl, mt1214g_summarydest)
+OAS.clusters.mt1214g <- read_csv("SRR5811762_Heavy_IGHG.csv.gz", skip =1)
+OAS.clusters.mt1214g <- OAS.clusters.mt1214g %>% filter(Redundancy > 1)
+unlink("SRR5811762_Heavy_IGHG.csv.gz")
+
+mt1214m_summaryurl <- paste0("http://opig.stats.ox.ac.uk/webapps/ngsdb/unpaired/Waltari_2018/csv/SRR5811762_Heavy_IGHM.csv.gz" )
+mt1214m_summarydest <- paste0("SRR5811762_Heavy_IGHM.csv.gz" )
+download.file(mt1214m_summaryurl, mt1214m_summarydest)
+OAS.clusters.mt1214m <- read_csv("SRR5811762_Heavy_IGHM.csv.gz", skip =1)
+OAS.clusters.mt1214m <- OAS.clusters.mt1214m %>% filter(Redundancy > 1)
+unlink("SRR5811762_Heavy_IGHM.csv.gz")
+
+mt1214b_summaryurl <- paste0("http://opig.stats.ox.ac.uk/webapps/ngsdb/unpaired/Waltari_2018/csv/SRR5811762_Heavy_Bulk.csv.gz" )
+mt1214b_summarydest <- paste0("SRR5811762_Heavy_Bulk.csv.gz" )
+download.file(mt1214b_summaryurl, mt1214b_summarydest)
+OAS.clusters.mt1214b <- read_csv("SRR5811762_Heavy_Bulk.csv.gz", skip =1)
+OAS.clusters.mt1214b <- OAS.clusters.mt1214b %>% filter(Redundancy > 1)
+unlink("SRR5811762_Heavy_Bulk.csv.gz")
 
 
-BX.clusters.mt1214d <- read.csv("~/immcantation_pipeline/COVID_mabs/sept21/SRR5811762_Heavy_IGHDn.csv.gz")
-BX.clusters.mt1214e <- read.csv("~/immcantation_pipeline/COVID_mabs/sept21/SRR5811762_Heavy_IGHEn.csv.gz")
-BX.clusters.mt1214g <- read.csv("~/immcantation_pipeline/COVID_mabs/sept21/SRR5811762_Heavy_IGHGn.csv.gz")
-
-BX.clusters.mt1214d$ANARCI_numbering <- NULL
-BX.clusters.mt1214d$ANARCI_status <- NULL
-BX.clusters.mt1214d <- BX.clusters.mt1214d %>% filter(Redundancy > 1)
-
-BX.clusters.mt1214e$ANARCI_numbering <- NULL
-BX.clusters.mt1214e$ANARCI_status <- NULL
-BX.clusters.mt1214e <- BX.clusters.mt1214e %>% filter(Redundancy > 1)
-
-
-BX.clusters.mt1214g$ANARCI_numbering <- NULL
-BX.clusters.mt1214g$ANARCI_status <- NULL
-BX.clusters.mt1214g <- BX.clusters.mt1214g %>% filter(Redundancy > 1)
-
-
-BX.clusters.mt1214m <- read.csv("~/immcantation_pipeline/COVID_mabs/sept21/SRR5811762_Heavy_IGHMn.csv.gz")
-BX.clusters.mt1214m$ANARCI_numbering <- NULL
-BX.clusters.mt1214m$ANARCI_status <- NULL
-BX.clusters.mt1214m <- BX.clusters.mt1214m %>% filter(Redundancy > 1)
-
-BX.clusters.mt1214b <- read.csv("~/immcantation_pipeline/COVID_mabs/sept21/SRR5811762_Heavy_Bulkn.csv.gz")
-BX.clusters.mt1214b$ANARCI_numbering <- NULL
-BX.clusters.mt1214b$ANARCI_status <- NULL
-BX.clusters.mt1214b <- BX.clusters.mt1214b %>% filter(Redundancy > 1)
-
-
-BX.clusters.mt1214a$cregion <- "IgA"
-BX.clusters.mt1214g$cregion <- "IgG"
-BX.clusters.mt1214m$cregion <- "IgM"
+OAS.clusters.mt1214a$cregion <- "IgA"
+OAS.clusters.mt1214g$cregion <- "IgG"
+OAS.clusters.mt1214m$cregion <- "IgM"
 
 ## combine, then locus IGH
-BX.clusters.mt1214agm <- rbind(BX.clusters.mt1214a, BX.clusters.mt1214g, BX.clusters.mt1214m)
-BX.clusters.mt1214all <- full_join(BX.clusters.mt1214agm, BX.clusters.mt1214b)
-BX.clusters.mt1214all$locus <- "IGH"
+OAS.clusters.mt1214agm <- rbind(OAS.clusters.mt1214a, OAS.clusters.mt1214g, OAS.clusters.mt1214m)
+OAS.clusters.mt1214all <- full_join(OAS.clusters.mt1214agm, OAS.clusters.mt1214b)
+OAS.clusters.mt1214all$locus <- "IGH"
+OAS.clusters.mt1214all$ANARCI_numbering <- NULL
+OAS.clusters.mt1214all$ANARCI_status <- NULL
 
 ## RUN THESE ON ALL DATASETS TO BE USED - ALSO LOOK INTO RENUMBERING WITHIN R
-BX.clusters.mt1214all$junction_length_check <- BX.clusters.mt1214all$junction_length / 3
-BX.clusters.mt1214all <- BX.clusters.mt1214all %>% filter(is.wholenumber(junction_length_check))
+OAS.clusters.mt1214all$junction_length_check <- OAS.clusters.mt1214all$junction_length / 3
+OAS.clusters.mt1214all <- OAS.clusters.mt1214all %>% filter(is.wholenumber(junction_length_check))
 
-BX.clusters.mt1214all$dataset <- "mt1214"
-BX.clusters.mt1214all$obs <- 1:nrow(BX.clusters.mt1214all) 
-BX.clusters.mt1214all <- BX.clusters.mt1214all %>% unite(sequence_id, dataset, obs, sep = "_", remove = TRUE, na.rm = TRUE)
-
-#write.table(BX.clusters.mt1214all, "MT1214downloaded.tab", sep = "\t", row.names = FALSE, quote = FALSE)
+OAS.clusters.mt1214all$dataset <- "mt1214"
+OAS.clusters.mt1214all$obs <- 1:nrow(OAS.clusters.mt1214all) 
+OAS.clusters.mt1214all <- OAS.clusters.mt1214all %>% unite(sequence_id, dataset, obs, sep = "_", remove = TRUE, na.rm = TRUE)
+hiv.bulk.mt1214t <- OAS.clusters.mt1214all
+#write.table(OAS.clusters.mt1214all, "MT1214downloaded.tab", sep = "\t", row.names = FALSE, quote = FALSE)
+rm(list=ls(pattern="OAS."))
 
