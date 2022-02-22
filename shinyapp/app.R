@@ -29,6 +29,8 @@ toshiny.hiv.allc <- read.delim("toshiny_hiv_allc.tab")
 toshiny.den.all <- read.delim("toshiny_den_all.tab")
 toshiny.den.allc <- read.delim("toshiny_den_allc.tab")
 
+toshiny.cov2hivden.allc <- read.delim("toshiny_cov2hivden_allc.tab")
+
 ## then for each dataframe change sequence_id & cdr3_aa_imgt columns to character
 toshiny.cov2.abdab$sequence_id <- as.character(toshiny.cov2.abdab$sequence_id)
 toshiny.cov2.abdab$cdr3_aa_imgt <- as.character(toshiny.cov2.abdab$cdr3_aa_imgt)
@@ -55,6 +57,8 @@ toshiny.den.all$cdr3_aa_imgt <- as.character(toshiny.den.all$cdr3_aa_imgt)
 toshiny.den.allc$sequence_id <- as.character(toshiny.den.allc$sequence_id)
 toshiny.den.allc$cdr3_aa_imgt <- as.character(toshiny.den.allc$cdr3_aa_imgt)
 
+toshiny.cov2hivden.allc$sequence_id <- as.character(toshiny.cov2hivden.allc$sequence_id)
+toshiny.cov2hivden.allc$cdr3_aa_imgt <- as.character(toshiny.cov2hivden.allc$cdr3_aa_imgt)
 
 ## to re-order any rows for plotting re-run here
 toshiny.cov2.abdab.h$binding <- factor(toshiny.cov2.abdab.h$binding, levels = c("RBD", "non-RBD"))
@@ -79,7 +83,8 @@ ui <- fluidPage(
                     "HIV mAbs vs. HIV patient MT1214 bulk repertoire vs. HIV patient NIH45 bulk repertoire vs. HIV Setliff 2018 patient bulk repertoires - IgH",
                     "HIV mAbs vs. HIV patient MT1214 bulk repertoire vs. HIV patient NIH45 bulk repertoire vs. HIV Setliff 2018 patient bulk repertoires - IgH combined",
                     "Dengue mAbs vs. Dengue patient d13 bulk repertoire vs. Dengue Parameswaran 2013 patient bulk repertoires - IgH",
-                    "Dengue mAbs vs. Dengue patient d13 bulk repertoire vs. Dengue Parameswaran 2013 patient bulk repertoires - IgH combined"), selectize = FALSE),
+                    "Dengue mAbs vs. Dengue patient d13 bulk repertoire vs. Dengue Parameswaran 2013 patient bulk repertoires - IgH combined",
+                    "All datasets - IgH combined"), selectize = FALSE),
       selectInput("plotcolors", "Plot Colors:",
                   c("Average SHM",
                     "Maximum SHM",
@@ -110,7 +115,7 @@ ui <- fluidPage(
               "Parsimony",
               "up to 500 nearest sequences to a single selected mAb - Parsimony; 100% CDR3 identity (Briney 2019)",
               "up to 500 nearest sequences to a single selected mAb - Parsimony; 80% CDR3 identity (Soto 2019)",
-              "up to 500 nearest sequences to a single selected mAb - Parsimony; 75% CDR3 identity",
+              "up to 500 nearest sequences to a single selected mAb - Parsimony; 70% CDR3 identity (Setliff 2018)",
               "up to 500 nearest sequences to a single selected mAb - Parsimony; 50% CDR3 identity"), selectize = FALSE),
       div(style="display: inline-block; width: 300px;",
           sliderInput("height", "Topology height", min = 200, max = 4200, value = 1000)),
@@ -127,7 +132,7 @@ server <- function(input, output, session) {
   options(width = 180, DT.options = list(pageLength = 10)) # Increase text width for printing table ALSO ADDING DEFAULT NUMBER OF 10 ROWS IN DATATABLE
     ## early in server now defining facets here
     facetvar1 <- reactive({
-      switch(input$dataset, "SARS-CoV2 mAbs - heavy chains & light chains" = "cregion", "SARS-CoV2 mAbs - IgH by binding" = "binding", "SARS-CoV2 mAbs - IgH by neutralization" = "neutralization", "SARS-CoV2 mAbs vs. 4 COVID-19 patient bulk repertoires vs. Healthy control bulk repertoire - IgH" = "id", "SARS-CoV2 mAbs vs. 4 COVID-19 patient bulk repertoires vs. Healthy control bulk repertoire - IgH combined" = "cregion", "SARS-CoV2 mAbs vs. HIV mAbs - IgH" = "id", "SARS-CoV2 mAbs vs. HIV mAbs - IgH combined" = "cregion", "HIV mAbs vs. HIV patient MT1214 bulk repertoire vs. HIV patient NIH45 bulk repertoire vs. HIV Setliff 2018 patient bulk repertoires - IgH" = "id", "HIV mAbs vs. HIV patient MT1214 bulk repertoire vs. HIV patient NIH45 bulk repertoire vs. HIV Setliff 2018 patient bulk repertoires - IgH combined" = "cregion", "Dengue mAbs vs. Dengue patient d13 bulk repertoire vs. Dengue Parameswaran 2013 patient bulk repertoires - IgH" = "id", "Dengue mAbs vs. Dengue patient d13 bulk repertoire vs. Dengue Parameswaran 2013 patient bulk repertoires - IgH combined" = "cregion")
+      switch(input$dataset, "SARS-CoV2 mAbs - heavy chains & light chains" = "cregion", "SARS-CoV2 mAbs - IgH by binding" = "binding", "SARS-CoV2 mAbs - IgH by neutralization" = "neutralization", "SARS-CoV2 mAbs vs. 4 COVID-19 patient bulk repertoires vs. Healthy control bulk repertoire - IgH" = "id", "SARS-CoV2 mAbs vs. 4 COVID-19 patient bulk repertoires vs. Healthy control bulk repertoire - IgH combined" = "cregion", "SARS-CoV2 mAbs vs. HIV mAbs - IgH" = "id", "SARS-CoV2 mAbs vs. HIV mAbs - IgH combined" = "cregion", "HIV mAbs vs. HIV patient MT1214 bulk repertoire vs. HIV patient NIH45 bulk repertoire vs. HIV Setliff 2018 patient bulk repertoires - IgH" = "id", "HIV mAbs vs. HIV patient MT1214 bulk repertoire vs. HIV patient NIH45 bulk repertoire vs. HIV Setliff 2018 patient bulk repertoires - IgH combined" = "cregion", "Dengue mAbs vs. Dengue patient d13 bulk repertoire vs. Dengue Parameswaran 2013 patient bulk repertoires - IgH" = "id", "Dengue mAbs vs. Dengue patient d13 bulk repertoire vs. Dengue Parameswaran 2013 patient bulk repertoires - IgH combined" = "cregion", "All datasets - IgH combined" = "cregion")
     })
     ## to change x columns vs. leaving fixed (for IgH only datasets) - note if I leave out default is fixed...
     facetvar2 <- reactive({
@@ -136,7 +141,7 @@ server <- function(input, output, session) {
     
   inputdataset <- reactive({
 ## using new names that reduce variables, round
-    switch(input$dataset, "SARS-CoV2 mAbs - heavy chains & light chains" = toshiny.cov2.abdab, "SARS-CoV2 mAbs - IgH by binding" = toshiny.cov2.abdab.h, "SARS-CoV2 mAbs - IgH by neutralization" = toshiny.cov2.abdab.h, "SARS-CoV2 mAbs vs. 4 COVID-19 patient bulk repertoires vs. Healthy control bulk repertoire - IgH" = toshiny.cov2.all, "SARS-CoV2 mAbs vs. 4 COVID-19 patient bulk repertoires vs. Healthy control bulk repertoire - IgH combined" = toshiny.cov2.allc, "SARS-CoV2 mAbs vs. HIV mAbs - IgH" = toshiny.cov2hiv, "SARS-CoV2 mAbs vs. HIV mAbs - IgH combined" = toshiny.cov2hivc, "HIV mAbs vs. HIV patient MT1214 bulk repertoire vs. HIV patient NIH45 bulk repertoire vs. HIV Setliff 2018 patient bulk repertoires - IgH" = toshiny.hiv.all, "HIV mAbs vs. HIV patient MT1214 bulk repertoire vs. HIV patient NIH45 bulk repertoire vs. HIV Setliff 2018 patient bulk repertoires - IgH combined" = toshiny.hiv.allc, "Dengue mAbs vs. Dengue patient d13 bulk repertoire vs. Dengue Parameswaran 2013 patient bulk repertoires - IgH" = toshiny.den.all, "Dengue mAbs vs. Dengue patient d13 bulk repertoire vs. Dengue Parameswaran 2013 patient bulk repertoires - IgH combined" = toshiny.den.allc)
+    switch(input$dataset, "SARS-CoV2 mAbs - heavy chains & light chains" = toshiny.cov2.abdab, "SARS-CoV2 mAbs - IgH by binding" = toshiny.cov2.abdab.h, "SARS-CoV2 mAbs - IgH by neutralization" = toshiny.cov2.abdab.h, "SARS-CoV2 mAbs vs. 4 COVID-19 patient bulk repertoires vs. Healthy control bulk repertoire - IgH" = toshiny.cov2.all, "SARS-CoV2 mAbs vs. 4 COVID-19 patient bulk repertoires vs. Healthy control bulk repertoire - IgH combined" = toshiny.cov2.allc, "SARS-CoV2 mAbs vs. HIV mAbs - IgH" = toshiny.cov2hiv, "SARS-CoV2 mAbs vs. HIV mAbs - IgH combined" = toshiny.cov2hivc, "HIV mAbs vs. HIV patient MT1214 bulk repertoire vs. HIV patient NIH45 bulk repertoire vs. HIV Setliff 2018 patient bulk repertoires - IgH" = toshiny.hiv.all, "HIV mAbs vs. HIV patient MT1214 bulk repertoire vs. HIV patient NIH45 bulk repertoire vs. HIV Setliff 2018 patient bulk repertoires - IgH combined" = toshiny.hiv.allc, "Dengue mAbs vs. Dengue patient d13 bulk repertoire vs. Dengue Parameswaran 2013 patient bulk repertoires - IgH" = toshiny.den.all, "Dengue mAbs vs. Dengue patient d13 bulk repertoire vs. Dengue Parameswaran 2013 patient bulk repertoires - IgH combined" = toshiny.den.allc, "All datasets - IgH combined" = toshiny.cov2hivden.allc)
       })
 ## extra filter for downloading
     filteredDS <- reactive({
@@ -408,7 +413,7 @@ server <- function(input, output, session) {
                              minit=10, k=10, trace=0)
             tree <- acctran(tree1, seqs) # added
             filteredData <- isolate({filteredDSpartial2()})  ### added because not in this option but now need for changing title below
-          } else if (input$plottab == "up to 500 nearest sequences to a single selected mAb - Parsimony; 75% CDR3 identity") {
+          } else if (input$plottab == "up to 500 nearest sequences to a single selected mAb - Parsimony; 70% CDR3 identity (Setliff 2018)") {
             filteredDataall <- isolate({filteredDSall2()})
             filteredDataall.y <- t(sapply(strsplit(filteredDataall[,2],""), tolower))
             rownames(filteredDataall.y) <- filteredDataall[,1]
@@ -422,7 +427,7 @@ server <- function(input, output, session) {
             ### for distance thresholding
             dmall.matrix <- dmall.matrix %>% select(sequence_id, all_of(filteredData1ID))  ## getting this error message Use `all_of(filteredData1ID)` instead of `filteredData1ID` to silence this message.
             colnames(dmall.matrix)[2] <- "DIST"
-            dmall.matrix <- dmall.matrix %>% filter(DIST < 0.376) ## now this will change in each else if
+            dmall.matrix <- dmall.matrix %>% filter(DIST < 0.451) ## now this will change in each else if
             #### end distance thresholding
             dmall.matrix <- dmall.matrix %>% select(sequence_id)
             dm.matrix <- dmall.matrix %>% separate(sequence_id, into = c("SEQ", "gene", "cdr3_aa_imgt"), sep = "_", remove = FALSE, convert = TRUE, extra = "merge", fill = "left") %>%
@@ -472,7 +477,7 @@ server <- function(input, output, session) {
             filteredData <- isolate({filteredDSpartial2()})  ### added because not in this option but now need for changing title below
           }
           ### this changes the colors based on source - note these are unique to the datasets...
-          tipcolors <- def(tree$tip.label, "hc" = "gray70", "nielsen" = "coral", "galson" = "indianred", "binder" = "orange", "kc" = "sienna", "mt1214" = "plum", "nih45" = "pink", "bulk-cap" = "thistle", "d13" = "blue", "Parameswaran" = "gold", "SARS-CoV2-mAb" = "orchid", "plasmablasts" = "orchid", "denmab" = "orchid", "HIV-IEDBmAb" = "orchid", "HIV-CATNAPmAb" = "orchid", default = "black", regexp = TRUE)
+          tipcolors <- def(tree$tip.label, "hc" = "gray70", "nielsen" = "coral", "galson" = "indianred", "binder" = "orange", "kc" = "sienna", "mt1214" = "plum", "nih45" = "pink", "bulk-cap" = "thistle", "d13" = "blue", "Parameswaran" = "gold", "SARS-CoV2-mAb" = "orchid", "plasmablasts" = "orchid", "denmab" = "orchid", "HIV-IEDBmAb" = "orchid", "HIV-CATNAPmAb" = "orchid", "HIV-Yacoob-mAb" = "orchid",default = "black", regexp = TRUE)
           ### below changing to midpoint of tree
           plot(midpoint(tree), lab4ut="axial",
                edge.width=2, label.offset = 0, cex = 1.2, align.tip.label = TRUE, adj = 1, no.margin = FALSE, font = 4, tip.color = tipcolors)  ## x.lim breaks parsimony and some NJ

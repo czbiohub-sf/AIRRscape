@@ -291,17 +291,17 @@ unique(toshiny.hiv.mabs.all$jgene)
 # toshiny.hiv.mabs$dataset <- "HIV-mAb"
 # toshiny.hiv.mabs <- toshiny.hiv.mabs %>% unite(sequence_id, dataset, sequence_id0, sep = "-", remove = TRUE, na.rm = TRUE)
 
-toshiny.cov2.abdab$sequence_id0 <- toshiny.cov2.abdab$sequence_id
-toshiny.cov2.abdab$sequence_id <- NULL
-toshiny.cov2.abdab$dataset <- "SARS-CoV2-mAb"
-toshiny.cov2.abdab <- toshiny.cov2.abdab %>% unite(sequence_id, dataset, sequence_id0, sep = "-", remove = TRUE, na.rm = TRUE)
 
-## first part changed very early 
-toshiny.cov2.abdab$cdr3_aa_imgt <- toshiny.cov2.abdab$cdr3_aa
-toshiny.cov2.abdab$cdr3_aa <- NULL
+## these one off done separately early, saved file now is corrected
+# toshiny.cov2.abdab$sequence_id0 <- toshiny.cov2.abdab$sequence_id
+# toshiny.cov2.abdab$sequence_id <- NULL
+# toshiny.cov2.abdab$dataset <- "SARS-CoV2-mAb"
+# toshiny.cov2.abdab <- toshiny.cov2.abdab %>% unite(sequence_id, dataset, sequence_id0, sep = "-", remove = TRUE, na.rm = TRUE)
+# toshiny.cov2.abdab$cdr3_aa_imgt <- toshiny.cov2.abdab$cdr3_aa
+# toshiny.cov2.abdab$cdr3_aa <- NULL
+
 
 ## den.mabs are changed
-
 # toshiny.den.mabs$cdr3_aa_imgt <- toshiny.den.mabs$cdr3_aa
 # toshiny.den.mabs$cdr3_aa <- NULL
 # toshiny.den.mabs$ncount <- NULL
@@ -457,6 +457,22 @@ toshiny.den.mabs
 toshiny.den.bulk.OAS
 toshiny.den.bulk.d13
 
+## entire collection combined
+toshiny.cov2.abdab.h
+toshiny.cov2.bulk.binder.p11
+toshiny.cov2.bulk.galson.p1
+toshiny.cov2.bulk.kc.m5.allreps
+toshiny.cov2.bulk.nielsen.p7450
+toshiny.hc.BXmay.10mstim
+toshiny.hiv.mabs.h
+toshiny.hiv.bulk.nih45
+toshiny.hiv.bulk.mt1214
+toshiny.hiv.bulk.cap
+toshiny.den.mabs
+toshiny.den.bulk.OAS
+toshiny.den.bulk.d13
+
+toshiny.cov2hivden.all
 
 #####################################################
 # toshiny.cov2.all
@@ -666,6 +682,82 @@ toshiny.den.allc$cregion <- "IgH"
 write.table(toshiny.den.all, "toshiny_den_all.tab", sep = "\t", row.names = FALSE, quote = FALSE)
 write.table(toshiny.den.allc, "toshiny_den_allc.tab", sep = "\t", row.names = FALSE, quote = FALSE)
 
+#####################################################
+# toshiny.cov2hivden.all
+toshiny.cov2.abdab.h
+toshiny.cov2.bulk.binder.p11
+toshiny.cov2.bulk.galson.p1
+toshiny.cov2.bulk.kc.m5.allreps
+toshiny.cov2.bulk.nielsen.p7450
+toshiny.hc.BXmay.10mstim
+toshiny.hiv.mabs.h
+toshiny.hiv.bulk.nih45
+toshiny.hiv.bulk.mt1214
+toshiny.hiv.bulk.cap
+toshiny.den.mabs
+toshiny.den.bulk.OAS
+toshiny.den.bulk.d13
+
+toshiny.cov2hivden.all <- bind_rows(toshiny.cov2.abdab.h, toshiny.cov2.bulk.binder.p11, toshiny.cov2.bulk.galson.p1, toshiny.cov2.bulk.kc.m5.allreps, toshiny.cov2.bulk.nielsen.p7450, toshiny.hc.BXmay.10mstim, toshiny.hiv.mabs.all.h, toshiny.hiv.bulk.mt1214, toshiny.hiv.bulk.nih45, toshiny.hiv.bulk.cap, toshiny.den.mabs.h, toshiny.den.bulk.d13, toshiny.den.bulk.OAS, .id = "id")
+
+toshiny.cov2hivden.all$id <- gsub("10","HIV patient MTonetwoonefour bulk repertoire",toshiny.cov2hivden.all$id)
+toshiny.cov2hivden.all$id <- gsub("11","Dengue plasmablasts",toshiny.cov2hivden.all$id)
+toshiny.cov2hivden.all$id <- gsub("12","Dengue patient dthirteen",toshiny.cov2hivden.all$id)
+toshiny.cov2hivden.all$id <- gsub("13","Dengue Parameswaran twozeroonethree patient bulk repertoires",toshiny.cov2hivden.all$id)
+
+toshiny.cov2hivden.all$id <- gsub("1","SARS-CoVtwo mAbs",toshiny.cov2hivden.all$id)
+toshiny.cov2hivden.all$id <- gsub("2","COVID-nineteen patient Binder peleven",toshiny.cov2hivden.all$id)
+toshiny.cov2hivden.all$id <- gsub("3","COVID-nineteen patient Galson pone",toshiny.cov2hivden.all$id)
+toshiny.cov2hivden.all$id <- gsub("4","COVID-nineteen patient Kuri-Cervantes mfive",toshiny.cov2hivden.all$id)
+toshiny.cov2hivden.all$id <- gsub("5","COVID-nineteen patient Nielsen psevenfourfivezero",toshiny.cov2hivden.all$id)
+toshiny.cov2hivden.all$id <- gsub("6","Healthy control bulk repertoire",toshiny.cov2hivden.all$id)
+
+toshiny.cov2hivden.all$id <- gsub("7","HIV mAbs",toshiny.cov2hivden.all$id)
+toshiny.cov2hivden.all$id <- gsub("8","HIV Setliff twozerooneeight patient bulk repertoires",toshiny.cov2hivden.all$id)
+toshiny.cov2hivden.all$id <- gsub("9","HIV patient NIHfourfive bulk repertoire",toshiny.cov2hivden.all$id)
+
+
+toshiny.cov2hivden.all$id <- gsub("SARS-CoVtwo mAbs","SARS-CoV2 mAbs",toshiny.cov2hivden.all$id)
+toshiny.cov2hivden.all$id <- gsub("COVID-nineteen patient Binder peleven","COVID-19 patient Binder p11 bulk repertoire",toshiny.cov2hivden.all$id)
+toshiny.cov2hivden.all$id <- gsub("COVID-nineteen patient Galson pone","COVID-19 patient Galson p1 bulk repertoire",toshiny.cov2hivden.all$id)
+toshiny.cov2hivden.all$id <- gsub("COVID-nineteen patient Kuri-Cervantes mfive","COVID-19 patient Kuri-Cervantes m5 bulk repertoire",toshiny.cov2hivden.all$id)
+toshiny.cov2hivden.all$id <- gsub("COVID-nineteen patient Nielsen psevenfourfivezero","COVID-19 patient Nielsen p7450 bulk repertoire",toshiny.cov2hivden.all$id)
+toshiny.cov2hivden.all$id <- gsub("HIV Setliff twozerooneeight patient bulk repertoires","HIV Setliff 2018 patient bulk repertoires",toshiny.cov2hivden.all$id)
+toshiny.cov2hivden.all$id <- gsub("Dengue patient dthirteen","Dengue patient d13 bulk repertoire",toshiny.cov2hivden.all$id)
+
+toshiny.cov2hivden.all$id <- gsub("HIV patient NIHfourfive bulk repertoire","HIV patient NIH45 bulk repertoire",toshiny.cov2hivden.all$id)
+toshiny.cov2hivden.all$id <- gsub("HIV patient MTonetwoonefour bulk repertoire","HIV patient MT1214 bulk repertoire",toshiny.cov2hivden.all$id)
+toshiny.cov2hivden.all$id <- gsub("Dengue Parameswaran twozeroonethree patient bulk repertoires","Dengue Parameswaran 2013 patient bulk repertoires",toshiny.cov2hivden.all$id)
+
+
+unique(toshiny.cov2hivden.all$id)
+head(toshiny.cov2hivden.all$sequence_id)
+
+
+## for all combined need to recalculate ncount and shm_mean
+toshiny.cov2hivden.allc <- toshiny.cov2hivden.all
+toshiny.cov2hivden.allc$ncount <- NULL
+toshiny.cov2hivden.allc$shm_mean <- NULL
+toshiny.cov2hivden.allc$shm_max <- NULL
+toshiny.cov2hivden.allc <- toshiny.cov2hivden.allc %>%
+  add_count(gf_jgene,cdr3length_imgt) %>%
+  rename(ncount = n) %>%
+  group_by(gf_jgene,cdr3length_imgt) %>%
+  mutate(shm_mean = mean(shm, na.rm = TRUE)) %>%
+  # ADD MAX SHM AS WELL..
+  mutate(shm_max = max(shm, na.rm = TRUE)) %>% 
+  mutate(shm_mean = na_if(shm_mean, "NaN")) %>% 
+  mutate(shm_max = na_if(shm_max, "-Inf")) %>% 
+  mutate(across(shm, round, 2)) %>% 
+  mutate(across(shm_max, round, 2)) %>% 
+  mutate(across(shm_mean, round, 2))
+
+## also every combined - add cregion0 and convert cregion to IgH
+toshiny.cov2hivden.allc$cregion0 <- toshiny.cov2hivden.allc$cregion
+toshiny.cov2hivden.allc$cregion <- "IgH"
+
+write.table(toshiny.cov2hivden.all, "toshiny_cov2hivden_all.tab", sep = "\t", row.names = FALSE, quote = FALSE)
+write.table(toshiny.cov2hivden.allc, "toshiny_cov2hivden_allc.tab", sep = "\t", row.names = FALSE, quote = FALSE)
 
 #####################################################
 #checks
