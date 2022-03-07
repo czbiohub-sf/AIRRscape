@@ -1,12 +1,16 @@
 #install.packages("shiny")
 #install.packages("ggplot2")
 #install.packages("tidyverse")
+#install.packages("DT")
 library(shiny)
 library(ggplot2)
 library(tidyverse)
 library(DT)
 
 ## for plotting
+#install.packages("seqinr")
+#install.packages("phangorn")
+#install.packages("ape")
 library(seqinr)
 library(phangorn)
 library(ape)
