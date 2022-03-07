@@ -798,15 +798,6 @@ toshiny.den.allc
 
 # unique(toshiny.den.all$id)
 # [1] "Dengue plasmablasts"               "Dengue patient d13"                "Dengue Parameswaran 2013 patients"
-# > 
-
-##################################################################################
-## to deploy app on ShinyApps.io
-## MAKE SURE THAT THE TAB INPUT FILES ARE IN THE APP FOLDER
-library(rsconnect)
-rsconnect::deployApp('~/data_carpentry/AIRRscape/shinyapp')
-
-
 
 ##############################################################################################################################
 ##############################################################################################################################
