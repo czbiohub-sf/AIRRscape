@@ -11,9 +11,11 @@ library(DT)
 #install.packages("seqinr")
 #install.packages("phangorn")
 #install.packages("ape")
+#install.packages("shinyscreenshot")
 library(seqinr)
 library(phangorn)
 library(ape)
+library(shinyscreenshot)
 
 ##########
 
@@ -97,7 +99,7 @@ ui <- fluidPage(
       br(),
       p("Alternately if you want to see more than a bin you can create a box and all antibodies within will appear in the top table."),
       br(),
-      p("From the lower table you can download all or selected antibodies in the chosen bin, download the distance matrix of all antibodies, or create topologies of selected antibodies. The last topology options are to find the nearest sequences (up to 500) of a single selected antibody, with 4 possible distance thresholds. Note that you can change the window size of the topology using the slider."),
+      p("From the lower table you can download all or selected antibodies in the chosen bin, download the distance matrix of all antibodies, or create topologies of selected antibodies. The last topology options are to find the nearest sequences (up to 500) of a single selected antibody, with four possible distance thresholds. Note that you can change the window size of the topology using the slider."),
       br(),
       p("Finally make sure to check all antibodies in the table have the same CDR3 length or the topology calculation will fail."),
       width = 2
@@ -127,6 +129,8 @@ ui <- fluidPage(
           sliderInput("width", "Topology width", min = 1000, max = 3000, value = 1600)),
       div(HTML("<br>")),br(),
       plotOutput("phyloPlot", inline = TRUE),
+      ## new code ot take screenshots from https://deanattali.com/blog/shinyscreenshot-release/
+      actionButton("screensht", "Take a screenshot")
     )
   )
 )
@@ -495,6 +499,10 @@ server <- function(input, output, session) {
           title(gjcdr3.titleID, family = "sans")
         })
       })
+      
+      observeEvent(input$screensht, {
+        screenshot()
+      })  
       
 }
 
