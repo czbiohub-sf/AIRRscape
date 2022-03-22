@@ -1,3 +1,6 @@
+# install.packages("tidyverse")
+# install.packages("knitr")
+library(knitr)
 library(tidyverse)
 
 ##############################################################################################################################
@@ -132,6 +135,7 @@ library(tidyverse)
 ## wget commands and key combining filenames with datasets found in:
 # /AIRRscape/paper_assets/intermediate_files/oas/bulk_download_dengue_paramaswaran.xlsx
 ## use those wget commands, or just use the files already in the /paper_assets/intermediate_files/oas/ folder
+
 ## then run these R commands
 OAS.clusters.p148a <- read_csv("paper_assets/intermediate_files/oas/SRR2150126_Heavy_Bulk.csv.gz", skip =1)
 OAS.clusters.p148b <- read_csv("paper_assets/intermediate_files/oas/SRR2150229_Heavy_Bulk.csv.gz", skip =1)
@@ -411,8 +415,6 @@ OAS.clusters.p563$obs <- 1:nrow(OAS.clusters.p563)
 OAS.clusters.p569$obs <- 1:nrow(OAS.clusters.p569)
 
 ####
-
-
 OAS.clusters.p148 <- OAS.clusters.p148 %>% unite(sequence_id, dataset, obs, sep = "_", remove = TRUE, na.rm = TRUE)
 OAS.clusters.p172 <- OAS.clusters.p172 %>% unite(sequence_id, dataset, obs, sep = "_", remove = TRUE, na.rm = TRUE)
 OAS.clusters.p194 <- OAS.clusters.p194 %>% unite(sequence_id, dataset, obs, sep = "_", remove = TRUE, na.rm = TRUE)
@@ -459,15 +461,15 @@ OAS.clusters.p558 <- OAS.clusters.p558 %>% unite(sequence_id, dataset, obs, sep 
 OAS.clusters.p563 <- OAS.clusters.p563 %>% unite(sequence_id, dataset, obs, sep = "_", remove = TRUE, na.rm = TRUE)
 OAS.clusters.p569 <- OAS.clusters.p569 %>% unite(sequence_id, dataset, obs, sep = "_", remove = TRUE, na.rm = TRUE)
 
-OAS.clusters.all <- rbind(OAS.clusters.p148,OAS.clusters.p172,OAS.clusters.p194,OAS.clusters.p199,OAS.clusters.p203,OAS.clusters.p208,OAS.clusters.p232,OAS.clusters.p237,OAS.clusters.p238,OAS.clusters.p240,OAS.clusters.p249,OAS.clusters.p252,OAS.clusters.p255,OAS.clusters.p265,OAS.clusters.p275,OAS.clusters.p276,OAS.clusters.p287,OAS.clusters.p289,OAS.clusters.p299,OAS.clusters.p301,OAS.clusters.p307,OAS.clusters.p311,OAS.clusters.p320,OAS.clusters.p346,OAS.clusters.p376,OAS.clusters.p391,OAS.clusters.p422,OAS.clusters.p444,OAS.clusters.p455,OAS.clusters.p479,OAS.clusters.p481,OAS.clusters.p489,OAS.clusters.p500,OAS.clusters.p514,OAS.clusters.p515,OAS.clusters.p517,OAS.clusters.p520,OAS.clusters.p524,OAS.clusters.p529,OAS.clusters.p543,OAS.clusters.p551,OAS.clusters.p555,OAS.clusters.p558,OAS.clusters.p563,OAS.clusters.p569)
+den.bulk.OAS <- rbind(OAS.clusters.p148,OAS.clusters.p172,OAS.clusters.p194,OAS.clusters.p199,OAS.clusters.p203,OAS.clusters.p208,OAS.clusters.p232,OAS.clusters.p237,OAS.clusters.p238,OAS.clusters.p240,OAS.clusters.p249,OAS.clusters.p252,OAS.clusters.p255,OAS.clusters.p265,OAS.clusters.p275,OAS.clusters.p276,OAS.clusters.p287,OAS.clusters.p289,OAS.clusters.p299,OAS.clusters.p301,OAS.clusters.p307,OAS.clusters.p311,OAS.clusters.p320,OAS.clusters.p346,OAS.clusters.p376,OAS.clusters.p391,OAS.clusters.p422,OAS.clusters.p444,OAS.clusters.p455,OAS.clusters.p479,OAS.clusters.p481,OAS.clusters.p489,OAS.clusters.p500,OAS.clusters.p514,OAS.clusters.p515,OAS.clusters.p517,OAS.clusters.p520,OAS.clusters.p524,OAS.clusters.p529,OAS.clusters.p543,OAS.clusters.p551,OAS.clusters.p555,OAS.clusters.p558,OAS.clusters.p563,OAS.clusters.p569)
 
-OAS.clusters.all$ANARCI_numbering <- NULL
-OAS.clusters.all$ANARCI_status <- NULL
-write.table(OAS.clusters.all, "OAS_sept21_germ-pass2.tsv", sep = "\t", row.names = FALSE, quote = FALSE)
-#den.bulk.OAS <- OAS.clusters.all
-rm(list=ls(pattern="OAS."))
+den.bulk.OAS$ANARCI_numbering <- NULL
+den.bulk.OAS$ANARCI_status <- NULL
+# write.table(den.bulk.OAS, "OAS_sept21_germ-pass2.tsv", sep = "\t", row.names = FALSE, quote = FALSE)
+# rm(list=ls(pattern="OAS."))
+
 ## this file "OAS_sept21_germ-pass2.tsv" is already available in the /paper_assets/intermediate_files folder
-### further processing can be found in airrscape_processing.R script
+# den.bulk.OAS <- read_tsv("paper_assets/intermediate_files/OAS_sept21_germ-pass2.tsv.gz")
 
 
 ##############################################################################################################################
@@ -484,7 +486,7 @@ rm(list=ls(pattern="OAS."))
 ##############################################################################################################################
 ##############################################################################################################################
 
-### CODE FOR IMPORTING HIV-MT1214 DATA
+### CODE FOR IMPORTING HIV-MT1214 DATA from Waltari 2018 (on OAS)
 
 ### mt1214 from OAS download:
 ## can download from OAS, then load removing first line
@@ -547,17 +549,18 @@ OAS.clusters.mt1214all <- OAS.clusters.mt1214all %>% filter(is.wholenumber(junct
 
 OAS.clusters.mt1214all$dataset <- "mt1214"
 OAS.clusters.mt1214all$obs <- 1:nrow(OAS.clusters.mt1214all) 
-OAS.clusters.mt1214all <- OAS.clusters.mt1214all %>% unite(sequence_id, dataset, obs, sep = "_", remove = TRUE, na.rm = TRUE)
-hiv.bulk.mt1214t <- OAS.clusters.mt1214all
-#write.table(OAS.clusters.mt1214all, "MT1214downloaded.tab", sep = "\t", row.names = FALSE, quote = FALSE)
-rm(list=ls(pattern="OAS."))
+hiv.bulk.mt1214 <- OAS.clusters.mt1214all %>% unite(sequence_id, dataset, obs, sep = "_", remove = TRUE, na.rm = TRUE)
+
+#write.table(hiv.bulk.mt1214, "MT1214downloaded.tab", sep = "\t", row.names = FALSE, quote = FALSE)
+# rm(list=ls(pattern="OAS."))
+
 ## this file "MT1214downloaded.tab" is already available in the /paper_assets/intermediate_files folder
-### further processing can be found in airrscape_processing.R script
+# hiv.bulk.mt1214 <- read_tsv("paper_assets/intermediate_files/MT1214downloaded.tab.gz")
 
 ##############################################################################################################################
 ##############################################################################################################################
 
-### CODE FOR INTIAL IMPORTING SETLIFF 2018 HIV DATA FROM OAS AND COMBINING 100 RAW DATASETS INTO 12 DONOR TIMEPOINTS:
+### CODE FOR IMPORTING SETLIFF 2018 HIV DATA FROM OAS AND COMBINING 100 RAW DATASETS INTO 12 DONOR TIMEPOINTS:
 ## wget commands and key combining filenames with datasets found in:
 # /AIRRscape/paper_assets/intermediate_files/bulk_download_hiv_setliff.xlsx
  ## use those wget commands, then run these R commands
@@ -737,51 +740,259 @@ hiv.bulk.cap351.6m <- hiv.bulk.cap351.6m  %>% filter(Redundancy > 1)
 #write.table(hiv.bulk.cap351.6m, "hiv_bulk_cap351_6m.tab", sep = "\t", row.names = FALSE, quote = FALSE)
 
 ## these 12 saved tab files "hiv.bulk.cap..." are already available in the /paper_assets/intermediate_files folder
-### further processing can be found in airrscape_processing.R script
+# hiv.bulk.cap287.3y <- read_tsv("paper_assets/intermediate_files/hiv_bulk_cap287_3y.tab.gz")
+# hiv.bulk.cap287.6m <- read_tsv("paper_assets/intermediate_files/hiv_bulk_cap287_6m.tab.gz")
+# hiv.bulk.cap301.3y <- read_tsv("paper_assets/intermediate_files/hiv_bulk_cap301_3y.tab.gz")
+# hiv.bulk.cap301.6m <- read_tsv("paper_assets/intermediate_files/hiv_bulk_cap301_6m.tab.gz")
+# hiv.bulk.cap312.3y <- read_tsv("paper_assets/intermediate_files/hiv_bulk_cap312_3y.tab.gz")
+# hiv.bulk.cap312.6m <- read_tsv("paper_assets/intermediate_files/hiv_bulk_cap312_6m.tab.gz")
+# hiv.bulk.cap322.3y <- read_tsv("paper_assets/intermediate_files/hiv_bulk_cap322_3y.tab.gz")
+# hiv.bulk.cap322.6m <- read_tsv("paper_assets/intermediate_files/hiv_bulk_cap322_6m.tab.gz")
+# hiv.bulk.cap335.3y <- read_tsv("paper_assets/intermediate_files/hiv_bulk_cap335_3y.tab.gz")
+# hiv.bulk.cap335.6m <- read_tsv("paper_assets/intermediate_files/hiv_bulk_cap335_6m.tab.gz")
+# hiv.bulk.cap351.3y <- read_tsv("paper_assets/intermediate_files/hiv_bulk_cap351_3y.tab.gz")
+# hiv.bulk.cap351.6m <- read_tsv("paper_assets/intermediate_files/hiv_bulk_cap351_6m.tab.gz")
 
 ##############################################################################################################################
 ##############################################################################################################################
 
-### CODE FOR IMPORTING ANTIBODY SEQUENCES FROM CoV-AbDab
+### CODE FOR IMPORTING HIV ANTIBODY SEQUENCES FROM IEDB, CATNAP, AND YACOOB ET AL.
+
+### first download IEDB data
+## focus is protein sequence, for AIRRscape visualization of SHM, we searched Genbank using tblastn to search for 100% sequence match to nucleotide sequences
+# resulting file is HIV_mablist_clonalclusters.tab  - ??? sequences
+
+## next adding CATNAP - ab_seqs_na.fasta
+## CATNAP_seqs_nt.fasta
+
+## from xxx website
+## Immcantation commands
+
+hiv.mabs.catnap <- read_tsv("/Users/eric.waltari/immcantation_pipeline/AIRRScape0/CATNAP_seqs_germ-pass.tsv")
+toshiny.hiv.mabs.catnap <- shinyprocess(hiv.mabs.catnap, renumber_sequences = FALSE, filter_after_counting = FALSE)
+write.table(toshiny.hiv.mabs.catnap, "toshiny_hiv_mabs_catnap.tab", sep = "\t", row.names = FALSE, quote = FALSE)
+
+## combined IEDB mabs with CATNAP
+toshiny.hiv.mabs.all <- read_tsv("/Users/eric.waltari/immcantation_pipeline/AIRRScape0/toshiny_hiv_mabs_all0.tab")
+
+
+
+## lastly added Yacoob et al data
+
+## from xxx website
+## Immcantation commands
+
+hiv.mabs.yacoob <- read_tsv("/Users/eric.waltari/immcantation_pipeline/AIRRScape0/yacoob_seqs_germ-pass.tsv")
+toshiny.hiv.mabs.yacoob <- shinyprocess(hiv.mabs.yacoob, renumber_sequences = FALSE, filter_after_counting = FALSE)
+write.table(toshiny.hiv.mabs.yacoob, "toshiny_hiv_mabs_yacoob.tab", sep = "\t", row.names = FALSE, quote = FALSE)
+
+## combined IEDB mabs with CATNAP & Yacoob
+toshiny.hiv.mabs.all <- read_tsv("/Users/eric.waltari/immcantation_pipeline/AIRRScape0/toshiny_hiv_mabs_all1.tab")
+
+## these files are already available in the /paper_assets/intermediate_files folder
+# toshiny.cov2.abdab.withfullv <- read_tsv("paper_assets/intermediate_files/toshiny_cov2_abdab_withfullv.tab.gz")
+
+
+## combining hiv & catnap
+#toshiny.hiv.mabs.all <- read_tsv("paper_assets/intermediate_files/toshiny_hiv_mabs.tab")
+#toshiny.hiv.mabs.all.h <- read_tsv("paper_assets/intermediate_files/toshiny_hiv_mabs_h.tab")
+
+##############################################################################################################################
+##############################################################################################################################
+
+### CODE FOR IMPORTING DENV ANTIBODY SEQUENCES FROM ZANINI PAPER
+
+# data directly from Zanini SOM, then run through Immcantation
+# file is available in the /paper_assets/intermediate_files folder - toshiny_den_mabs0.fasta
+## converting to fasta, running these commands from the Immcantation docker container
+## follow commands on Immcantation website https://immcantation.readthedocs.io/en/stable/docker/intro.html 
+## we used (docker pull immcantation/suite:4.1.0)
+# changeo-igblast -s /data/toshiny_den_mabs0.fasta -n toshiny_den_mabs0 -o /data	
+# note using 20% threshold to match Zanini		
+# changeo-clone -d /data/toshiny_den_mabs0_db-pass.tsv -n toshiny_den_mabs0 -o /data -x 0.2	
+
+# resulting file is toshiny_den_mabs0_germ-pass.tsv - 79 sequences
+## this file is already available in the /paper_assets/intermediate_files folder
+# den.mabs <- read_tsv("paper_assets/intermediate_files/toshiny_den_mabs0_germ-pass.tsv")
+
+##############################################################################################################################
+##############################################################################################################################
+
+### CODE FOR IMPORTING SARS-COV2 ANTIBODY SEQUENCES FROM CoV-AbDab
 ## first download full database as CSV (e.g. http://opig.stats.ox.ac.uk/webapps/covabdab/static/downloads/CoV-AbDab_xxyyzz.csv)
 ### version 1.0 of AIRRscape usees CoV-AbDab from CoV-AbDab_090721 database snapshot
 
 ## this list includes all CoV antibodies, and many non-human
 ## focus is protein sequence, and some entries are not complete (i.e. not full length sequence)
-## list is first trimmed to antibodies with full length sequence, binding to SARS-CoV-2, and derived from humans or humanized mice
+## list is first trimmed to antibodies  binding to SARS-CoV-2, and derived from humans or humanized mice
 
-## for AIRRscape visualization of SHM, we searched Genbank using tblastn tosearch for 100% sequence match to nucleotide sequences 
-## these were then checked for artificially high SHM due to codon optimization (e.g. Seydoux et al., 2020 (https://www.biorxiv.org/content/10.1101/2020.05.12.091298v1))
+## code to convert CoV-AbDab columns to AIRRscape format
+cov2.abdab <- read_csv("CoV-AbDab_xxyyzz.csv")
+
+cov2.abdab <- cov2.abdab[ grep("SARS-CoV2", cov2.abdab$`Binds to`) , ]
+cov2.abdab <- cov2.abdab[ grep("Human", cov2.abdab$`Heavy V Gene`) , ]
+cov2.abdab <- subset(cov2.abdab, `Ab or Nb` %in% c("Ab"))
+cov2.abdab <- cov2.abdab[ grep("ND", cov2.abdab$`Light V Gene`, invert = TRUE) , ]
+
+cov2.abdab.neut <- cov2.abdab[ grep("SARS-CoV2", cov2.abdab$`Neutralising Vs`) , ]
+cov2.abdab.nonneut <- cov2.abdab[ grep("SARS-CoV2", cov2.abdab$`Neutralising Vs`, invert = TRUE) , ]
+cov2.abdab.neut$neutralization <- "neutralizing"
+cov2.abdab.nonneut$neutralization <- "non-neutralizing or unknown"
+cov2.abdab <- bind_rows(cov2.abdab.neut, cov2.abdab.nonneut)
+cov2.abdab.rbd <- cov2.abdab %>% filter(`Protein + Epitope` == "S; RBD")
+cov2.abdab.nonrbd <- cov2.abdab %>% filter(`Protein + Epitope` != "S; RBD")
+cov2.abdab.rbd$binding <- "RBD"
+cov2.abdab.nonrbd$binding <- "non-RBD"
+cov2.abdab <- bind_rows(cov2.abdab.rbd, cov2.abdab.nonrbd)
+rm(cov2.abdab.neut)
+rm(cov2.abdab.nonneut)
+rm(cov2.abdab.rbd)
+rm(cov2.abdab.nonrbd)
+
+cov2.abdab$`Heavy V Gene` <- gsub(" [(]Human[)]","",cov2.abdab$`Heavy V Gene`)
+cov2.abdab$`Heavy J Gene` <- gsub(" [(]Human[)]","",cov2.abdab$`Heavy J Gene`)
+cov2.abdab$`Light V Gene` <- gsub(" [(]Human[)]","",cov2.abdab$`Light V Gene`)
+cov2.abdab$`Light J Gene` <- gsub(" [(]Human[)]","",cov2.abdab$`Light J Gene`)
+cov2.abdab$dataset <- "SARS-CoV2-mAb"
+
+## split HC & LC to separate heavy & light v gene, j gene, and full sequence data
+cov2.abdab.h <- cov2.abdab
+cov2.abdab.l <- cov2.abdab
+
+cov2.abdab.h <- cov2.abdab.h %>% rename(v_call = `Heavy V Gene`)
+cov2.abdab.h <- cov2.abdab.h %>% rename(j_call = `Heavy J Gene`)
+cov2.abdab.l <- cov2.abdab.l %>% rename(v_call = `Light V Gene`)
+cov2.abdab.l <- cov2.abdab.l %>% rename(j_call = `Light J Gene`)
+
+cov2.abdab.h <- cov2.abdab.h %>% rename(fullv = `VH or VHH`)
+cov2.abdab.l <- cov2.abdab.l %>% rename(fullv = VL)
+cov2.abdab.h <- cov2.abdab.h %>% rename(cdr3_aa_imgt = CDRH3)
+cov2.abdab.l <- cov2.abdab.l %>% rename(cdr3_aa_imgt = CDRL3)
+
+## renaming sequence_id, then rejoin hc & lc files
+cov2.abdab.l$toadd <- "LC"
+cov2.abdab.l <- cov2.abdab.l %>% unite(sequence_id0, Name, toadd, sep = "_", remove = FALSE, na.rm = TRUE)
+
+cov2.abdab.h <- cov2.abdab.h %>% unite(sequence_id, dataset, Name, sep = "_", remove = FALSE, na.rm = TRUE)
+cov2.abdab.l <- cov2.abdab.l %>% unite(sequence_id, dataset, sequence_id0, sep = "_", remove = FALSE, na.rm = TRUE)
+
+cov2.abdab <- full_join(cov2.abdab.h, cov2.abdab.l)
+rm(cov2.abdab.h)
+rm(cov2.abdab.l)
+
+### also remove sequences with ND's in jgene (or manually annotate)
+#cov2.abdab <- cov2.abdab %>% filter(jgene != "N")
+
+### want most of commands from shinyprocess function - but can't just rerun because no junction_aa
+## subset of those commands:
+cov2.abdab$sequence_id <- gsub("\\_","\\-",cov2.abdab$sequence_id)
+cov2.abdab$cdr3length_imgt <- nchar(cov2.abdab$cdr3_aa_imgt)
+### removing all sequences with IMGT CDR3 less than 3
+cov2.abdab <- cov2.abdab %>% filter(cdr3length_imgt > 2.8)  
+## next lines create V gene family, J gene columns
+cov2.abdab$gene <- getGene(cov2.abdab$v_call, first=TRUE, strip_d=TRUE)
+cov2.abdab$gf <- substring(cov2.abdab$gene, 1,5)
+cov2.abdab$jgene <- getGene(cov2.abdab$j_call, first=TRUE, strip_d=TRUE)
+## this creates new column gf_jgene which is used in all shiny plots
+cov2.abdab <- cov2.abdab %>% unite(gf_jgene, gf, jgene, sep = "_", remove = FALSE, na.rm = TRUE)
+## this removes any rows without CDR3, or with junctions that are not 3-mers
+cov2.abdab <- cov2.abdab %>% filter(!is.na(cdr3length_imgt)) %>% 
+   filter(is.wholenumber(cdr3length_imgt))
+
+cov2.abdab <- cov2.abdab %>%
+   add_count(gf_jgene,cdr3length_imgt) %>% 
+   rename(ncount = n) %>% 
+   group_by(gf_jgene,cdr3length_imgt)
+## this will filter the dataset to AIRRscape-specific columns (plus fullv sequence)
+vars2 <- c("sequence_id", "binding", "neutralization", "cregion", "cdr3_aa_imgt","gene", "gf_jgene", "gf","jgene", "cdr3length_imgt", "shm", "shm_max", "shm_mean", "ncount", "fullv")
+
+cov2.abdab.fullv0 <- cov2.abdab %>% select(any_of(vars2))
+cov2.abdab.fullv <- cov2.abdab.fullv0 %>% filter(fullv != "ND")
+#write.table(cov2.abdab.fullv0, "toshiny_cov2_abdab_withfullv0.tab", sep = "\t", row.names = FALSE, quote = FALSE)
+#write.table(cov2.abdab.fullv, "toshiny_cov2_abdab_withfullv.tab", sep = "\t", row.names = FALSE, quote = FALSE)
+   
+#######
+# our resulting file is toshiny_cov2_abdab_withfullv0.tab - 3,385 of 4,306 total sequences have full vgene sequence
+## for AIRRscape visualization of SHM, we searched Genbank using tblastn (in Geneious) to search for 100% sequence match to nucleotide sequences
+## subset with matches are run with Immcantation:changeo-igblast
+# changeo-igblast -s /data/toshiny_cov2_abdab0.fasta -n toshiny_den_mabs0 -o /data	
+# resulting file is toshiny_cov2_abdab0_germ-pass.tsv
+
+## these were then checked to remove any with artificially high SHM due to codon optimization (e.g. Seydoux et al., 2020 https://www.biorxiv.org/content/10.1101/2020.05.12.091298v1)
+## after checking save this without SHM
+cov2.abdab.withfullv <- read_tsv("paper_assets/intermediate_files/cov2_abdab_withfullv.tab")
+cov2.abdab.fullvtoaddshm <- read_tsv("paper_assets/intermediate_files/cov2_abdab0_germ-pass.tsv")
+
+## get 'binding' and 'neutralization' columns to add to cov2.abdab.fullvtoaddshm
+cov2.abdab.withfullv.bindneut <- cov2.abdab.withfullv %>% select(sequence_id,binding,neutralization)
+cov2.abdab.fullvtoaddshm <- left_join(cov2.abdab.fullvtoaddshm, cov2.abdab.withfullv.bindneut)   # or left_join?
 
 
-## these are only in SRA, so need full processing through Immcantation
-## d13-enriched
-## https://trace.ncbi.nlm.nih.gov/Traces/sra/?run=SRR17417727
-## d13-stimulated
-## https://trace.ncbi.nlm.nih.gov/Traces/sra/?run=SRR17417728
-# fastq-dump --split-files --origfmt --gzip SRR17417727
-# fastq-dump --split-files --origfmt --gzip SRR17417728
+## this calculates SHM but depending on whether v_identity is from 0 to 1 or 0 to 100
+# if (mean(cov2.abdab.fullvtoaddshm$v_identity) < 1) {
+#    cov2.abdab.fullvtoaddshm$shm <- (100 - (cov2.abdab.fullvtoaddshm$v_identity * 100))
+# } else {
+#    cov2.abdab.fullvtoaddshm$shm <- (100 - cov2.abdab.fullvtoaddshm$v_identity)
+# }
+## or just run shinyprocess!
 
-## first step in converting raw 300x250 MiSeq data uses Immcantation:Presto
-## see Waltari 2019 for details https://doi.org/10.3389/fimmu.2019.01452
-## result are 2 fastq files
-# 20190112_d13_2_enriched-final_collapse-unique_atleast-2.fastq
-# 20190112_d13_2_stimulated-final_collapse-unique_atleast-2.fastq
+toshiny.cov2.abdab.fullvtoaddshm <- shinyprocess(cov2.abdab.fullvtoaddshm, renumber_sequences = FALSE)
 
-## follow commands on Immcantation website https://immcantation.readthedocs.io/en/stable/docker/intro.html 
-## we used (docker pull immcantation/suite:4.1.0)
-# changeo-igblast -s /data/20190112_d13_2_enriched-final_collapse-unique_atleast-2.fastq -n d13_2enrich -o /data
-## from resulting db-pass tsv file removed all LC reads
-# changeo-clone -d /data/d13_2enrich_db-passHC.tsv -n d13_2enrichHC -o /data -x 0.12
-# changeo-igblast -s /data/20190113_d13_2_stimulated-final_collapse-unique_atleast-2.fastq -n d13_2stim -o /data
-## from resulting db-pass tsv file removed all LC reads
-# changeo-clone -d /data/d13_2stim_db-passHC.tsv -n d13_2stimHC -o /data -x 0.12
+toshiny.cov2.abdab.fullvtoaddshm <- toshiny.cov2.abdab.fullvtoaddshm %>% relocate(sequence_id)
+## need to recover 257 sequences lost...
+cov2.abdab.257lost <- anti_join(cov2.abdab.fullvtoaddshm, toshiny.cov2.abdab.fullvtoaddshm)   # or left_join?
 
-# resulting files are d13_2enrichHC_germ-pass.tsv - 19,718 sequences & d13_2stimHC_germ-pass.tsv - 146,529 sequences
+cov2.abdab.257lost <- semi_join(cov2.abdab.withfullv, cov2.abdab.257lost)   # or left_join?
 
-## these files are already available in the /paper_assets/intermediate_files folder
-# den.bulk.d13enrich <- read_tsv("paper_assets/intermediate_files/d13_2enrichHC_germ-pass.tsv.gz")
-# den.bulk.d13stim <- read_tsv("paper_assets/intermediate_files/d13_2stimHC_germ-pass.tsv.gz")
+## better to do a join that removes all rows in cov2.abdab.withfullv not in cov2.abdab.fullvtoaddshm - anti_join?
+cov2.abdab.noshm <- anti_join(cov2.abdab.withfullv, cov2.abdab.fullvtoaddshm)   # or left_join?
+## then add 257 lost sequences
+cov2.abdab.noshm <- bind_rows(cov2.abdab.noshm, cov2.abdab.257lost)   # or left_join?
+
+
+toshiny.cov2.abdab.fullv <- full_join(toshiny.cov2.abdab.fullvtoaddshm, cov2.abdab.noshm)   # or left_join?
+# resulting search adds SHM data to 1,493 sequences - toshiny_cov2_abdab_withfullv.tab
+
+## now some last clean up steps
+toshiny.cov2.abdab.fullv$shm_max <- NULL
+toshiny.cov2.abdab.fullv$shm_mean <- NULL
+toshiny.cov2.abdab.fullv$ncount <- NULL
+toshiny.cov2.abdab.fullv$order <- NULL
+
+### change kappa & lambda to IgK & IgL
+toshiny.cov2.abdab.fullv$cregion <- gsub("IgK","Kappa",toshiny.cov2.abdab.fullv$cregion)
+toshiny.cov2.abdab.fullv$cregion <- gsub("IgL","Lambda",toshiny.cov2.abdab.fullv$cregion)
+
+## ALSO NEED TO MAKE SURE SEQUENCE ID IS FIRST FOR MABS...AND CDR3 AFTER CREGION
+toshiny.cov2.abdab.fullv <- toshiny.cov2.abdab.fullv %>% relocate(sequence_id)
+toshiny.cov2.abdab.fullv <- toshiny.cov2.abdab.fullv %>% relocate(cdr3_aa_imgt, .after = cregion)
+
+toshiny.cov2.abdab.fullv <- toshiny.cov2.abdab.fullv %>% relocate(neutralization, .after = cdr3_aa_imgt)
+toshiny.cov2.abdab.fullv <- toshiny.cov2.abdab.fullv %>% relocate(binding, .after = cdr3_aa_imgt)
+toshiny.cov2.abdab.fullv <- toshiny.cov2.abdab.fullv %>% relocate(gf_jgene, .after = gene)
+
+toshiny.cov2.abdab <- toshiny.cov2.abdab.fullv %>%
+   add_count(gf_jgene,cdr3length_imgt) %>%
+   rename(ncount = n) %>%
+   group_by(gf_jgene,cdr3length_imgt) %>%
+   mutate(shm_mean = mean(shm, na.rm = TRUE)) %>%
+   # ADD MAX SHM AS WELL..
+   mutate(shm_max = max(shm, na.rm = TRUE)) %>% 
+   mutate(shm_mean = na_if(shm_mean, "NaN")) %>% 
+   mutate(shm_max = na_if(shm_max, "-Inf")) %>% 
+   mutate(across(shm, round, 2)) %>% 
+   mutate(across(shm_max, round, 2)) %>% 
+   mutate(across(shm_mean, round, 2))
+
+toshiny.cov2.abdab$fullv <- NULL
+
+#write.table(toshiny.cov2.abdab.fullv, "toshiny_cov2_abdab_fullv.tab", sep = "\t", row.names = FALSE, quote = FALSE)
+#write.table(toshiny.cov2.abdab, "toshiny_cov2_abdab.tab", sep = "\t", row.names = FALSE, quote = FALSE)
+
+## these files are already available in the /paper_assets/intermediate_files or /shinyapp folder
+# cov2.abdab.withfullv <- read_tsv("paper_assets/intermediate_files/cov2_abdab_withfullv.tab")
+# tonshiny.cov2.abdab.fullv <- read_tsv("paper_assets/intermediate_files/toshiny_cov2_abdab_fullv.tab")
+# toshiny.cov2.abdab <- read_tsv("shinyapp/toshiny_cov2_abdab.tab")
 
 ##############################################################################################################################
 ##############################################################################################################################

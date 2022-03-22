@@ -1,6 +1,6 @@
 
 ## if need to install
-# pkgs = c("alakazam", "igraph", "dplyr","RColorBrewer", "hexbin", "scales","grid", "lattice", "gdata","gridExtra", "ape", "shazam","reshape2", "DT","ggplot2", "seqinr", "phangorn","shiny","rlang", "tidyverse") # package names
+# pkgs = c("alakazam", "igraph", "dplyr","RColorBrewer", "hexbin", "scales","grid", "lattice", "gdata","gridExtra", "ape", "shazam","reshape2", "DT","ggplot2", "seqinr", "phangorn","shiny","rlang", "knitr", tidyverse") # package names
 # install.packages(pkgs)
 
 library(alakazam)
@@ -23,6 +23,7 @@ library(seqinr)
 library(phangorn)
 library(shiny)
 library(rlang)
+library(knitr)
 library(tidyverse)
 
 Mode <- function(x) {
@@ -69,14 +70,29 @@ hiv.bulk.cap351.3y <- read_tsv("paper_assets/intermediate_files/hiv_bulk_cap351_
 hiv.bulk.cap351.6m <- read_tsv("paper_assets/intermediate_files/hiv_bulk_cap351_6m.tab.gz")
 
 
-### lists of mabs rather than repertoires...HAVE SEPARATE SECTION FOR PROCESSING THESE
-
+### lists of mabs
 toshiny.cov2.abdab <- read_tsv("shinyapp/toshiny_cov2_abdab.tab")
+den.mabs <- read_tsv("paper_assets/intermediate_files/toshiny_den_mabs0_germ-pass.tsv")
+
+# for HIV 3 sources:
 ## combining hiv & catnap
 #toshiny.hiv.mabs.all <- read_tsv("paper_assets/intermediate_files/toshiny_hiv_mabs.tab")
 #toshiny.hiv.mabs.all.h <- read_tsv("paper_assets/intermediate_files/toshiny_hiv_mabs_h.tab")
 #toshiny.den.mabs <- read_tsv("paper_assets/intermediate_files/toshiny_denmabs.tab")  # now updated to get directly from Zanini SOM
-den.mabs <- read_tsv("paper_assets/intermediate_files/toshiny_den_mabs0_germ-pass.tsv")
+
+## then
+hiv.mabs.catnap <- read_tsv("/Users/eric.waltari/immcantation_pipeline/AIRRScape0/CATNAP_seqs_germ-pass.tsv")
+toshiny.hiv.mabs.catnap <- shinyprocess(hiv.mabs.catnap, renumber_sequences = FALSE, filter_after_counting = FALSE)
+write.table(toshiny.hiv.mabs.catnap, "toshiny_hiv_mabs_catnap.tab", sep = "\t", row.names = FALSE, quote = FALSE)
+toshiny.hiv.mabs.all <- read_tsv("/Users/eric.waltari/immcantation_pipeline/AIRRScape0/toshiny_hiv_mabs_all0.tab")
+
+hiv.mabs.yacoob <- read_tsv("/Users/eric.waltari/immcantation_pipeline/AIRRScape0/yacoob_seqs_germ-pass.tsv")
+toshiny.hiv.mabs.yacoob <- shinyprocess(hiv.mabs.yacoob, renumber_sequences = FALSE, filter_after_counting = FALSE)
+write.table(toshiny.hiv.mabs.yacoob, "toshiny_hiv_mabs_yacoob.tab", sep = "\t", row.names = FALSE, quote = FALSE)
+
+## combined IEDB mabs with CATNAP & Yacoob
+toshiny.hiv.mabs.all <- read_tsv("paper_assets/intermediate_files/toshiny_hiv_mabs_all.tab")
+
 
 ##################################################################################################################
 ### COMMANDS FOR READING IN AIRR-COMPLIANT DATASETS FOR SHINY APP
@@ -332,34 +348,13 @@ unique(toshiny.hiv.mabs.all$jgene)
 # toshiny.hiv.mabs <- toshiny.hiv.mabs %>% unite(sequence_id, dataset, sequence_id0, sep = "-", remove = TRUE, na.rm = TRUE)
 
 
-## den.mabs are changed
-# toshiny.den.mabs$cdr3_aa_imgt <- toshiny.den.mabs$cdr3_aa
-# toshiny.den.mabs$cdr3_aa <- NULL
-# toshiny.den.mabs$ncount <- NULL
-# toshiny.den.mabs$shm.mean <- NULL
 
 ## hiv.mabs are changed
 # toshiny.hiv.mabs$cdr3_aa_imgt <- toshiny.hiv.mabs$cdr3_aa
 # toshiny.hiv.mabs$cdr3_aa <- NULL
 
 # toshiny.hiv.mabs$ncount <- NULL
-# toshiny.hiv.mabs$shm.mean <- NULL
-
-toshiny.cov2.abdab$ncount <- NULL
-toshiny.cov2.abdab$shm.mean <- NULL
-
-toshiny.cov2.abdab <- toshiny.cov2.abdab %>%
-  add_count(gf_jgene,cdr3length_imgt) %>%
-  rename(ncount = n) %>%
-  group_by(gf_jgene,cdr3length_imgt) %>%
-  mutate(shm_mean = mean(shm, na.rm = TRUE)) %>%
-  # ADD MAX SHM AS WELL..
-  mutate(shm_max = max(shm, na.rm = TRUE)) %>% 
-  mutate(shm_mean = na_if(shm_mean, "NaN")) %>% 
-  mutate(shm_max = na_if(shm_max, "-Inf")) %>% 
-  mutate(across(shm, round, 2)) %>% 
-  mutate(across(shm_max, round, 2)) %>% 
-  mutate(across(shm_mean, round, 2))
+# toshiny.hiv.mabs$shm_mean <- NULL
 
 
 
@@ -397,11 +392,11 @@ toshiny.cov2.abdab <- toshiny.cov2.abdab %>% relocate(binding, .after = cdr3_aa_
 toshiny.den.bulk.OAS <- toshiny.den.bulk.OAS %>% relocate(sequence_id)
 toshiny.den.bulk.OAS <- toshiny.den.bulk.OAS %>% relocate(cdr3_aa_imgt, .after = cregion)
 
+### make heavy chain subsets
 toshiny.den.mabs.h <- subset(toshiny.den.mabs, cregion %in% c("IgH"))
-
 toshiny.cov2.abdab.h <- subset(toshiny.cov2.abdab, cregion %in% c("IgH"))
 toshiny.hiv.mabs.all.h <- subset(toshiny.hiv.mabs.all, cregion %in% c("IgH"))
-## END ONE-OFF COMMANDS FOR MAB DATASETS
+## END ONE-OFF COMMANDS
 
 
 ## next save these individually, then combine them!!!
@@ -436,7 +431,7 @@ write.table(toshiny.den.bulk.d13, "toshiny_den_bulk_d13.tab", sep = "\t", row.na
 
 
 #####################################################################################################################
-## CODE TO COMBINE 2-6 DATASETS INTO A SINGLE FILE FOR SHINY VISUALIZATION (BOTH SEPARATE & COMBINED)
+## CODE TO COMBINE DATASETS INTO A SINGLE FILE FOR SHINY VISUALIZATION (BOTH SEPARATE & COMBINED)
 #####################################################################################################################
 
 ## files to use
@@ -454,10 +449,10 @@ toshiny.hc.BXmay.10mstim
 
 # toshiny.cov2hiv
 toshiny.cov2.abdab.h
-toshiny.hiv.mabs.h
+toshiny.hiv.mabs.all.h
 
 # all hiv
-toshiny.hiv.mabs.h
+toshiny.hiv.mabs.all.h
 toshiny.hiv.bulk.nih45
 toshiny.hiv.bulk.mt1214
 toshiny.hiv.bulk.cap
@@ -474,7 +469,7 @@ toshiny.cov2.bulk.galson.p1
 toshiny.cov2.bulk.kc.m5.allreps
 toshiny.cov2.bulk.nielsen.p7450
 toshiny.hc.BXmay.10mstim
-toshiny.hiv.mabs.h
+toshiny.hiv.mabs.all.h
 toshiny.hiv.bulk.nih45
 toshiny.hiv.bulk.mt1214
 toshiny.hiv.bulk.cap

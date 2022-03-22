@@ -138,11 +138,11 @@ ui <- fluidPage(
 
 server <- function(input, output, session) {
   options(width = 180, DT.options = list(pageLength = 10)) # Increase text width for printing table ALSO ADDING DEFAULT NUMBER OF 10 ROWS IN DATATABLE
-    ## early in server now defining facets here
+    ## early in server now defining facets here - this is where all of the sidebar dataset options are tied to a dataset
     facetvar1 <- reactive({
       switch(input$dataset, "SARS-CoV2 mAbs - heavy chains & light chains" = "cregion", "SARS-CoV2 mAbs - IgH by binding" = "binding", "SARS-CoV2 mAbs - IgH by neutralization" = "neutralization", "SARS-CoV2 mAbs vs. 4 COVID-19 patient bulk repertoires vs. Healthy control bulk repertoire - IgH" = "id", "SARS-CoV2 mAbs vs. 4 COVID-19 patient bulk repertoires vs. Healthy control bulk repertoire - IgH combined" = "cregion", "SARS-CoV2 mAbs vs. HIV mAbs - IgH" = "id", "SARS-CoV2 mAbs vs. HIV mAbs - IgH combined" = "cregion", "HIV mAbs vs. HIV patient MT1214 bulk repertoire vs. HIV patient NIH45 bulk repertoire vs. HIV Setliff 2018 patient bulk repertoires - IgH" = "id", "HIV mAbs vs. HIV patient MT1214 bulk repertoire vs. HIV patient NIH45 bulk repertoire vs. HIV Setliff 2018 patient bulk repertoires - IgH combined" = "cregion", "Dengue mAbs vs. Dengue patient d13 bulk repertoire vs. Dengue Parameswaran 2013 patient bulk repertoires - IgH" = "id", "Dengue mAbs vs. Dengue patient d13 bulk repertoire vs. Dengue Parameswaran 2013 patient bulk repertoires - IgH combined" = "cregion", "All datasets - IgH combined" = "cregion")
     })
-    ## to change x columns vs. leaving fixed (for IgH only datasets) - note if I leave out default is fixed...
+    ## to change x-axis columns vs. leaving fixed (for IgH only datasets) - note if you leave out default is fixed...
     facetvar2 <- reactive({
       switch(input$dataset, "SARS-CoV2 mAbs - heavy chains & light chains" = "free_x", "SARS-CoV2 mAbs - IgH by binding" = "fixed", "SARS-CoV2 mAbs - IgH by neutralization" = "fixed")
     })
@@ -200,7 +200,7 @@ server <- function(input, output, session) {
       partial2id$sequence_id
     })
 
-### ADDING NEW VARIABLE SEPARATELY CALCULATING DISTANCE MATRIX AS I HAD BEEN BELOW BUT WITHIN TREE-PLOTTING STEP
+### ADDING NEW VARIABLE SEPARATELY CALCULATING DISTANCE MATRIX AS BELOW BUT WITHIN TREE-PLOTTING STEP
     ## THIS SHOULD SEPARATELY BE AVAILABLE FOR DOWNLOADING...
     matrixDSall2 <- reactive({
     filteredDataall <- filteredDSall2()
@@ -273,7 +273,7 @@ server <- function(input, output, session) {
     }, width = 1200, height = "auto")
 
 
-### datatable under second plot 
+### datatable under plot 
       output$click_info <- DT::renderDataTable({
              dat <- inputdataset()
              old <- options(width = 1600); on.exit(options(old))
@@ -485,7 +485,7 @@ server <- function(input, output, session) {
             filteredData <- isolate({filteredDSpartial2()})  ### added because not in this option but now need for changing title below
           }
           ### this changes the colors based on source - note these are unique to the datasets...
-          tipcolors <- def(tree$tip.label, "hc" = "gray70", "nielsen" = "coral", "galson" = "indianred", "binder" = "orange", "kc" = "sienna", "mt1214" = "plum", "nih45" = "pink", "bulk-cap" = "thistle", "d13" = "blue", "Parameswaran" = "gold", "SARS-CoV2-mAb" = "orchid", "plasmablasts" = "orchid", "denmab" = "orchid", "HIV-IEDBmAb" = "orchid", "HIV-CATNAPmAb" = "orchid", "HIV-Yacoob-mAb" = "orchid",default = "black", regexp = TRUE)
+          tipcolors <- def(tree$tip.label, "hc" = "gray20", "nielsen" = "coral", "galson" = "indianred", "binder" = "orange", "kc" = "sienna", "mt1214" = "limegreen", "nih45" = "seagreen", "bulk-cap" = "darkgreen", "d13" = "blue", "Parameswaran" = "goldenrod", "SARS-CoV2-mAb" = "orchid", "plasmablasts" = "orchid", "denmab" = "orchid", "HIV-IEDBmAb" = "orchid", "HIV-CATNAPmAb" = "orchid", "HIV-Yacoob-mAb" = "orchid",default = "black", regexp = TRUE)
           ### below changing to midpoint of tree
           plot(midpoint(tree), lab4ut="axial",
                edge.width=2, label.offset = 0, cex = 1.2, align.tip.label = TRUE, adj = 1, no.margin = FALSE, font = 4, tip.color = tipcolors)  ## x.lim breaks parsimony and some NJ
