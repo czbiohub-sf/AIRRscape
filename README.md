@@ -1,6 +1,6 @@
-# AIRRscape: an interactive web tool for exploring B-cell receptor repertoires and antibody responses  
+# AIRRscape: an interactive tool for exploring B-cell receptor repertoires and antibody responses  
 
-## Dependencies 
+## Dependencies
 Have RStudio downloaded: https://www.rstudio.com/products/rstudio/download/
 
 ## Running AIRRscape
@@ -30,6 +30,8 @@ When making topologies there is an upper limit for making these on the fly. We r
 
 ## Citation
 To cite AIRRscape in publications, use:
-tktk
+AIRRscape: an interactive tool for exploring B-cell receptor repertoires and antibody responses
+Eric Waltari, Saba Nafees, Joan Wong, Krista M. McCutcheon, John E. Pak
+bioRxiv: tktk; doi: tktk
 
 (modified using RStudio)
