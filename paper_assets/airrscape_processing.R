@@ -41,7 +41,6 @@ is.wholenumber <- function(x, tol = .Machine$double.eps^0.5) {
 
 
 ### LOADING AND CONVERTING INTERMEDIATE DATASETS
-
 cov2.bulk.binder.p11 <- read_tsv("paper_assets/intermediate_files/Binder_p11_germ-pass.tsv.gz")   # v_identity between 0.60 and 1, sequences renamed, have clone_id & germline_alignment_d_mask, NOT cdr3_aa
 cov2.bulk.nielsen.p7450 <- read_tsv("paper_assets/intermediate_files/Nielsen_7450_airr-covid-19.tsv.gz")   # v_identity between 60 and 100, has cdr3_aa
 cov2.bulk.galson.p1 <- read_tsv("paper_assets/intermediate_files/Galson_p1_germ-pass.tsv.gz")   # v_identity between 0.60 and 1, sequences renamed, have clone_id & germline_alignment_d_mask, NOT cdr3_aa
@@ -74,23 +73,7 @@ hiv.bulk.cap351.6m <- read_tsv("paper_assets/intermediate_files/hiv_bulk_cap351_
 toshiny.cov2.abdab <- read_tsv("shinyapp/toshiny_cov2_abdab.tab")
 den.mabs <- read_tsv("paper_assets/intermediate_files/toshiny_den_mabs0_germ-pass.tsv")
 
-# for HIV 3 sources:
-## combining hiv & catnap
-#toshiny.hiv.mabs.all <- read_tsv("paper_assets/intermediate_files/toshiny_hiv_mabs.tab")
-#toshiny.hiv.mabs.all.h <- read_tsv("paper_assets/intermediate_files/toshiny_hiv_mabs_h.tab")
-#toshiny.den.mabs <- read_tsv("paper_assets/intermediate_files/toshiny_denmabs.tab")  # now updated to get directly from Zanini SOM
-
-## then
-hiv.mabs.catnap <- read_tsv("/Users/eric.waltari/immcantation_pipeline/AIRRScape0/CATNAP_seqs_germ-pass.tsv")
-toshiny.hiv.mabs.catnap <- shinyprocess(hiv.mabs.catnap, renumber_sequences = FALSE, filter_after_counting = FALSE)
-write.table(toshiny.hiv.mabs.catnap, "toshiny_hiv_mabs_catnap.tab", sep = "\t", row.names = FALSE, quote = FALSE)
-toshiny.hiv.mabs.all <- read_tsv("/Users/eric.waltari/immcantation_pipeline/AIRRScape0/toshiny_hiv_mabs_all0.tab")
-
-hiv.mabs.yacoob <- read_tsv("/Users/eric.waltari/immcantation_pipeline/AIRRScape0/yacoob_seqs_germ-pass.tsv")
-toshiny.hiv.mabs.yacoob <- shinyprocess(hiv.mabs.yacoob, renumber_sequences = FALSE, filter_after_counting = FALSE)
-write.table(toshiny.hiv.mabs.yacoob, "toshiny_hiv_mabs_yacoob.tab", sep = "\t", row.names = FALSE, quote = FALSE)
-
-## combined IEDB mabs with CATNAP & Yacoob
+# for HIV 3 sources: IEDB, CATNAP & Yacoob
 toshiny.hiv.mabs.all <- read_tsv("paper_assets/intermediate_files/toshiny_hiv_mabs_all.tab")
 
 
@@ -237,6 +220,7 @@ toshiny.cov2.bulk.galson.p1 <- shinyprocess(cov2.bulk.galson.p1)
 toshiny.cov2.bulk.nielsen.p7450 <- shinyprocess(cov2.bulk.nielsen.p7450)
 toshiny.cov2.bulk.kc.m5.allreps <- shinyprocess(cov2.bulk.kc.m5.allreps)
 
+## dengue maps need processing, HIV & CoV2 are processed in airrscape_preprocessing script
 toshiny.den.mabs <- shinyprocess(den.mabs, renumber_sequences = FALSE, filter_after_counting = FALSE)
 
 ## for Setliff datasets, run Shinyprocess on each timepoint individually
@@ -312,7 +296,6 @@ unique(toshiny.cov2.bulk.nielsen.p7450$gf)
 unique(toshiny.cov2.bulk.galson.p1$gf)
 unique(toshiny.cov2.bulk.kc.m5.allreps$gf)
 
-
 unique(toshiny.cov2.abdab$jgene)
 unique(toshiny.den.mabs$jgene)
 
@@ -331,34 +314,17 @@ unique(toshiny.cov2.abdab$jgene)
 unique(toshiny.hiv.mabs.all$jgene)
 
 
-## ALSO MORE ONE-OFF COMMANDS FOR MAB DATASETS
-## need to recalculate shm_mean & shm_max (new) for the three mab datasets
-# toshiny.den.mabs
-# toshiny.hiv.mabs
-# toshiny.cov2.abdab
 
-## also need to rename sequence_id for cov2 and hiv mabs
-# SARS-CoV2-mAb
-# HIV-mAb
-## BUT ALSO WILL WANT TO CHANGE THE NAME OF EACH SEQUENCE!!! DONE HERE...
-## renamed whether source is IEDB or CATNAP
-# toshiny.hiv.mabs$sequence_id0 <- toshiny.hiv.mabs$sequence_id
-# toshiny.hiv.mabs$sequence_id <- NULL
-# toshiny.hiv.mabs$dataset <- "HIV-mAb"
-# toshiny.hiv.mabs <- toshiny.hiv.mabs %>% unite(sequence_id, dataset, sequence_id0, sep = "-", remove = TRUE, na.rm = TRUE)
+## some one off commands...
+toshiny.hiv.bulk.mt1214$cregion <- toshiny.hiv.bulk.mt1214$cregion %>% replace_na("IgH")
+toshiny.hiv.bulk.nih45 <- toshiny.hiv.bulk.nih45[ grep("IgK", toshiny.hiv.bulk.nih45$cregion, invert = TRUE) , ]
 
+## for mabs make heavy chain subsets
+toshiny.den.mabs.h <- subset(toshiny.den.mabs, cregion %in% c("IgH"))
+toshiny.cov2.abdab.h <- subset(toshiny.cov2.abdab, cregion %in% c("IgH"))
+toshiny.hiv.mabs.all.h <- subset(toshiny.hiv.mabs.all, cregion %in% c("IgH"))
 
-
-## hiv.mabs are changed
-# toshiny.hiv.mabs$cdr3_aa_imgt <- toshiny.hiv.mabs$cdr3_aa
-# toshiny.hiv.mabs$cdr3_aa <- NULL
-
-# toshiny.hiv.mabs$ncount <- NULL
-# toshiny.hiv.mabs$shm_mean <- NULL
-
-
-
-## next combining all Setliff data
+## combining all Setliff data
 toshiny.hiv.bulk.cap <- rbind(toshiny.hiv.bulk.cap287.3y,toshiny.hiv.bulk.cap287.6m,toshiny.hiv.bulk.cap301.3y,toshiny.hiv.bulk.cap301.6m,toshiny.hiv.bulk.cap312.3y,toshiny.hiv.bulk.cap312.6m,toshiny.hiv.bulk.cap322.3y,toshiny.hiv.bulk.cap322.6m,toshiny.hiv.bulk.cap335.3y,toshiny.hiv.bulk.cap335.6m,toshiny.hiv.bulk.cap351.3y,toshiny.hiv.bulk.cap351.6m)
 ## need to recalculate ncount, shm_mean, shm_max
 toshiny.hiv.bulk.cap$ncount <- NULL
@@ -377,29 +343,8 @@ toshiny.hiv.bulk.cap <- toshiny.hiv.bulk.cap %>%
   mutate(across(shm_max, round, 2)) %>% 
   mutate(across(shm_mean, round, 2))
 
-## more one off commands...
-toshiny.hiv.bulk.mt1214$cregion <- toshiny.hiv.bulk.mt1214$cregion %>% replace_na("IgH")
-toshiny.hiv.bulk.nih45 <- toshiny.hiv.bulk.nih45[ grep("IgK", toshiny.hiv.bulk.nih45$cregion, invert = TRUE) , ]
 
-## ALSO NEED TO MAKE SURE SEQUENCE ID IS FIRST FOR MABS...AND CDR3 AFTER CREGION
-toshiny.cov2.abdab <- toshiny.cov2.abdab %>% relocate(sequence_id)
-toshiny.cov2.abdab <- toshiny.cov2.abdab %>% relocate(cdr3_aa_imgt, .after = cregion)
-
-toshiny.cov2.abdab <- toshiny.cov2.abdab %>% relocate(neutralization, .after = cdr3_aa_imgt)
-toshiny.cov2.abdab <- toshiny.cov2.abdab %>% relocate(binding, .after = cdr3_aa_imgt)
-
-# relocate for den.bulk.OAS
-toshiny.den.bulk.OAS <- toshiny.den.bulk.OAS %>% relocate(sequence_id)
-toshiny.den.bulk.OAS <- toshiny.den.bulk.OAS %>% relocate(cdr3_aa_imgt, .after = cregion)
-
-### make heavy chain subsets
-toshiny.den.mabs.h <- subset(toshiny.den.mabs, cregion %in% c("IgH"))
-toshiny.cov2.abdab.h <- subset(toshiny.cov2.abdab, cregion %in% c("IgH"))
-toshiny.hiv.mabs.all.h <- subset(toshiny.hiv.mabs.all, cregion %in% c("IgH"))
-## END ONE-OFF COMMANDS
-
-
-## next save these individually, then combine them!!!
+## next you may save these individually - further down are combinaation steps
 write.table(toshiny.den.bulk.d13stim, "toshiny_den_bulk_d13stim.tab", sep = "\t", row.names = FALSE, quote = FALSE)
 write.table(toshiny.den.bulk.d13enrich, "toshiny_den_bulk_d13enrich.tab", sep = "\t", row.names = FALSE, quote = FALSE)
 write.table(toshiny.den.bulk.OAS, "toshiny_den_bulk_OAS.tab", sep = "\t", row.names = FALSE, quote = FALSE)
@@ -417,8 +362,8 @@ write.table(toshiny.cov2.abdab, "toshiny_cov2_abdab.tab", sep = "\t", row.names 
 write.table(toshiny.cov2.abdab.h, "toshiny_cov2_abdab_h.tab", sep = "\t", row.names = FALSE, quote = FALSE)
 write.table(toshiny.den.mabs, "toshiny_den_mabs.tab", sep = "\t", row.names = FALSE, quote = FALSE)
 write.table(toshiny.den.mabs.h, "toshiny_den_mabs_h.tab", sep = "\t", row.names = FALSE, quote = FALSE)
-write.table(toshiny.hiv.mabs.all, "toshiny_hiv_mabs.tab", sep = "\t", row.names = FALSE, quote = FALSE)
-write.table(toshiny.hiv.mabs.all.h, "toshiny_hiv_mabs_h.tab", sep = "\t", row.names = FALSE, quote = FALSE)
+write.table(toshiny.hiv.mabs.all, "toshiny_hiv_mabs_all.tab", sep = "\t", row.names = FALSE, quote = FALSE)
+write.table(toshiny.hiv.mabs.all.h, "toshiny_hiv_mabs_all_h.tab", sep = "\t", row.names = FALSE, quote = FALSE)
 
 
 ## combine d13 enrich & d 13 stim, also one-off potential contamination removed...
@@ -763,44 +708,6 @@ toshiny.cov2hivden.allc$cregion <- "IgH"
 write.table(toshiny.cov2hivden.all, "toshiny_cov2hivden_all.tab", sep = "\t", row.names = FALSE, quote = FALSE)
 write.table(toshiny.cov2hivden.allc, "toshiny_cov2hivden_allc.tab", sep = "\t", row.names = FALSE, quote = FALSE)
 
-#####################################################
-#checks
-toshiny.cov2.abdab
-toshiny.cov2.abdab.h
-toshiny.cov2.abdab.h
 
-toshiny.cov2hiv
-toshiny.cov2hivc
-
-toshiny.cov2.all
-toshiny.cov2.allc
-
-toshiny.hiv.all
-toshiny.hiv.allc
-
-toshiny.den.all
-toshiny.den.allc
-
-"SARS-CoV2 mAbs"
-"COVID-19 patient Binder p11"
-"COVID-19 patient Galson p1"
-"COVID-19 patient Kuri-Cervantes m5"
-"COVID-19 patient Nielsen p7450"
-
-#"SARS-CoV2 mAbs vs. HIV mAbs - IgH",
-
-# unique(toshiny.cov2.all$id)
-# [1] "SARS-CoV2 mAbs"                     "COVID-19 patient Binder p11"        "COVID-19 patient Galson p1"         "COVID-19 patient Kuri-Cervantes m5"
-# [5] "COVID-19 patient Nielsen p7450"     "Healthy control"
-
-# > unique(toshiny.cov2hiv$id)
-# [1] "SARS-CoV2 mAbs" "HIV mAbs"      
-# > 
-#   
-# > unique(toshiny.hiv.all$id)
-# [1] "HIV mAbs"           "HIV patient MT1214" "HIV patient NIH45" 
-
-# unique(toshiny.den.all$id)
-# [1] "Dengue plasmablasts"               "Dengue patient d13"                "Dengue Parameswaran 2013 patients"
-
+##############################################################################################################################
 ##############################################################################################################################

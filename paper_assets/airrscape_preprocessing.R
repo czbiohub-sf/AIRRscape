@@ -20,7 +20,7 @@ library(tidyverse)
 
 ### CODE FOR IMPORTING CoV2-Kuri-Cervantes_M5 data from iReceptor
 
-## login to iReceptor, search metadata for SubjectID = 7450 & Diagnosis = COVID-19
+## login to iReceptor, search metadata for SubjectID = M5 & Diagnosis = COVID-19
 ## aka https://gateway.ireceptor.org/samples?query_id=59127 & https://gateway.ireceptor.org/sequences-download?query_id=59128&n=1136400&page=sequences
 ## results in 1,136,400 sequences: saved as Kuri-Cervantes_M5-reps1to4_airr-covid-19.tsv
 
@@ -758,44 +758,132 @@ hiv.bulk.cap351.6m <- hiv.bulk.cap351.6m  %>% filter(Redundancy > 1)
 
 ### CODE FOR IMPORTING HIV ANTIBODY SEQUENCES FROM IEDB, CATNAP, AND YACOOB ET AL.
 
-### first download IEDB data
+### first download IEDB data - searching all B cell human data
+# resulting file is HIV_mablist.tsv  - 96 paired HC/LC sequences
 ## focus is protein sequence, for AIRRscape visualization of SHM, we searched Genbank using tblastn to search for 100% sequence match to nucleotide sequences
-# resulting file is HIV_mablist_clonalclusters.tab  - ??? sequences
 
-## next adding CATNAP - ab_seqs_na.fasta
-## CATNAP_seqs_nt.fasta
+## extracted all mAbs with organism matching "HIV" or "human immunodeficiency virus", removing duplicates
+## code to convert CoV-AbDab columns to AIRRscape format
+hiv.iedb <- read_csv("bcell_receptor_table_export_xxyyzz.csv")
 
-## from xxx website
-## Immcantation commands
+hiv.iedb.hiv1 <- hiv.iedb[ grep("HIV", hiv.iedb$Organism) , ]
+hiv.iedb.hiv2 <- hiv.iedb[ grep("immunodeficiency virus", hiv.iedb$Organism) , ]
+hiv.iedb <- rbind(hiv.iedb.hiv1,hiv.iedb.hiv2)
+rm(hiv.iedb.hiv1)
+rm(hiv.iedb.hiv2)
+##add HIV-IEDBmAb- to names
+hiv.iedb$toadd <- "HIV-IEDBmAb"
+hiv.iedb <- hiv.iedb %>% unite(sequence_id, toadd, 'Reference Name', sep = "-", remove = FALSE, na.rm = TRUE)
 
-hiv.mabs.catnap <- read_tsv("/Users/eric.waltari/immcantation_pipeline/AIRRScape0/CATNAP_seqs_germ-pass.tsv")
+## remove duplicates `Chain 1 CDR3 Curated`
+hiv.iedb <- hiv.iedb %>% rename(CDRH3 = 'Chain 1 CDR3 Calculated')
+
+hiv.iedb <- hiv.iedb %>%
+   group_by(sequence_id,CDRH3) %>%
+   summarize_all(first)
+
+## split HC & LC to separate heavy & light v gene, j gene, and full sequence data
+hiv.iedb.h <- hiv.iedb
+hiv.iedb.l <- hiv.iedb
+
+hiv.iedb.h <- hiv.iedb.h %>% rename(v_call = `Calculated Chain 1 V Gene`)
+hiv.iedb.h <- hiv.iedb.h %>% rename(j_call = `Calculated Chain 1 J Gene`)
+hiv.iedb.l <- hiv.iedb.l %>% rename(v_call = `Calculated Chain 2 V Gene`)
+hiv.iedb.l <- hiv.iedb.l %>% rename(j_call = `Calculated Chain 2 J Gene`)
+
+hiv.iedb.h <- hiv.iedb.h %>% rename(fullv = `Chain 1 Full Sequence`)
+hiv.iedb.l <- hiv.iedb.l %>% rename(fullv = `Chain 2 Full Sequence`)
+hiv.iedb.h <- hiv.iedb.h %>% rename(cdr3_aa_imgt = CDRH3)
+hiv.iedb.l <- hiv.iedb.l %>% rename(cdr3_aa_imgt = 'Chain 2 CDR3 Calculated')
+hiv.iedb.l$CDRH3 <- NULL
+
+## renaming sequence_id, then rejoin hc & lc files
+hiv.iedb.l <- hiv.iedb.l %>% rename(sequence_id0 = sequence_id)
+hiv.iedb.l$toadd2 <- "LC"
+hiv.iedb.l <- hiv.iedb.l %>% unite(sequence_id, sequence_id0, toadd2, sep = "-", remove = FALSE, na.rm = TRUE)
+hiv.iedb.l$sequence_id0 <- NULL
+
+hiv.iedb <- full_join(hiv.iedb.h, hiv.iedb.l)
+rm(hiv.iedb.h)
+rm(hiv.iedb.l)
+
+### want most of commands from shinyprocess function - but can't just rerun because no junction_aa
+## subset of those commands:
+hiv.iedb$sequence_id <- gsub("\\_","\\-",hiv.iedb$sequence_id)
+hiv.iedb$sequence_id <- gsub("\\.","\\-",hiv.iedb$sequence_id)
+hiv.iedb$sequence_id <- gsub("\\+","\\-",hiv.iedb$sequence_id)
+hiv.iedb$sequence_id <- gsub("\\ ","\\-",hiv.iedb$sequence_id)
+hiv.iedb$cdr3length_imgt <- nchar(hiv.iedb$cdr3_aa_imgt)
+## next lines create V gene family, J gene columns
+hiv.iedb$gene <- getGene(hiv.iedb$v_call, first=TRUE, strip_d=TRUE)
+hiv.iedb$gf <- substring(hiv.iedb$gene, 1,5)
+hiv.iedb$jgene <- getGene(hiv.iedb$j_call, first=TRUE, strip_d=TRUE)
+## this creates new column gf_jgene which is used in all shiny plots
+hiv.iedb <- hiv.iedb %>% unite(gf_jgene, gf, jgene, sep = "_", remove = FALSE, na.rm = TRUE)
+## this removes any rows without CDR3, or with junctions that are not 3-mers
+hiv.iedb <- hiv.iedb %>% filter(!is.na(cdr3length_imgt)) %>% 
+   filter(is.wholenumber(cdr3length_imgt))
+
+## this will filter the dataset to AIRRscape-specific columns (plus fullv sequence)
+vars2 <- c("sequence_id", "binding", "neutralization", "cregion", "cdr3_aa_imgt","gene", "gf_jgene", "gf","jgene", "cdr3length_imgt", "shm", "shm_max", "shm_mean", "ncount", "fullv")
+
+hiv.iedb.fullv <- hiv.iedb %>% select(any_of(vars2))
+
+### also remove sequences with ND's in cdr3
+hiv.iedb.fullv <- hiv.iedb.fullv %>% filter(cdr3_aa_imgt != "NA")
+
+## add cregion
+hiv.iedb.fullv$cregion <- str_sub(hiv.iedb.fullv$gene, end=3)
+hiv.iedb.fullv$cregion <- gsub('IG','Ig',hiv.iedb.fullv$cregion)
+
+#write.table(hiv.iedb.fullv, "hiv_iedb_withfullv.tab", sep = "\t", row.names = FALSE, quote = FALSE)
+
+#######
+# our resulting file is hiv_iedb_withfullv.tab - after manually removing some duplicates have 96 sequences, all with full v-gene
+## for AIRRscape visualization of SHM, we searched Genbank using tblastn (in Geneious) to search for 100% sequence match to nucleotide sequences
+## subset with matches are run with Immcantation:changeo-igblast
+# changeo-igblast -s /data/hiv_iedb0.fasta -n hiv_iedb0 -o /data	
+# resulting file is hiv_iedb0_germ-pass.tsv - result are 149 with SHM
+# toshiny_hiv_iedb.tab - 194 sequences, 149 with SHM
+
+
+#################################################
+## next adding CATNAP - sequences from: https://www.hiv.lanl.gov/cgi-bin/common_code/download.cgi?/scratch/NEUTRALIZATION/heavy_seqs_na.fasta
+## and https://www.hiv.lanl.gov/cgi-bin/common_code/download.cgi?/scratch/NEUTRALIZATION/light_seqs_na.fasta
+
+## running these commands from the Immcantation docker container
+## follow commands on Immcantation website https://immcantation.readthedocs.io/en/stable/docker/intro.html 
+## we used (docker pull immcantation/suite:4.1.0)
+# changeo-igblast -s /data/CATNAP_seqs_nt.fasta -n CATNAP_seqs -o /data
+# changeo-clone -d /data/CATNAP_seqs_db-pass.tsv -n CATNAP_seqs -o /data -x 0.12
+## resulting file is CATNAP_seqs_germ-pass.tsv
+
+hiv.mabs.catnap <- read_tsv("CATNAP_seqs_germ-pass.tsv")
 toshiny.hiv.mabs.catnap <- shinyprocess(hiv.mabs.catnap, renumber_sequences = FALSE, filter_after_counting = FALSE)
-write.table(toshiny.hiv.mabs.catnap, "toshiny_hiv_mabs_catnap.tab", sep = "\t", row.names = FALSE, quote = FALSE)
+#write.table(toshiny.hiv.mabs.catnap, "toshiny_hiv_mabs_catnap.tab", sep = "\t", row.names = FALSE, quote = FALSE)
 
-## combined IEDB mabs with CATNAP
-toshiny.hiv.mabs.all <- read_tsv("/Users/eric.waltari/immcantation_pipeline/AIRRScape0/toshiny_hiv_mabs_all0.tab")
+## then manually combined IEDB mabs with CATNAP
+## resulting file is toshiny_hiv_mabs_all0.tab
 
+#################################################
+## lastly added Yacoob et al data - Genbank KX443243–KX443325
+## running these commands from the Immcantation docker container
+## follow commands on Immcantation website https://immcantation.readthedocs.io/en/stable/docker/intro.html 
+## we used (docker pull immcantation/suite:4.1.0)
+# cchangeo-igblast -s /data/yacoob_seqs_nt.fasta -n yacoob_seqs -o /data
+# changeo-clone -d /data/yacoob_seqs_db-pass.tsv -n yacoob_seqs -o /data -x 0.12
+## resulting file is yacoob_seqs_germ-pass.tsv
 
-
-## lastly added Yacoob et al data
-
-## from xxx website
-## Immcantation commands
-
-hiv.mabs.yacoob <- read_tsv("/Users/eric.waltari/immcantation_pipeline/AIRRScape0/yacoob_seqs_germ-pass.tsv")
+hiv.mabs.yacoob <- read_tsv("yacoob_seqs_germ-pass.tsv")
 toshiny.hiv.mabs.yacoob <- shinyprocess(hiv.mabs.yacoob, renumber_sequences = FALSE, filter_after_counting = FALSE)
-write.table(toshiny.hiv.mabs.yacoob, "toshiny_hiv_mabs_yacoob.tab", sep = "\t", row.names = FALSE, quote = FALSE)
+#write.table(toshiny.hiv.mabs.yacoob, "toshiny_hiv_mabs_yacoob.tab", sep = "\t", row.names = FALSE, quote = FALSE)
 
-## combined IEDB mabs with CATNAP & Yacoob
-toshiny.hiv.mabs.all <- read_tsv("/Users/eric.waltari/immcantation_pipeline/AIRRScape0/toshiny_hiv_mabs_all1.tab")
+## then combined IEDB, CATNAP & Yacoob mabs
+## resulting file is toshiny_hiv_mabs_all.tab - 622 sequences total
 
-## these files are already available in the /paper_assets/intermediate_files folder
-# toshiny.cov2.abdab.withfullv <- read_tsv("paper_assets/intermediate_files/toshiny_cov2_abdab_withfullv.tab.gz")
+## this file is available in the /paper_assets/intermediate_files folder
+# toshiny.hiv.mabs.all <- read_tsv("paper_assets/intermediate_files/toshiny_hiv_mabs_all.tab")
 
-
-## combining hiv & catnap
-#toshiny.hiv.mabs.all <- read_tsv("paper_assets/intermediate_files/toshiny_hiv_mabs.tab")
-#toshiny.hiv.mabs.all.h <- read_tsv("paper_assets/intermediate_files/toshiny_hiv_mabs_h.tab")
 
 ##############################################################################################################################
 ##############################################################################################################################
@@ -814,6 +902,9 @@ toshiny.hiv.mabs.all <- read_tsv("/Users/eric.waltari/immcantation_pipeline/AIRR
 # resulting file is toshiny_den_mabs0_germ-pass.tsv - 79 sequences
 ## this file is already available in the /paper_assets/intermediate_files folder
 # den.mabs <- read_tsv("paper_assets/intermediate_files/toshiny_den_mabs0_germ-pass.tsv")
+
+## then run shinyprocess - THIS IS IN THE AIRRSCAPE_PROCESSING CODE, HOWEVER
+#toshiny.den.mabs <- shinyprocess(den.mabs, renumber_sequences = FALSE, filter_after_counting = FALSE)
 
 ##############################################################################################################################
 ##############################################################################################################################
@@ -908,24 +999,22 @@ vars2 <- c("sequence_id", "binding", "neutralization", "cregion", "cdr3_aa_imgt"
 
 cov2.abdab.fullv0 <- cov2.abdab %>% select(any_of(vars2))
 cov2.abdab.fullv <- cov2.abdab.fullv0 %>% filter(fullv != "ND")
-#write.table(cov2.abdab.fullv0, "toshiny_cov2_abdab_withfullv0.tab", sep = "\t", row.names = FALSE, quote = FALSE)
-#write.table(cov2.abdab.fullv, "toshiny_cov2_abdab_withfullv.tab", sep = "\t", row.names = FALSE, quote = FALSE)
+#write.table(cov2.abdab.fullv, "cov2_abdab_withfullv.tab", sep = "\t", row.names = FALSE, quote = FALSE)
    
 #######
-# our resulting file is toshiny_cov2_abdab_withfullv0.tab - 3,385 of 4,306 total sequences have full vgene sequence
+# our resulting file is cov2_abdab_withfullv.tab - 3,385 of 4,306 total sequences have full vgene sequence
 ## for AIRRscape visualization of SHM, we searched Genbank using tblastn (in Geneious) to search for 100% sequence match to nucleotide sequences
 ## subset with matches are run with Immcantation:changeo-igblast
-# changeo-igblast -s /data/toshiny_cov2_abdab0.fasta -n toshiny_den_mabs0 -o /data	
-# resulting file is toshiny_cov2_abdab0_germ-pass.tsv
+# changeo-igblast -s /data/cov2_abdab0.fasta -n cov2_abdab0 -o /data	
+# resulting file is cov2_abdab0_germ-pass.tsv
 
 ## these were then checked to remove any with artificially high SHM due to codon optimization (e.g. Seydoux et al., 2020 https://www.biorxiv.org/content/10.1101/2020.05.12.091298v1)
-## after checking save this without SHM
 cov2.abdab.withfullv <- read_tsv("paper_assets/intermediate_files/cov2_abdab_withfullv.tab")
 cov2.abdab.fullvtoaddshm <- read_tsv("paper_assets/intermediate_files/cov2_abdab0_germ-pass.tsv")
 
 ## get 'binding' and 'neutralization' columns to add to cov2.abdab.fullvtoaddshm
 cov2.abdab.withfullv.bindneut <- cov2.abdab.withfullv %>% select(sequence_id,binding,neutralization)
-cov2.abdab.fullvtoaddshm <- left_join(cov2.abdab.fullvtoaddshm, cov2.abdab.withfullv.bindneut)   # or left_join?
+cov2.abdab.fullvtoaddshm <- left_join(cov2.abdab.fullvtoaddshm, cov2.abdab.withfullv.bindneut)
 
 
 ## this calculates SHM but depending on whether v_identity is from 0 to 1 or 0 to 100
@@ -934,12 +1023,12 @@ cov2.abdab.fullvtoaddshm <- left_join(cov2.abdab.fullvtoaddshm, cov2.abdab.withf
 # } else {
 #    cov2.abdab.fullvtoaddshm$shm <- (100 - cov2.abdab.fullvtoaddshm$v_identity)
 # }
-## or just run shinyprocess!
+## or just run shinyprocess! - if not already loaded, function is below...
 
 toshiny.cov2.abdab.fullvtoaddshm <- shinyprocess(cov2.abdab.fullvtoaddshm, renumber_sequences = FALSE)
 
 toshiny.cov2.abdab.fullvtoaddshm <- toshiny.cov2.abdab.fullvtoaddshm %>% relocate(sequence_id)
-## need to recover 257 sequences lost...
+## need to recover 257 sequences lost during shinyprocess computation
 cov2.abdab.257lost <- anti_join(cov2.abdab.fullvtoaddshm, toshiny.cov2.abdab.fullvtoaddshm)   # or left_join?
 
 cov2.abdab.257lost <- semi_join(cov2.abdab.withfullv, cov2.abdab.257lost)   # or left_join?
@@ -959,7 +1048,7 @@ toshiny.cov2.abdab.fullv$shm_mean <- NULL
 toshiny.cov2.abdab.fullv$ncount <- NULL
 toshiny.cov2.abdab.fullv$order <- NULL
 
-### change kappa & lambda to IgK & IgL
+### change IgK & IgL to Kappa & Lambda
 toshiny.cov2.abdab.fullv$cregion <- gsub("IgK","Kappa",toshiny.cov2.abdab.fullv$cregion)
 toshiny.cov2.abdab.fullv$cregion <- gsub("IgL","Lambda",toshiny.cov2.abdab.fullv$cregion)
 
@@ -971,6 +1060,7 @@ toshiny.cov2.abdab.fullv <- toshiny.cov2.abdab.fullv %>% relocate(neutralization
 toshiny.cov2.abdab.fullv <- toshiny.cov2.abdab.fullv %>% relocate(binding, .after = cdr3_aa_imgt)
 toshiny.cov2.abdab.fullv <- toshiny.cov2.abdab.fullv %>% relocate(gf_jgene, .after = gene)
 
+## now add count, shm_mean, shm_max after all sequences are combined
 toshiny.cov2.abdab <- toshiny.cov2.abdab.fullv %>%
    add_count(gf_jgene,cdr3length_imgt) %>%
    rename(ncount = n) %>%
@@ -993,6 +1083,100 @@ toshiny.cov2.abdab$fullv <- NULL
 # cov2.abdab.withfullv <- read_tsv("paper_assets/intermediate_files/cov2_abdab_withfullv.tab")
 # tonshiny.cov2.abdab.fullv <- read_tsv("paper_assets/intermediate_files/toshiny_cov2_abdab_fullv.tab")
 # toshiny.cov2.abdab <- read_tsv("shinyapp/toshiny_cov2_abdab.tab")
+
+##############################################################################################################################
+## shinyprocess function
+##############################################################################################################################
+
+shinyprocess <- function(x, filter_columns = TRUE, renumber_sequences = TRUE, filter_after_counting = TRUE) {
+   colname <- substitute(x)
+   ## this removes columns with all NAs
+   x <- x[!map_lgl(x, ~ all(is.na(.)))]
+   ## this calculates SHM but depending on whether v_identity is from 0 to 1 or 0 to 100
+   if (mean(x$v_identity) < 1) {
+      x$shm <- (100 - (x$v_identity * 100))
+   } else {
+      x$shm <- (100 - x$v_identity)
+   }
+   ## this makes new standard cdr3 column (sometimes already exists, but there should always be a junction_aa) by removing both ends of the junction_aa column
+   x$cdr3_aa_imgt <- x$junction_aa
+   str_sub(x$cdr3_aa_imgt, -1, -1) <- ""
+   str_sub(x$cdr3_aa_imgt, 1, 1) <- ""
+   ## this calculates the CDR3 length
+   x$cdr3length_imgt <- nchar(x$cdr3_aa_imgt)
+   ## removing non-productive, out of frame, stop codons, any X in CDR3 (was 'nnnn' in sequence)
+   x <- x %>% filter(productive != "FALSE") %>%
+      filter(vj_in_frame != "FALSE") %>%
+      filter(productive != "F") %>%
+      filter(vj_in_frame != "F")
+   x <- x[ grep("\\*", x$junction_aa, invert = TRUE) , ]
+   x <- x[ grep("\\X", x$junction_aa, invert = TRUE) , ]
+   ### removing all sequences with IMGT CDR3 less than 3
+   x <- x %>% filter(cdr3length_imgt > 2.8)  
+   ## next lines create V gene family, J gene columns
+   x$gene <- getGene(x$v_call, first=TRUE, strip_d=TRUE)
+   x$gf <- substring(x$gene, 1,5)
+   x$jgene <- getGene(x$j_call, first=TRUE, strip_d=TRUE)
+   ## this creates new column gf_jgene which is used in all shiny plots
+   x <- x %>% unite(gf_jgene, gf, jgene, sep = "_", remove = FALSE, na.rm = TRUE)
+   ## this removes any rows without CDR3, or with junctions that are not 3-mers
+   x <- x %>% filter(!is.na(cdr3length_imgt)) %>% 
+      filter(is.wholenumber(cdr3length_imgt))
+   # if there is a clone_id column this will make a count of reads_per_clone
+   if ("clone_id" %in% names(x)) {
+      x <- x %>% add_count(clone_id) %>%
+         rename(reads_per_clone = n)
+   }
+   ## if no cregion column, make one  !(x %in% y)
+   if (!("cregion" %in% names(x))) {
+      x$cregion <- str_sub(x$v_call, end=3)
+      x$cregion <- gsub('IG','Ig',x$cregion)
+   }
+   ## making more important columns used in plotting, also a rounding step
+   x <- x %>%
+      add_count(gf_jgene,cdr3length_imgt) %>% 
+      rename(ncount = n) %>% 
+      group_by(gf_jgene,cdr3length_imgt) %>% 
+      mutate(shm_mean = mean(shm, na.rm = TRUE)) %>% 
+      # NOTE ADDIN MAX SHM AS WELL..
+      mutate(shm_max = max(shm, na.rm = TRUE)) %>% 
+      mutate(across(shm, round, 2)) %>% 
+      mutate(across(shm_max, round, 2)) %>% 
+      mutate(across(shm_mean, round, 2))
+   ## this will filter the dataset if filter_columns option is set to true - note the any_of which allows columns to be missing
+   vars2 <- c("sequence_id", "binding", "neutralization", "cregion", "cdr3_aa_imgt","gene", "gf_jgene", "gf","jgene", "cdr3length_imgt", "shm", "shm_max", "shm_mean", "ncount", "reads_per_clone")
+   if (filter_columns) {
+      x <- x %>% select(any_of(vars2))
+   }
+   ## this will remove all redundant sequences with same gf/gene & cdr3 motif...note we count above so okay to collapse here!!
+   if (filter_after_counting) {
+      x <- x %>%
+         group_by(cdr3_aa_imgt,gf_jgene) %>%
+         summarize_all(first) %>%
+         rename(ncountfull = ncount) %>% 
+         ungroup() %>%
+         add_count(gf_jgene,cdr3length_imgt) %>% 
+         rename(ncount = n) %>%
+         relocate(ncount, .before = shm_mean)
+   }
+   ## this will make a new sequence_id column with new row names if renumber_sequences option is set to true MOVING LAST TO CHANGE X DEFINITION
+   if (renumber_sequences) {
+      ## NOTE THIS NOW WORKS, TRICK WAS TO ASSIGN COLNAME VERY EARLY ON BEFORE ANYTHING ELSE...
+      ## adding change from underscores to dashes...
+      x$dataset <- deparse(substitute(colname))
+      x$dataset <- gsub('"','',x$dataset)
+      x$dataset <- gsub("\\.","\\-",x$dataset)
+      x$dataset <- gsub("\\_","\\-",x$dataset)
+      x$obs <- 1:nrow(x) 
+      x <- x %>% unite(sequence_id, dataset, obs, sep = "_", remove = TRUE, na.rm = TRUE)
+      # x <- x %>% relocate(sequence_id, .before = cregion)  ## changed to default i.e. move to make first column
+      x <- x %>% relocate(sequence_id)
+      # x$sequence_id <- gsub("\\_","\\-",x$sequence_id) ## moved to always run
+   }
+   ## need to always check and remove underscores from all names
+   x$sequence_id <- gsub("\\_","\\-",x$sequence_id)
+   return(x)
+}
 
 ##############################################################################################################################
 ##############################################################################################################################
