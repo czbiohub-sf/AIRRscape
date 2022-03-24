@@ -759,9 +759,6 @@ hiv.bulk.cap351.6m <- hiv.bulk.cap351.6m  %>% filter(Redundancy > 1)
 ### CODE FOR IMPORTING HIV ANTIBODY SEQUENCES FROM IEDB, CATNAP, AND YACOOB ET AL.
 
 ### first download IEDB data - searching all B cell human data
-# resulting file is HIV_mablist.tsv  - 96 paired HC/LC sequences
-## focus is protein sequence, for AIRRscape visualization of SHM, we searched Genbank using tblastn to search for 100% sequence match to nucleotide sequences
-
 ## extracted all mAbs with organism matching "HIV" or "human immunodeficiency virus", removing duplicates
 ## code to convert CoV-AbDab columns to AIRRscape format
 hiv.iedb <- read_csv("bcell_receptor_table_export_xxyyzz.csv")
@@ -841,15 +838,17 @@ hiv.iedb.fullv$cregion <- gsub('IG','Ig',hiv.iedb.fullv$cregion)
 #######
 # our resulting file is hiv_iedb_withfullv.tab - after manually removing some duplicates have 96 sequences, all with full v-gene
 ## for AIRRscape visualization of SHM, we searched Genbank using tblastn (in Geneious) to search for 100% sequence match to nucleotide sequences
-## subset with matches are run with Immcantation:changeo-igblast
+## subset with matches are run with commands from the Immcantation docker container
+## follow commands on Immcantation website https://immcantation.readthedocs.io/en/stable/docker/intro.html 
+## we used (docker pull immcantation/suite:4.1.0)
 # changeo-igblast -s /data/hiv_iedb0.fasta -n hiv_iedb0 -o /data	
 # resulting file is hiv_iedb0_germ-pass.tsv - result are 149 with SHM
 # toshiny_hiv_iedb.tab - 194 sequences, 149 with SHM
 
-
 #################################################
 ## next adding CATNAP - sequences from: https://www.hiv.lanl.gov/cgi-bin/common_code/download.cgi?/scratch/NEUTRALIZATION/heavy_seqs_na.fasta
 ## and https://www.hiv.lanl.gov/cgi-bin/common_code/download.cgi?/scratch/NEUTRALIZATION/light_seqs_na.fasta
+## then combine into one fasta file - CATNAP_seqs_nt.fasta
 
 ## running these commands from the Immcantation docker container
 ## follow commands on Immcantation website https://immcantation.readthedocs.io/en/stable/docker/intro.html 
@@ -859,7 +858,7 @@ hiv.iedb.fullv$cregion <- gsub('IG','Ig',hiv.iedb.fullv$cregion)
 ## resulting file is CATNAP_seqs_germ-pass.tsv
 
 hiv.mabs.catnap <- read_tsv("CATNAP_seqs_germ-pass.tsv")
-toshiny.hiv.mabs.catnap <- shinyprocess(hiv.mabs.catnap, renumber_sequences = FALSE, filter_after_counting = FALSE)
+toshiny.hiv.mabs.catnap <- shinyprocess(hiv.mabs.catnap, renumber_sequences = FALSE, filter_after_counting = FALSE)  # shinyprocess function is at bottom of this script
 #write.table(toshiny.hiv.mabs.catnap, "toshiny_hiv_mabs_catnap.tab", sep = "\t", row.names = FALSE, quote = FALSE)
 
 ## then manually combined IEDB mabs with CATNAP
@@ -875,15 +874,14 @@ toshiny.hiv.mabs.catnap <- shinyprocess(hiv.mabs.catnap, renumber_sequences = FA
 ## resulting file is yacoob_seqs_germ-pass.tsv
 
 hiv.mabs.yacoob <- read_tsv("yacoob_seqs_germ-pass.tsv")
-toshiny.hiv.mabs.yacoob <- shinyprocess(hiv.mabs.yacoob, renumber_sequences = FALSE, filter_after_counting = FALSE)
+toshiny.hiv.mabs.yacoob <- shinyprocess(hiv.mabs.yacoob, renumber_sequences = FALSE, filter_after_counting = FALSE) # shinyprocess function is at bottom of this script
 #write.table(toshiny.hiv.mabs.yacoob, "toshiny_hiv_mabs_yacoob.tab", sep = "\t", row.names = FALSE, quote = FALSE)
 
-## then combined IEDB, CATNAP & Yacoob mabs
+## then combine IEDB, CATNAP & Yacoob mabs
 ## resulting file is toshiny_hiv_mabs_all.tab - 622 sequences total
 
 ## this file is available in the /paper_assets/intermediate_files folder
 # toshiny.hiv.mabs.all <- read_tsv("paper_assets/intermediate_files/toshiny_hiv_mabs_all.tab")
-
 
 ##############################################################################################################################
 ##############################################################################################################################
@@ -903,7 +901,7 @@ toshiny.hiv.mabs.yacoob <- shinyprocess(hiv.mabs.yacoob, renumber_sequences = FA
 ## this file is already available in the /paper_assets/intermediate_files folder
 # den.mabs <- read_tsv("paper_assets/intermediate_files/toshiny_den_mabs0_germ-pass.tsv")
 
-## then run shinyprocess - THIS IS IN THE AIRRSCAPE_PROCESSING CODE, HOWEVER
+## then run shinyprocess - note THIS IS IN THE AIRRSCAPE_PROCESSING SCRIPT
 #toshiny.den.mabs <- shinyprocess(den.mabs, renumber_sequences = FALSE, filter_after_counting = FALSE)
 
 ##############################################################################################################################
@@ -911,7 +909,7 @@ toshiny.hiv.mabs.yacoob <- shinyprocess(hiv.mabs.yacoob, renumber_sequences = FA
 
 ### CODE FOR IMPORTING SARS-COV2 ANTIBODY SEQUENCES FROM CoV-AbDab
 ## first download full database as CSV (e.g. http://opig.stats.ox.ac.uk/webapps/covabdab/static/downloads/CoV-AbDab_xxyyzz.csv)
-### version 1.0 of AIRRscape usees CoV-AbDab from CoV-AbDab_090721 database snapshot
+### version 1.0 of AIRRscape uses CoV-AbDab from CoV-AbDab_090721 database snapshot
 
 ## this list includes all CoV antibodies, and many non-human
 ## focus is protein sequence, and some entries are not complete (i.e. not full length sequence)
@@ -1017,29 +1015,22 @@ cov2.abdab.withfullv.bindneut <- cov2.abdab.withfullv %>% select(sequence_id,bin
 cov2.abdab.fullvtoaddshm <- left_join(cov2.abdab.fullvtoaddshm, cov2.abdab.withfullv.bindneut)
 
 
-## this calculates SHM but depending on whether v_identity is from 0 to 1 or 0 to 100
-# if (mean(cov2.abdab.fullvtoaddshm$v_identity) < 1) {
-#    cov2.abdab.fullvtoaddshm$shm <- (100 - (cov2.abdab.fullvtoaddshm$v_identity * 100))
-# } else {
-#    cov2.abdab.fullvtoaddshm$shm <- (100 - cov2.abdab.fullvtoaddshm$v_identity)
-# }
-## or just run shinyprocess! - if not already loaded, function is below...
-
+## then run shinyprocess - if not already loaded, function is at bottom...
 toshiny.cov2.abdab.fullvtoaddshm <- shinyprocess(cov2.abdab.fullvtoaddshm, renumber_sequences = FALSE)
 
 toshiny.cov2.abdab.fullvtoaddshm <- toshiny.cov2.abdab.fullvtoaddshm %>% relocate(sequence_id)
 ## need to recover 257 sequences lost during shinyprocess computation
-cov2.abdab.257lost <- anti_join(cov2.abdab.fullvtoaddshm, toshiny.cov2.abdab.fullvtoaddshm)   # or left_join?
+cov2.abdab.257lost <- anti_join(cov2.abdab.fullvtoaddshm, toshiny.cov2.abdab.fullvtoaddshm)
 
-cov2.abdab.257lost <- semi_join(cov2.abdab.withfullv, cov2.abdab.257lost)   # or left_join?
+cov2.abdab.257lost <- semi_join(cov2.abdab.withfullv, cov2.abdab.257lost)
 
-## better to do a join that removes all rows in cov2.abdab.withfullv not in cov2.abdab.fullvtoaddshm - anti_join?
-cov2.abdab.noshm <- anti_join(cov2.abdab.withfullv, cov2.abdab.fullvtoaddshm)   # or left_join?
+## better to do a join that removes all rows in cov2.abdab.withfullv not in cov2.abdab.fullvtoaddshm - anti_join
+cov2.abdab.noshm <- anti_join(cov2.abdab.withfullv, cov2.abdab.fullvtoaddshm)
 ## then add 257 lost sequences
-cov2.abdab.noshm <- bind_rows(cov2.abdab.noshm, cov2.abdab.257lost)   # or left_join?
+cov2.abdab.noshm <- bind_rows(cov2.abdab.noshm, cov2.abdab.257lost)
 
 
-toshiny.cov2.abdab.fullv <- full_join(toshiny.cov2.abdab.fullvtoaddshm, cov2.abdab.noshm)   # or left_join?
+toshiny.cov2.abdab.fullv <- full_join(toshiny.cov2.abdab.fullvtoaddshm, cov2.abdab.noshm)
 # resulting search adds SHM data to 1,493 sequences - toshiny_cov2_abdab_withfullv.tab
 
 ## now some last clean up steps
