@@ -30,8 +30,11 @@ When making topologies there is an upper limit for making these on the fly. We r
 
 ## Citation
 To cite AIRRscape in publications, use:
+
 AIRRscape: an interactive tool for exploring B-cell receptor repertoires and antibody responses
+
 Eric Waltari, Saba Nafees, Joan Wong, Krista M. McCutcheon, John E. Pak
+
 bioRxiv 2022.03.24.485594; doi: https://doi.org/10.1101/2022.03.24.485594
 
 (modified using RStudio)
