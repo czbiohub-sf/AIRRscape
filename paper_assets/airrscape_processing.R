@@ -40,43 +40,6 @@ is.wholenumber <- function(x, tol = .Machine$double.eps^0.5) {
 #setwd("~/data_carpentry/AIRRscape")
 
 
-### LOADING AND CONVERTING INTERMEDIATE DATASETS
-cov2.bulk.binder.p11 <- read_tsv("paper_assets/intermediate_files/Binder_p11_germ-pass.tsv.gz")   # v_identity between 0.60 and 1, sequences renamed, have clone_id & germline_alignment_d_mask, NOT cdr3_aa
-cov2.bulk.nielsen.p7450 <- read_tsv("paper_assets/intermediate_files/Nielsen_7450_airr-covid-19.tsv.gz")   # v_identity between 60 and 100, has cdr3_aa
-cov2.bulk.galson.p1 <- read_tsv("paper_assets/intermediate_files/Galson_p1_germ-pass.tsv.gz")   # v_identity between 0.60 and 1, sequences renamed, have clone_id & germline_alignment_d_mask, NOT cdr3_aa
-cov2.bulk.kc.m5.allreps <- read_tsv("paper_assets/intermediate_files/Kuri-Cervantes_M5-reps1to4_airr-covid-19.tsv.gz")   # v_identity between 0.60 and 1, NOT cdr3_aa
-
-hiv.bulk.nih45 <- read_tsv("paper_assets/intermediate_files/hivnih45_vdjserver.tsv.gz")
-hiv.bulk.mt1214 <- read_tsv("paper_assets/intermediate_files/MT1214downloaded.tab.gz")
-
-den.bulk.OAS <- read_tsv("paper_assets/intermediate_files/OAS_sept21_germ-pass2.tsv.gz")
-den.bulk.d13enrich <- read_tsv("paper_assets/intermediate_files/d13_2enrichHC_germ-pass.tsv.gz")
-den.bulk.d13stim <- read_tsv("paper_assets/intermediate_files/d13_2stimHC_germ-pass.tsv.gz")
-hc.BXmay.10mstim <- read_tsv("paper_assets/intermediate_files/BXmay10mstimHC_germ-pass.tsv.gz")
-
-## Setliff 2018 data is too large to be combined, so 12 separate files
-hiv.bulk.cap287.3y <- read_tsv("paper_assets/intermediate_files/hiv_bulk_cap287_3y.tab.gz")
-hiv.bulk.cap287.6m <- read_tsv("paper_assets/intermediate_files/hiv_bulk_cap287_6m.tab.gz")
-hiv.bulk.cap301.3y <- read_tsv("paper_assets/intermediate_files/hiv_bulk_cap301_3y.tab.gz")
-hiv.bulk.cap301.6m <- read_tsv("paper_assets/intermediate_files/hiv_bulk_cap301_6m.tab.gz")
-hiv.bulk.cap312.3y <- read_tsv("paper_assets/intermediate_files/hiv_bulk_cap312_3y.tab.gz")
-hiv.bulk.cap312.6m <- read_tsv("paper_assets/intermediate_files/hiv_bulk_cap312_6m.tab.gz")
-hiv.bulk.cap322.3y <- read_tsv("paper_assets/intermediate_files/hiv_bulk_cap322_3y.tab.gz")
-hiv.bulk.cap322.6m <- read_tsv("paper_assets/intermediate_files/hiv_bulk_cap322_6m.tab.gz")
-hiv.bulk.cap335.3y <- read_tsv("paper_assets/intermediate_files/hiv_bulk_cap335_3y.tab.gz")
-hiv.bulk.cap335.6m <- read_tsv("paper_assets/intermediate_files/hiv_bulk_cap335_6m.tab.gz")
-hiv.bulk.cap351.3y <- read_tsv("paper_assets/intermediate_files/hiv_bulk_cap351_3y.tab.gz")
-hiv.bulk.cap351.6m <- read_tsv("paper_assets/intermediate_files/hiv_bulk_cap351_6m.tab.gz")
-
-
-### lists of mabs
-toshiny.cov2.abdab <- read_tsv("shinyapp/toshiny_cov2_abdab.tab")
-den.mabs <- read_tsv("paper_assets/intermediate_files/toshiny_den_mabs0_germ-pass.tsv")
-
-# for HIV 3 sources: IEDB, CATNAP & Yacoob
-toshiny.hiv.mabs.all <- read_tsv("paper_assets/intermediate_files/toshiny_hiv_mabs_all.tab")
-
-
 ##################################################################################################################
 ### COMMANDS FOR READING IN AIRR-COMPLIANT DATASETS FOR SHINY APP
 ### note that for non-AIRR (e.g. older Immcantation data or databases like AbDab) datasets, column names will be different
@@ -191,6 +154,31 @@ shinyprocess <- function(x, filter_columns = TRUE, renumber_sequences = TRUE, fi
   return(x)
 }
 
+
+### LOADING AND CONVERTING INTERMEDIATE DATASETS
+cov2.bulk.binder.p11 <- read_tsv("paper_assets/intermediate_files/Binder_p11_germ-pass.tsv.gz")   # v_identity between 0.60 and 1, sequences renamed, have clone_id & germline_alignment_d_mask, NOT cdr3_aa
+cov2.bulk.nielsen.p7450 <- read_tsv("paper_assets/intermediate_files/Nielsen_7450_airr-covid-19.tsv.gz")   # v_identity between 60 and 100, has cdr3_aa
+cov2.bulk.galson.p1 <- read_tsv("paper_assets/intermediate_files/Galson_p1_germ-pass.tsv.gz")   # v_identity between 0.60 and 1, sequences renamed, have clone_id & germline_alignment_d_mask, NOT cdr3_aa
+cov2.bulk.kc.m5.allreps <- read_tsv("paper_assets/intermediate_files/Kuri-Cervantes_M5-reps1to4_airr-covid-19.tsv.gz")   # v_identity between 0.60 and 1, NOT cdr3_aa
+
+hiv.bulk.nih45 <- read_tsv("paper_assets/intermediate_files/hivnih45_vdjserver.tsv.gz")
+hiv.bulk.mt1214 <- read_tsv("paper_assets/intermediate_files/MT1214downloaded.tab.gz")
+
+den.bulk.OAS <- read_tsv("paper_assets/intermediate_files/OAS_sept21_germ-pass2.tsv.gz")
+den.bulk.d13enrich <- read_tsv("paper_assets/intermediate_files/d13_2enrichHC_germ-pass.tsv.gz")
+den.bulk.d13stim <- read_tsv("paper_assets/intermediate_files/d13_2stimHC_germ-pass.tsv.gz")
+hc.BXmay.10mstim <- read_tsv("paper_assets/intermediate_files/BXmay10mstimHC_germ-pass.tsv.gz")
+
+## Setliff 2018 data is too large to be combined, so 12 separate files
+## at this point memory might be running low...to alleviate, adding Setliff files later, and removing intermediate datasets immediately after running each shinyprocess function...
+
+### lists of mabs
+toshiny.cov2.abdab <- read_tsv("shinyapp/toshiny_cov2_abdab.tab")
+den.mabs <- read_tsv("paper_assets/intermediate_files/toshiny_den_mabs0_germ-pass.tsv")
+
+# for HIV 3 sources: IEDB, CATNAP & Yacoob
+toshiny.hiv.mabs.all <- read_tsv("paper_assets/intermediate_files/toshiny_hiv_mabs_all.tab")
+
 #################################################################
 ## checking names
 den.bulk.OAS$sequence_id[1]          #name ok
@@ -206,30 +194,67 @@ hc.BXmay.10mstim$sequence_id[1]
 
 
 ## PROCESSING OF THESE INTERMEDIATE FILES USING SHINYPROCESS
+## after running function remove large intermediate files
+
 toshiny.den.bulk.d13enrich <- shinyprocess(den.bulk.d13enrich)
 toshiny.den.bulk.d13stim <- shinyprocess(den.bulk.d13stim)
 toshiny.den.bulk.OAS <- shinyprocess(den.bulk.OAS, renumber_sequences = FALSE)
+rm(den.bulk.OAS)
+rm(den.bulk.d13enrich)
+rm(den.bulk.d13stim)
 
 toshiny.hiv.bulk.mt1214 <- shinyprocess(hiv.bulk.mt1214)
 toshiny.hiv.bulk.nih45 <- shinyprocess(hiv.bulk.nih45)
+rm(hiv.bulk.nih45)
+rm(hiv.bulk.mt1214)
 
 toshiny.hc.BXmay.10mstim <- shinyprocess(hc.BXmay.10mstim)
+rm(hc.BXmay.10mstim)
 
 toshiny.cov2.bulk.binder.p11 <- shinyprocess(cov2.bulk.binder.p11)
 toshiny.cov2.bulk.galson.p1 <- shinyprocess(cov2.bulk.galson.p1)
 toshiny.cov2.bulk.nielsen.p7450 <- shinyprocess(cov2.bulk.nielsen.p7450)
 toshiny.cov2.bulk.kc.m5.allreps <- shinyprocess(cov2.bulk.kc.m5.allreps)
+rm(cov2.bulk.binder.p11)
+rm(cov2.bulk.nielsen.p7450)
+rm(cov2.bulk.galson.p1)
+rm(cov2.bulk.kc.m5.allreps)
 
 ## dengue maps need processing, HIV & CoV2 are processed in airrscape_preprocessing script
 toshiny.den.mabs <- shinyprocess(den.mabs, renumber_sequences = FALSE, filter_after_counting = FALSE)
 
 ## for Setliff datasets, run Shinyprocess on each timepoint individually
+## breaking in two sets of six...
+hiv.bulk.cap287.3y <- read_tsv("paper_assets/intermediate_files/hiv_bulk_cap287_3y.tab.gz")
+hiv.bulk.cap287.6m <- read_tsv("paper_assets/intermediate_files/hiv_bulk_cap287_6m.tab.gz")
+hiv.bulk.cap301.3y <- read_tsv("paper_assets/intermediate_files/hiv_bulk_cap301_3y.tab.gz")
+hiv.bulk.cap301.6m <- read_tsv("paper_assets/intermediate_files/hiv_bulk_cap301_6m.tab.gz")
+hiv.bulk.cap312.3y <- read_tsv("paper_assets/intermediate_files/hiv_bulk_cap312_3y.tab.gz")
+hiv.bulk.cap312.6m <- read_tsv("paper_assets/intermediate_files/hiv_bulk_cap312_6m.tab.gz")
+
 toshiny.hiv.bulk.cap287.3y <- shinyprocess(hiv.bulk.cap287.3y)
 toshiny.hiv.bulk.cap287.6m <- shinyprocess(hiv.bulk.cap287.6m)
 toshiny.hiv.bulk.cap301.3y <- shinyprocess(hiv.bulk.cap301.3y)
 toshiny.hiv.bulk.cap301.6m <- shinyprocess(hiv.bulk.cap301.6m)
 toshiny.hiv.bulk.cap312.3y <- shinyprocess(hiv.bulk.cap312.3y)
 toshiny.hiv.bulk.cap312.6m <- shinyprocess(hiv.bulk.cap312.6m)
+
+## after running function remove large intermediate files
+rm(hiv.bulk.cap287.3y)
+rm(hiv.bulk.cap287.6m)
+rm(hiv.bulk.cap301.3y)
+rm(hiv.bulk.cap301.6m)
+rm(hiv.bulk.cap312.3y)
+rm(hiv.bulk.cap312.6m)
+
+## second set
+hiv.bulk.cap322.3y <- read_tsv("paper_assets/intermediate_files/hiv_bulk_cap322_3y.tab.gz")
+hiv.bulk.cap322.6m <- read_tsv("paper_assets/intermediate_files/hiv_bulk_cap322_6m.tab.gz")
+hiv.bulk.cap335.3y <- read_tsv("paper_assets/intermediate_files/hiv_bulk_cap335_3y.tab.gz")
+hiv.bulk.cap335.6m <- read_tsv("paper_assets/intermediate_files/hiv_bulk_cap335_6m.tab.gz")
+hiv.bulk.cap351.3y <- read_tsv("paper_assets/intermediate_files/hiv_bulk_cap351_3y.tab.gz")
+hiv.bulk.cap351.6m <- read_tsv("paper_assets/intermediate_files/hiv_bulk_cap351_6m.tab.gz")
+
 toshiny.hiv.bulk.cap322.3y <- shinyprocess(hiv.bulk.cap322.3y)
 toshiny.hiv.bulk.cap322.6m <- shinyprocess(hiv.bulk.cap322.6m)
 toshiny.hiv.bulk.cap335.3y <- shinyprocess(hiv.bulk.cap335.3y)
@@ -237,30 +262,13 @@ toshiny.hiv.bulk.cap335.6m <- shinyprocess(hiv.bulk.cap335.6m)
 toshiny.hiv.bulk.cap351.3y <- shinyprocess(hiv.bulk.cap351.3y)
 toshiny.hiv.bulk.cap351.6m <- shinyprocess(hiv.bulk.cap351.6m)
 
-
 ## after running function remove large intermediate files
-rm(den.bulk.OAS)
-rm(den.bulk.d13enrich)
-rm(den.bulk.d13stim)
-rm(hiv.bulk.nih45)
-rm(hiv.bulk.mt1214)
-rm(cov2.bulk.binder.p11)
-rm(cov2.bulk.nielsen.p7450)
-rm(cov2.bulk.galson.p1)
-rm(cov2.bulk.kc.m5.allreps)
-rm(hc.BXmay.10mstim)
-rm(toshiny.hiv.bulk.cap287.3y)
-rm(toshiny.hiv.bulk.cap287.6m)
-rm(toshiny.hiv.bulk.cap301.3y)
-rm(toshiny.hiv.bulk.cap301.6m)
-rm(toshiny.hiv.bulk.cap312.3y)
-rm(toshiny.hiv.bulk.cap312.6m)
-rm(toshiny.hiv.bulk.cap322.3y)
-rm(toshiny.hiv.bulk.cap322.6m)
-rm(toshiny.hiv.bulk.cap335.3y)
-rm(toshiny.hiv.bulk.cap335.6m)
-rm(toshiny.hiv.bulk.cap351.3y)
-rm(toshiny.hiv.bulk.cap351.6m)
+rm(hiv.bulk.cap322.3y)
+rm(hiv.bulk.cap322.6m)
+rm(hiv.bulk.cap335.3y)
+rm(hiv.bulk.cap335.6m)
+rm(hiv.bulk.cap351.3y)
+rm(hiv.bulk.cap351.6m)
 
 ##############################################################################
 ##############################################################################
@@ -272,7 +280,6 @@ unique(toshiny.den.bulk.OAS$cregion)
 
 unique(toshiny.hiv.bulk.nih45$cregion)  ## ONE IGK!!
 unique(toshiny.hiv.bulk.mt1214$cregion) ## NA
-unique(toshiny.hiv.bulk.cap$cregion)
 
 unique(toshiny.hc.BXmay.10mstim$cregion)
 unique(toshiny.cov2.bulk.binder.p11$cregion)
@@ -343,6 +350,7 @@ toshiny.hiv.bulk.cap <- toshiny.hiv.bulk.cap %>%
   mutate(across(shm_max, round, 2)) %>% 
   mutate(across(shm_mean, round, 2))
 
+unique(toshiny.hiv.bulk.cap$cregion)
 
 ## next you may save these individually - further down are combinaation steps
 write.table(toshiny.den.bulk.d13stim, "toshiny_den_bulk_d13stim.tab", sep = "\t", row.names = FALSE, quote = FALSE)
@@ -379,48 +387,48 @@ write.table(toshiny.den.bulk.d13, "toshiny_den_bulk_d13.tab", sep = "\t", row.na
 ## CODE TO COMBINE DATASETS INTO A SINGLE FILE FOR SHINY VISUALIZATION (BOTH SEPARATE & COMBINED)
 #####################################################################################################################
 
-## files to use
-# toshiny.cov2.abdab  # by cregion
-# toshiny.cov2.abdab.h  # by binding & by neutralization
-
-## then 4 combinations
-# toshiny.cov2.all
-toshiny.cov2.abdab.h
-toshiny.cov2.bulk.binder.p11
-toshiny.cov2.bulk.galson.p1
-toshiny.cov2.bulk.kc.m5.allreps
-toshiny.cov2.bulk.nielsen.p7450
-toshiny.hc.BXmay.10mstim
-
-# toshiny.cov2hiv
-toshiny.cov2.abdab.h
-toshiny.hiv.mabs.all.h
-
-# all hiv
-toshiny.hiv.mabs.all.h
-toshiny.hiv.bulk.nih45
-toshiny.hiv.bulk.mt1214
-toshiny.hiv.bulk.cap
-
-# all den
-toshiny.den.mabs
-toshiny.den.bulk.OAS
-toshiny.den.bulk.d13
-
-## entire collection combined, will be called toshiny.cov2hivden.all
-toshiny.cov2.abdab.h
-toshiny.cov2.bulk.binder.p11
-toshiny.cov2.bulk.galson.p1
-toshiny.cov2.bulk.kc.m5.allreps
-toshiny.cov2.bulk.nielsen.p7450
-toshiny.hc.BXmay.10mstim
-toshiny.hiv.mabs.all.h
-toshiny.hiv.bulk.nih45
-toshiny.hiv.bulk.mt1214
-toshiny.hiv.bulk.cap
-toshiny.den.mabs
-toshiny.den.bulk.OAS
-toshiny.den.bulk.d13
+# ## files to use
+# # toshiny.cov2.abdab  # by cregion
+# # toshiny.cov2.abdab.h  # by binding & by neutralization
+# 
+# ## then 4 combinations
+# # toshiny.cov2.all
+# toshiny.cov2.abdab.h
+# toshiny.cov2.bulk.binder.p11
+# toshiny.cov2.bulk.galson.p1
+# toshiny.cov2.bulk.kc.m5.allreps
+# toshiny.cov2.bulk.nielsen.p7450
+# toshiny.hc.BXmay.10mstim
+# 
+# # toshiny.cov2hiv
+# toshiny.cov2.abdab.h
+# toshiny.hiv.mabs.all.h
+# 
+# # all hiv
+# toshiny.hiv.mabs.all.h
+# toshiny.hiv.bulk.nih45
+# toshiny.hiv.bulk.mt1214
+# toshiny.hiv.bulk.cap
+# 
+# # all den
+# toshiny.den.mabs
+# toshiny.den.bulk.OAS
+# toshiny.den.bulk.d13
+# 
+# ## entire collection combined, will be called toshiny.cov2hivden.all
+# toshiny.cov2.abdab.h
+# toshiny.cov2.bulk.binder.p11
+# toshiny.cov2.bulk.galson.p1
+# toshiny.cov2.bulk.kc.m5.allreps
+# toshiny.cov2.bulk.nielsen.p7450
+# toshiny.hc.BXmay.10mstim
+# toshiny.hiv.mabs.all.h
+# toshiny.hiv.bulk.nih45
+# toshiny.hiv.bulk.mt1214
+# toshiny.hiv.bulk.cap
+# toshiny.den.mabs
+# toshiny.den.bulk.OAS
+# toshiny.den.bulk.d13
 
 
 #####################################################
@@ -557,7 +565,6 @@ head(toshiny.hiv.all$sequence_id)
 toshiny.hiv.all$vj_junction_pattern <- NULL
 
 unique(toshiny.hiv.all$cregion)
-#[1] "IgH" "IgM" "IgG" "IgA" NA    "IgK
 
 ## for all combined need to recalculate ncount and shm_mean
 toshiny.hiv.allc <- toshiny.hiv.all
@@ -632,20 +639,21 @@ write.table(toshiny.den.all, "toshiny_den_all.tab", sep = "\t", row.names = FALS
 write.table(toshiny.den.allc, "toshiny_den_allc.tab", sep = "\t", row.names = FALSE, quote = FALSE)
 
 #####################################################
-# toshiny.cov2hivden.all
-toshiny.cov2.abdab.h
-toshiny.cov2.bulk.binder.p11
-toshiny.cov2.bulk.galson.p1
-toshiny.cov2.bulk.kc.m5.allreps
-toshiny.cov2.bulk.nielsen.p7450
-toshiny.hc.BXmay.10mstim
-toshiny.hiv.mabs.h
-toshiny.hiv.bulk.nih45
-toshiny.hiv.bulk.mt1214
-toshiny.hiv.bulk.cap
-toshiny.den.mabs
-toshiny.den.bulk.OAS
-toshiny.den.bulk.d13
+## combining all datasets
+# # toshiny.cov2hivden.all
+# toshiny.cov2.abdab.h
+# toshiny.cov2.bulk.binder.p11
+# toshiny.cov2.bulk.galson.p1
+# toshiny.cov2.bulk.kc.m5.allreps
+# toshiny.cov2.bulk.nielsen.p7450
+# toshiny.hc.BXmay.10mstim
+# toshiny.hiv.mabs.h
+# toshiny.hiv.bulk.nih45
+# toshiny.hiv.bulk.mt1214
+# toshiny.hiv.bulk.cap
+# toshiny.den.mabs
+# toshiny.den.bulk.OAS
+# toshiny.den.bulk.d13
 
 toshiny.cov2hivden.all <- bind_rows(toshiny.cov2.abdab.h, toshiny.cov2.bulk.binder.p11, toshiny.cov2.bulk.galson.p1, toshiny.cov2.bulk.kc.m5.allreps, toshiny.cov2.bulk.nielsen.p7450, toshiny.hc.BXmay.10mstim, toshiny.hiv.mabs.all.h, toshiny.hiv.bulk.mt1214, toshiny.hiv.bulk.nih45, toshiny.hiv.bulk.cap, toshiny.den.mabs.h, toshiny.den.bulk.d13, toshiny.den.bulk.OAS, .id = "id")
 
@@ -665,7 +673,6 @@ toshiny.cov2hivden.all$id <- gsub("7","HIV mAbs",toshiny.cov2hivden.all$id)
 toshiny.cov2hivden.all$id <- gsub("8","HIV Setliff twozerooneeight patient bulk repertoires",toshiny.cov2hivden.all$id)
 toshiny.cov2hivden.all$id <- gsub("9","HIV patient NIHfourfive bulk repertoire",toshiny.cov2hivden.all$id)
 
-
 toshiny.cov2hivden.all$id <- gsub("SARS-CoVtwo mAbs","SARS-CoV2 mAbs",toshiny.cov2hivden.all$id)
 toshiny.cov2hivden.all$id <- gsub("COVID-nineteen patient Binder peleven","COVID-19 patient Binder p11 bulk repertoire",toshiny.cov2hivden.all$id)
 toshiny.cov2hivden.all$id <- gsub("COVID-nineteen patient Galson pone","COVID-19 patient Galson p1 bulk repertoire",toshiny.cov2hivden.all$id)
@@ -678,10 +685,8 @@ toshiny.cov2hivden.all$id <- gsub("HIV patient NIHfourfive bulk repertoire","HIV
 toshiny.cov2hivden.all$id <- gsub("HIV patient MTonetwoonefour bulk repertoire","HIV patient MT1214 bulk repertoire",toshiny.cov2hivden.all$id)
 toshiny.cov2hivden.all$id <- gsub("Dengue Parameswaran twozeroonethree patient bulk repertoires","Dengue Parameswaran 2013 patient bulk repertoires",toshiny.cov2hivden.all$id)
 
-
 unique(toshiny.cov2hivden.all$id)
 head(toshiny.cov2hivden.all$sequence_id)
-
 
 ## for all combined need to recalculate ncount and shm_mean
 toshiny.cov2hivden.allc <- toshiny.cov2hivden.all
