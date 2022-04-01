@@ -1,5 +1,8 @@
 # AIRRscape: an interactive tool for exploring B-cell receptor repertoires and antibody responses  
 
+![](fig2b_forcomms.png)
+
+
 ## Dependencies
 Have RStudio downloaded: https://www.rstudio.com/products/rstudio/download/
 
