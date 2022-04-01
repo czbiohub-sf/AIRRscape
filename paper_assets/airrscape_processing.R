@@ -3,6 +3,14 @@
 # pkgs = c("alakazam", "igraph", "dplyr","RColorBrewer", "hexbin", "scales","grid", "lattice", "gdata","gridExtra", "ape", "shazam","reshape2", "DT","ggplot2", "seqinr", "phangorn","shiny","rlang", "knitr", tidyverse") # package names
 # install.packages(pkgs)
 
+## for alakazam & shazam, need to use Bioconductor to install 2 dependent packages:
+# if (!require("BiocManager", quietly = TRUE))
+#   install.packages("BiocManager")
+# 
+# BiocManager::install("Biostrings")
+# BiocManager::install("GenomicAlignments")
+## note when Bioconductor asks whether to update all/some/none of the old packages, selected 'none'
+
 library(alakazam)
 library(igraph)
 library(dplyr)
