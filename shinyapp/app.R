@@ -24,48 +24,39 @@ options(shiny.maxRequestSize=200*1024^2)
 ##########
 
 ## datasets to load
-toshiny.cov2.abdab <- read.delim("toshiny_cov2_abdab.tab")
-toshiny.cov2.abdab.h <- read.delim("toshiny_cov2_abdab_h.tab")
+toshiny.cov2.abdab <- read_tsv("toshiny_cov2_abdab.tab")
+toshiny.cov2.abdab.h <- read_tsv("toshiny_cov2_abdab_h.tab")
 
-toshiny.cov2hiv <- read.delim("toshiny_cov2hiv.tab")
-toshiny.cov2hivc <- read.delim("toshiny_cov2hivc.tab")
+toshiny.cov2hiv <- read_tsv("toshiny_cov2hiv.tab")
+toshiny.cov2hivc <- read_tsv("toshiny_cov2hivc.tab")
 
-toshiny.cov2.all <- read.delim("toshiny_cov2_all.tab")
-toshiny.cov2.allc <- read.delim("toshiny_cov2_allc.tab")
+toshiny.cov2.all <- read_tsv("toshiny_cov2_all.tab")
+toshiny.cov2.allc <- read_tsv("toshiny_cov2_allc.tab")
 
-toshiny.hiv.all <- read.delim("toshiny_hiv_all.tab")
-toshiny.hiv.allc <- read.delim("toshiny_hiv_allc.tab")
+toshiny.hiv.all <- read_tsv("toshiny_hiv_all.tab")
+toshiny.hiv.allc <- read_tsv("toshiny_hiv_allc.tab")
 
-toshiny.den.all <- read.delim("toshiny_den_all.tab")
-toshiny.den.allc <- read.delim("toshiny_den_allc.tab")
+toshiny.den.all <- read_tsv("toshiny_den_all.tab")
+toshiny.den.allc <- read_tsv("toshiny_den_allc.tab")
 
 #toshiny.cov2hivden.allc <- read.delim("toshiny_cov2hivden_allc.tab")
 
 ## then for each dataframe change sequence_id & cdr3_aa_imgt columns to character
-toshiny.cov2.abdab$sequence_id <- as.character(toshiny.cov2.abdab$sequence_id)
-toshiny.cov2.abdab$cdr3_aa_imgt <- as.character(toshiny.cov2.abdab$cdr3_aa_imgt)
-toshiny.cov2.abdab.h$sequence_id <- as.character(toshiny.cov2.abdab.h$sequence_id)
-toshiny.cov2.abdab.h$cdr3_aa_imgt <- as.character(toshiny.cov2.abdab.h$cdr3_aa_imgt)
+## if using read_tsv do not need, but also need to change to non-tibble df for treebuilding
+toshiny.cov2.abdab <- toshiny.cov2.abdab %>% as.data.frame()
+toshiny.cov2.abdab.h <- toshiny.cov2.abdab.h %>% as.data.frame()
 
-toshiny.cov2hiv$sequence_id <- as.character(toshiny.cov2hiv$sequence_id)
-toshiny.cov2hiv$cdr3_aa_imgt <- as.character(toshiny.cov2hiv$cdr3_aa_imgt)
-toshiny.cov2hivc$sequence_id <- as.character(toshiny.cov2hivc$sequence_id)
-toshiny.cov2hivc$cdr3_aa_imgt <- as.character(toshiny.cov2hivc$cdr3_aa_imgt)
+toshiny.cov2hiv <- toshiny.cov2hiv %>% as.data.frame()
+toshiny.cov2hivc <- toshiny.cov2hivc %>% as.data.frame()
 
-toshiny.cov2.all$sequence_id <- as.character(toshiny.cov2.all$sequence_id)
-toshiny.cov2.all$cdr3_aa_imgt <- as.character(toshiny.cov2.all$cdr3_aa_imgt)
-toshiny.cov2.allc$sequence_id <- as.character(toshiny.cov2.allc$sequence_id)
-toshiny.cov2.allc$cdr3_aa_imgt <- as.character(toshiny.cov2.allc$cdr3_aa_imgt)
+toshiny.cov2.all <- toshiny.cov2.all %>% as.data.frame()
+toshiny.cov2.allc <- toshiny.cov2.allc %>% as.data.frame()
 
-toshiny.hiv.all$sequence_id <- as.character(toshiny.hiv.all$sequence_id)
-toshiny.hiv.all$cdr3_aa_imgt <- as.character(toshiny.hiv.all$cdr3_aa_imgt)
-toshiny.hiv.allc$sequence_id <- as.character(toshiny.hiv.allc$sequence_id)
-toshiny.hiv.allc$cdr3_aa_imgt <- as.character(toshiny.hiv.allc$cdr3_aa_imgt)
+toshiny.hiv.all <- toshiny.hiv.all %>% as.data.frame()
+toshiny.hiv.allc <- toshiny.hiv.allc %>% as.data.frame()
 
-toshiny.den.all$sequence_id <- as.character(toshiny.den.all$sequence_id)
-toshiny.den.all$cdr3_aa_imgt <- as.character(toshiny.den.all$cdr3_aa_imgt)
-toshiny.den.allc$sequence_id <- as.character(toshiny.den.allc$sequence_id)
-toshiny.den.allc$cdr3_aa_imgt <- as.character(toshiny.den.allc$cdr3_aa_imgt)
+toshiny.den.all <- toshiny.den.all %>% as.data.frame()
+toshiny.den.allc <- toshiny.den.allc %>% as.data.frame()
 
 # toshiny.cov2hivden.allc$sequence_id <- as.character(toshiny.cov2hivden.allc$sequence_id)
 # toshiny.cov2hivden.allc$cdr3_aa_imgt <- as.character(toshiny.cov2hivden.allc$cdr3_aa_imgt)
@@ -141,7 +132,9 @@ ui <- fluidPage(
       div(style="display: inline-block; width: 300px;",
           sliderInput("height", "Topology height", min = 200, max = 4200, value = 1000)),
       div(style="display: inline-block; width: 300px;",
-          sliderInput("width", "Topology width", min = 1000, max = 3000, value = 1600)),
+          sliderInput("width", "Topology width", min = 100, max = 3000, value = 1600)),
+      div(style="display: inline-block; width: 300px;",
+          sliderInput("width2", "Topology width2", min = 0, max = 45, value = 5)),
       div(HTML("<br>")),br(),
       plotOutput("phyloPlot", inline = TRUE),
       ## new code ot take screenshots from https://deanattali.com/blog/shinyscreenshot-release/
@@ -389,8 +382,8 @@ server <- function(input, output, session) {
   })  
   
   output$phyloPlot <- renderPlot(
-    height = function() input$height,
-    width = function() input$width, {
+    width = function() input$width,
+    height = function() input$height, {
       par(family = "mono", mar=c(0.3, 0, 0.3, 0) + 2.2)
       if (v$doPlot == FALSE) return()
       
@@ -547,7 +540,7 @@ server <- function(input, output, session) {
         tipcolors <- def(tree$tip.label, "hc" = "gray20", "nielsen" = "coral", "galson" = "indianred", "binder" = "orange", "kc" = "sienna", "mt1214" = "limegreen", "nih45" = "seagreen", "bulk-cap" = "darkgreen", "d13" = "blue", "Parameswaran" = "goldenrod", "SARS-CoV2-mAb" = "orchid", "plasmablasts" = "orchid", "denmab" = "orchid", "HIV-IEDBmAb" = "orchid", "HIV-CATNAPmAb" = "orchid", "HIV-Yacoob-mAb" = "orchid",default = "black", regexp = TRUE)
         ### below changing to midpoint of tree
         plot(midpoint(tree), lab4ut="axial",
-             edge.width=2, label.offset = 0, cex = 1.2, align.tip.label = TRUE, adj = 1, no.margin = FALSE, font = 4, tip.color = tipcolors)  ## x.lim breaks parsimony and some NJ
+             edge.width=2, label.offset = 0, cex = 1.2, align.tip.label = TRUE, adj = 1, no.margin = FALSE, font = 4, tip.color = tipcolors, x.lim = input$width2)  ## x.lim breaks parsimony and some NJ
         add.scale.bar(cex = 1.2, font = 4, lwd = 2)  ## was x = 1, y = -0.1, not sure if this will always work or be meaningful  , x.lim = 15 can also try x.lim = 50 - seems to work only with nearest 50/500 not with NJ or parsimony
         gjcdr3.title <- filteredData
         gjcdr3.title$cdr3length_imgt <- as.numeric(gjcdr3.title$cdr3length_imgt)
