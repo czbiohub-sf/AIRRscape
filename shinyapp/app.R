@@ -24,22 +24,22 @@ options(shiny.maxRequestSize=200*1024^2)
 ##########
 
 ## datasets to load
-toshiny.cov2.abdab <- read_tsv("toshiny_cov2_abdab.tab")
-toshiny.cov2.abdab.h <- read_tsv("toshiny_cov2_abdab_h.tab")
+toshiny.cov2.abdab <- read.delim("toshiny_cov2_abdab.tab")
+toshiny.cov2.abdab.h <- read.delim("toshiny_cov2_abdab_h.tab")
 
-toshiny.cov2hiv <- read_tsv("toshiny_cov2hiv.tab")
-toshiny.cov2hivc <- read_tsv("toshiny_cov2hivc.tab")
+toshiny.cov2hiv <- read.delim("toshiny_cov2hiv.tab")
+toshiny.cov2hivc <- read.delim("toshiny_cov2hivc.tab")
 
-toshiny.cov2.all <- read_tsv("toshiny_cov2_all.tab")
-toshiny.cov2.allc <- read_tsv("toshiny_cov2_allc.tab")
+toshiny.cov2.all <- read.delim("toshiny_cov2_all.tab")
+toshiny.cov2.allc <- read.delim("toshiny_cov2_allc.tab")
 
-toshiny.hiv.all <- read_tsv("toshiny_hiv_all.tab")
-toshiny.hiv.allc <- read_tsv("toshiny_hiv_allc.tab")
+toshiny.hiv.all <- read.delim("toshiny_hiv_all.tab")
+toshiny.hiv.allc <- read.delim("toshiny_hiv_allc.tab")
 
-toshiny.den.all <- read_tsv("toshiny_den_all.tab")
-toshiny.den.allc <- read_tsv("toshiny_den_allc.tab")
+toshiny.den.all <- read.delim("toshiny_den_all.tab")
+toshiny.den.allc <- read.delim("toshiny_den_allc.tab")
 
-#toshiny.cov2hivden.allc <- read_tsv("toshiny_cov2hivden_allc.tab")
+#toshiny.cov2hivden.allc <- read.delim("toshiny_cov2hivden_allc.tab")
 
 ## then for each dataframe change sequence_id & cdr3_aa_imgt columns to character
 toshiny.cov2.abdab$sequence_id <- as.character(toshiny.cov2.abdab$sequence_id)
