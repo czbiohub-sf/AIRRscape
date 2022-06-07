@@ -152,8 +152,8 @@ server <- function(input, output, session) {
   uploads1 <- reactive({
     if (!is.null(input$calfile1)) {
     upload1 <- read.delim(input$calfile1$datapath)
-    upload1$sequence_id <- as.character(upload1$sequence_id)
-    upload1$cdr3_aa_imgt <- as.character(upload1$cdr3_aa_imgt)
+    # upload1$sequence_id <- as.character(upload1$sequence_id)
+    # upload1$cdr3_aa_imgt <- as.character(upload1$cdr3_aa_imgt)
     upload1
     }
   })
@@ -161,35 +161,35 @@ server <- function(input, output, session) {
   uploads2 <- reactive({
     if (!is.null(input$calfile2)) {
       upload2 <- read.delim(input$calfile2$datapath)
-      upload2$sequence_id <- as.character(upload2$sequence_id)
-      upload2$cdr3_aa_imgt <- as.character(upload2$cdr3_aa_imgt)
+      # upload2$sequence_id <- as.character(upload2$sequence_id)
+      # upload2$cdr3_aa_imgt <- as.character(upload2$cdr3_aa_imgt)
       upload2
     }
   })
   
 ## JW idea: add an else if, running the convert function if needed...? but also need to combine datasets, not just convert...
-  # convert1 <- reactive({
-  #   uploaded_dataset1 <- uploads1()
-  #   if (is.null(uploaded_dataset1$gf_jgene)) {
-  #     upload1afterconv <- shinyprocess(uploaded_dataset1)
-  #     } else {
-  #       upload1afterconv <- uploaded_dataset1
-  #     }
-  #   upload1afterconv$sequence_id <- as.character(upload1afterconv$sequence_id)
-  #   upload1afterconv$cdr3_aa_imgt <- as.character(upload1afterconv$cdr3_aa_imgt)
-  #   upload1afterconv
-  #   })
-  # convert2 <- reactive({
-  #   uploaded_dataset2 <- uploads2()
-  #   if (is.null(uploaded_dataset2$gf_jgene)) {
-  #     upload2afterconv <- shinyprocess(uploaded_dataset2)
-  #   } else {
-  #     upload2afterconv <- uploaded_dataset2
-  #   }
-  #   upload2afterconv$sequence_id <- as.character(upload2afterconv$sequence_id)
-  #   upload2afterconv$cdr3_aa_imgt <- as.character(upload2afterconv$cdr3_aa_imgt)
-  #   upload2afterconv
-  # })
+  convert1 <- reactive({
+    uploaded_dataset1 <- uploads1()
+    if (is.null(uploaded_dataset1$gf_jgene)) {
+      upload1afterconv <- shinyprocess(uploaded_dataset1)
+      } else {
+        upload1afterconv <- uploaded_dataset1
+      }
+    upload1afterconv$sequence_id <- as.character(upload1afterconv$sequence_id)
+    upload1afterconv$cdr3_aa_imgt <- as.character(upload1afterconv$cdr3_aa_imgt)
+    upload1afterconv
+    })
+  convert2 <- reactive({
+    uploaded_dataset2 <- uploads2()
+    if (is.null(uploaded_dataset2$gf_jgene)) {
+      upload2afterconv <- shinyprocess(uploaded_dataset2)
+    } else {
+      upload2afterconv <- uploaded_dataset2
+    }
+    upload2afterconv$sequence_id <- as.character(upload2afterconv$sequence_id)
+    upload2afterconv$cdr3_aa_imgt <- as.character(upload2afterconv$cdr3_aa_imgt)
+    upload2afterconv
+  })
 
   facetvar1 <- reactive({
     switch(input$dataset, "SARS-CoV2 mAbs - heavy chains & light chains" = "cregion", "SARS-CoV2 mAbs - IgH by binding" = "binding", "SARS-CoV2 mAbs - IgH by neutralization" = "neutralization", "SARS-CoV2 mAbs vs. 4 COVID-19 patient bulk repertoires vs. Healthy control bulk repertoire - IgH" = "id", "SARS-CoV2 mAbs vs. 4 COVID-19 patient bulk repertoires vs. Healthy control bulk repertoire - IgH combined" = "cregion", "SARS-CoV2 mAbs vs. HIV mAbs - IgH" = "id", "SARS-CoV2 mAbs vs. HIV mAbs - IgH combined" = "cregion", "HIV mAbs vs. HIV patient MT1214 bulk repertoire vs. HIV patient NIH45 bulk repertoire vs. HIV Setliff 2018 patient bulk repertoires - IgH" = "id", "HIV mAbs vs. HIV patient MT1214 bulk repertoire vs. HIV patient NIH45 bulk repertoire vs. HIV Setliff 2018 patient bulk repertoires - IgH combined" = "cregion", "Dengue mAbs vs. Dengue patient d13 bulk repertoire vs. Dengue Parameswaran 2013 patient bulk repertoires - IgH" = "id", "Dengue mAbs vs. Dengue patient d13 bulk repertoire vs. Dengue Parameswaran 2013 patient bulk repertoires - IgH combined" = "cregion", "Your datasets - IgH" = "id", "Your datasets - IgH combined" = "cregion")
@@ -201,7 +201,7 @@ server <- function(input, output, session) {
   
   inputdataset <- reactive({
     ## using new names that reduce variables, round
-    switch(input$dataset, "SARS-CoV2 mAbs - heavy chains & light chains" = toshiny.cov2.abdab, "SARS-CoV2 mAbs - IgH by binding" = toshiny.cov2.abdab.h, "SARS-CoV2 mAbs - IgH by neutralization" = toshiny.cov2.abdab.h, "SARS-CoV2 mAbs vs. 4 COVID-19 patient bulk repertoires vs. Healthy control bulk repertoire - IgH" = toshiny.cov2.all, "SARS-CoV2 mAbs vs. 4 COVID-19 patient bulk repertoires vs. Healthy control bulk repertoire - IgH combined" = toshiny.cov2.allc, "SARS-CoV2 mAbs vs. HIV mAbs - IgH" = toshiny.cov2hiv, "SARS-CoV2 mAbs vs. HIV mAbs - IgH combined" = toshiny.cov2hivc, "HIV mAbs vs. HIV patient MT1214 bulk repertoire vs. HIV patient NIH45 bulk repertoire vs. HIV Setliff 2018 patient bulk repertoires - IgH" = toshiny.hiv.all, "HIV mAbs vs. HIV patient MT1214 bulk repertoire vs. HIV patient NIH45 bulk repertoire vs. HIV Setliff 2018 patient bulk repertoires - IgH combined" = toshiny.hiv.allc, "Dengue mAbs vs. Dengue patient d13 bulk repertoire vs. Dengue Parameswaran 2013 patient bulk repertoires - IgH" = toshiny.den.all, "Dengue mAbs vs. Dengue patient d13 bulk repertoire vs. Dengue Parameswaran 2013 patient bulk repertoires - IgH combined" = toshiny.den.allc, "Your datasets - IgH" = uploads1(), "Your datasets - IgH combined" = uploads2())
+    switch(input$dataset, "SARS-CoV2 mAbs - heavy chains & light chains" = toshiny.cov2.abdab, "SARS-CoV2 mAbs - IgH by binding" = toshiny.cov2.abdab.h, "SARS-CoV2 mAbs - IgH by neutralization" = toshiny.cov2.abdab.h, "SARS-CoV2 mAbs vs. 4 COVID-19 patient bulk repertoires vs. Healthy control bulk repertoire - IgH" = toshiny.cov2.all, "SARS-CoV2 mAbs vs. 4 COVID-19 patient bulk repertoires vs. Healthy control bulk repertoire - IgH combined" = toshiny.cov2.allc, "SARS-CoV2 mAbs vs. HIV mAbs - IgH" = toshiny.cov2hiv, "SARS-CoV2 mAbs vs. HIV mAbs - IgH combined" = toshiny.cov2hivc, "HIV mAbs vs. HIV patient MT1214 bulk repertoire vs. HIV patient NIH45 bulk repertoire vs. HIV Setliff 2018 patient bulk repertoires - IgH" = toshiny.hiv.all, "HIV mAbs vs. HIV patient MT1214 bulk repertoire vs. HIV patient NIH45 bulk repertoire vs. HIV Setliff 2018 patient bulk repertoires - IgH combined" = toshiny.hiv.allc, "Dengue mAbs vs. Dengue patient d13 bulk repertoire vs. Dengue Parameswaran 2013 patient bulk repertoires - IgH" = toshiny.den.all, "Dengue mAbs vs. Dengue patient d13 bulk repertoire vs. Dengue Parameswaran 2013 patient bulk repertoires - IgH combined" = toshiny.den.allc, "Your datasets - IgH" = convert1(), "Your datasets - IgH combined" = convert2())
   })
   ## extra filter for downloading
   filteredDS <- reactive({
