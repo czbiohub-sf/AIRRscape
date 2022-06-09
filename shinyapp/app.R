@@ -132,7 +132,7 @@ ui <- fluidPage(
       div(style="display: inline-block; width: 300px;",
           sliderInput("height", "Topology height", min = 200, max = 4200, value = 1000)),
       div(style="display: inline-block; width: 300px;",
-          sliderInput("width2", "Topology width", min = 0, max = 45, value = 5)),
+          sliderInput("width2", "Topology width (wider -> narrower)", min = 1, max = 150, value = 5)),
       # div(style="display: inline-block; width: 300px;",
       #     sliderInput("width", "Topology width2", min = 100, max = 3000, value = 1600)),
       div(HTML("<br>")),br(),
@@ -384,7 +384,7 @@ server <- function(input, output, session) {
   })  
   
   output$phyloPlot <- renderPlot(
-    width = 1600,
+    width = 1200,
     # width = function() input$width, ## can comment this width parameter out, only use width2
     height = function() input$height, {
       par(family = "mono", mar=c(0.3, 0, 0.3, 0) + 2.2)
@@ -543,7 +543,7 @@ server <- function(input, output, session) {
         tipcolors <- def(tree$tip.label, "hc" = "gray20", "nielsen" = "coral", "galson" = "indianred", "binder" = "orange", "kc" = "sienna", "mt1214" = "limegreen", "nih45" = "seagreen", "bulk-cap" = "darkgreen", "d13" = "blue", "Parameswaran" = "goldenrod", "SARS-CoV2-mAb" = "orchid", "plasmablasts" = "orchid", "denmab" = "orchid", "HIV-IEDBmAb" = "orchid", "HIV-CATNAPmAb" = "orchid", "HIV-Yacoob-mAb" = "orchid",default = "black", regexp = TRUE)
         ### below changing to midpoint of tree
         plot(midpoint(tree), lab4ut="axial",
-             edge.width=2, label.offset = 0, cex = 1.2, align.tip.label = TRUE, adj = 1, no.margin = FALSE, font = 4, tip.color = tipcolors, x.lim = input$width2)  ## x.lim breaks parsimony and some NJ
+             edge.width=2, label.offset = 0, cex = 1.2, align.tip.label = TRUE, adj = 1, no.margin = FALSE, font = 4, tip.color = tipcolors, x.lim = (input$width2)/4)  ## x.lim breaks parsimony and some NJ
         add.scale.bar(cex = 1.2, font = 4, lwd = 2)  ## was x = 1, y = -0.1, not sure if this will always work or be meaningful  , x.lim = 15 can also try x.lim = 50 - seems to work only with nearest 50/500 not with NJ or parsimony
         gjcdr3.title <- filteredData
         gjcdr3.title$cdr3length_imgt <- as.numeric(gjcdr3.title$cdr3length_imgt)
