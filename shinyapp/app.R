@@ -132,9 +132,9 @@ ui <- fluidPage(
       div(style="display: inline-block; width: 300px;",
           sliderInput("height", "Topology height", min = 200, max = 4200, value = 1000)),
       div(style="display: inline-block; width: 300px;",
-          sliderInput("width", "Topology width", min = 100, max = 3000, value = 1600)),
-      div(style="display: inline-block; width: 300px;",
-          sliderInput("width2", "Topology width2", min = 0, max = 45, value = 5)),
+          sliderInput("width2", "Topology width", min = 0, max = 45, value = 5)),
+      # div(style="display: inline-block; width: 300px;",
+      #     sliderInput("width", "Topology width2", min = 100, max = 3000, value = 1600)),
       div(HTML("<br>")),br(),
       plotOutput("phyloPlot", inline = TRUE),
       ## new code ot take screenshots from https://deanattali.com/blog/shinyscreenshot-release/
@@ -384,7 +384,7 @@ server <- function(input, output, session) {
   })  
   
   output$phyloPlot <- renderPlot(
-    width = function() input$width,
+    # width = function() input$width, ## can comment this width parameter out, only use width2
     height = function() input$height, {
       par(family = "mono", mar=c(0.3, 0, 0.3, 0) + 2.2)
       if (v$doPlot == FALSE) return()
