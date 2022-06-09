@@ -168,8 +168,8 @@ server <- function(input, output, session) {
   })
   
 ## JW idea: add an else if, running the convert function if needed...? but also need to combine datasets, not just convert...
-  convert1 <- NULL
-  convert2 <- NULL
+  # convert1 <- NULL
+  # convert2 <- NULL
   convert1 <- reactive({
     uploaded_dataset1 <- uploads1()
     if (is.null(uploaded_dataset1$gf_jgene)) {
@@ -384,6 +384,7 @@ server <- function(input, output, session) {
   })  
   
   output$phyloPlot <- renderPlot(
+    width = 1600,
     # width = function() input$width, ## can comment this width parameter out, only use width2
     height = function() input$height, {
       par(family = "mono", mar=c(0.3, 0, 0.3, 0) + 2.2)
