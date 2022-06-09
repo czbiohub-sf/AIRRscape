@@ -168,6 +168,8 @@ server <- function(input, output, session) {
   })
   
 ## JW idea: add an else if, running the convert function if needed...? but also need to combine datasets, not just convert...
+  convert1 <- NULL
+  convert2 <- NULL
   convert1 <- reactive({
     uploaded_dataset1 <- uploads1()
     if (is.null(uploaded_dataset1$gf_jgene)) {
