@@ -5,7 +5,7 @@
 #install.packages("DT")
 library(shiny)
 library(ggplot2)
-#library(alakazam)
+library(alakazam)
 library(tidyverse)
 library(DT)
 
@@ -20,8 +20,120 @@ library(ape)
 library(shinyscreenshot)
 
 setwd("~/data_carpentry/AIRRscape/shinyapp")
-options(shiny.maxRequestSize=200*1024^2)
+options(shiny.maxRequestSize=5000*1024^2)
 ##########
+
+## 2 more functions
+Mode <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
+
+
+is.wholenumber <- function(x, tol = .Machine$double.eps^0.5) {
+  abs(x - round(x)) < tol
+}
+### single processing function
+##################################################################################################################
+
+AIRRscapeprocess <- function(x, filter_columns = TRUE, filter_to_HC = TRUE, renumber_sequences = TRUE, filter_after_counting = TRUE) {
+  colname <- substitute(x)
+  ## this removes columns with all NAs
+  x <- x[!map_lgl(x, ~ all(is.na(.)))]
+  ## this calculates SHM but depending on whether v_identity is from 0 to 1 or 0 to 100
+  if (mean(x$v_identity) < 1) {
+    x$shm <- (100 - (x$v_identity * 100))
+  } else {
+    x$shm <- (100 - x$v_identity)
+  }
+  ## this makes new standard cdr3 column (sometimes already exists, but there should always be a junction_aa) by removing both ends of the junction_aa column
+  x$cdr3_aa_imgt <- x$junction_aa
+  str_sub(x$cdr3_aa_imgt, -1, -1) <- ""
+  str_sub(x$cdr3_aa_imgt, 1, 1) <- ""
+  ## this calculates the CDR3 length
+  x$cdr3length_imgt <- nchar(x$cdr3_aa_imgt)
+  ## removing non-productive, out of frame, stop codons, any X in CDR3 (was 'nnnn' in sequence)
+  x <- x %>% filter(productive != "FALSE") %>%
+    filter(vj_in_frame != "FALSE") %>%
+    filter(productive != "F") %>%
+    filter(vj_in_frame != "F")
+  x <- x[ grep("\\*", x$junction_aa, invert = TRUE) , ]
+  x <- x[ grep("\\X", x$junction_aa, invert = TRUE) , ]
+  ### removing all sequences with IMGT CDR3 less than 3
+  x <- x %>% filter(cdr3length_imgt > 2.8)  
+  ## next lines create V gene family, J gene columns
+  x$gene <- getGene(x$v_call, first=TRUE, strip_d=TRUE)
+  x$gf <- substring(x$gene, 1,5)
+  x$jgene <- getGene(x$j_call, first=TRUE, strip_d=TRUE)
+  ## this creates new column gf_jgene which is used in all shiny plots
+  x <- x %>% unite(gf_jgene, gf, jgene, sep = "_", remove = FALSE, na.rm = TRUE)
+  ## this removes any rows without CDR3, or with junctions that are not 3-mers
+  x <- x %>% filter(!is.na(cdr3length_imgt)) %>% 
+    filter(is.wholenumber(cdr3length_imgt))
+  # if there is a clone_id column this will make a count of reads_per_clone
+  if ("clone_id" %in% names(x)) {
+    x <- x %>% add_count(clone_id) %>%
+      rename(reads_per_clone = n)
+  }
+  ## if no cregion column, make one  !(x %in% y) - moving substitution from IG to Ig outside of the if to always have it...
+  if (!("cregion" %in% names(x))) {
+    x$cregion <- str_sub(x$v_call, end=3)
+    # x$cregion <- gsub('IG','Ig',x$cregion)
+  }
+  x$cregion <- gsub('IG','Ig',x$cregion)
+  ## adding conversion to standardize light chain naming if necessary...
+  x$cregion <- gsub("IgK","Kappa",x$cregion)
+  x$cregion <- gsub("IgL","Lambda",x$cregion)
+  ## making more important columns used in plotting, also a rounding step
+  x <- x %>%
+    add_count(gf_jgene,cdr3length_imgt) %>% 
+    rename(ncount = n) %>% 
+    group_by(gf_jgene,cdr3length_imgt) %>% 
+    mutate(shm_mean = mean(shm, na.rm = TRUE)) %>% 
+    # NOTE ADDIN MAX SHM AS WELL..
+    mutate(shm_max = max(shm, na.rm = TRUE)) %>% 
+    mutate(across(shm, round, 2)) %>% 
+    mutate(across(shm_max, round, 2)) %>% 
+    mutate(across(shm_mean, round, 2))
+  ## this will filter the dataset if filter_columns option is set to true - note the any_of which allows columns to be missing
+  vars2 <- c("sequence_id", "binding", "neutralization", "cregion", "cdr3_aa_imgt","gene", "gf_jgene", "gf","jgene", "cdr3length_imgt", "shm", "shm_max", "shm_mean", "ncount", "reads_per_clone")
+  if (filter_columns) {
+    x <- x %>% select(any_of(vars2))
+  }
+  ## this will filter to heavy chains only...
+  if (filter_to_HC) {
+    x <- x %>% filter(cregion == "IgH" | cregion == "IgA" | cregion == "IgD" | cregion == "IgE" | cregion == "IgG" | cregion == "IgM")
+  }
+  ## this will remove all redundant sequences with same gf/gene & cdr3 motif...note we count above so okay to collapse here!!
+  if (filter_after_counting) {
+    x <- x %>%
+      group_by(cdr3_aa_imgt,gf_jgene) %>%
+      summarize_all(first) %>%
+      rename(ncountfull = ncount) %>% 
+      ungroup() %>%
+      add_count(gf_jgene,cdr3length_imgt) %>% 
+      rename(ncount = n) %>%
+      relocate(ncount, .before = shm_mean)
+  }
+  ## this will make a new sequence_id column with new row names if renumber_sequences option is set to true MOVING LAST TO CHANGE X DEFINITION
+  if (renumber_sequences) {
+    ## NOTE THIS NOW WORKS, TRICK WAS TO ASSIGN COLNAME VERY EARLY ON BEFORE ANYTHING ELSE...
+    ## adding change from underscores to dashes...
+    x$dataset <- deparse(substitute(colname))
+    x$dataset <- gsub('"','',x$dataset)
+    x$dataset <- gsub("\\.","\\-",x$dataset)
+    x$dataset <- gsub("\\_","\\-",x$dataset)
+    x$obs <- 1:nrow(x) 
+    x <- x %>% unite(sequence_id, dataset, obs, sep = "_", remove = TRUE, na.rm = TRUE)
+    # x <- x %>% relocate(sequence_id, .before = cregion)  ## changed to default i.e. move to make first column
+    x <- x %>% relocate(sequence_id)
+    # x$sequence_id <- gsub("\\_","\\-",x$sequence_id) ## moved to always run
+  }
+  ## need to always check and remove underscores from all names
+  x$sequence_id <- gsub("\\_","\\-",x$sequence_id)
+  return(x)
+}
+
 
 ## datasets to load
 toshiny.cov2.abdab <- read_tsv("toshiny_cov2_abdab.tab")
@@ -92,12 +204,12 @@ ui <- fluidPage(
                     "Maximum SHM",
                     "Percentage of total antibody sequences"), selectize = FALSE), 
       fileInput(
-        inputId = "calfile1", 
+        inputId = "yourfile1", 
         label = "Select converted & combined tsv/tab files - first the separate datasets", 
         multiple = TRUE,
         accept = c(".tsv",".tab")),
       fileInput(
-        inputId = "calfile2", 
+        inputId = "yourfile2", 
         label = "Select converted & combined tsv/tab files - then the combined datasets", 
         multiple = TRUE,
         accept = c(".tsv",".tab")),
@@ -150,8 +262,9 @@ server <- function(input, output, session) {
   
 ## this only works if you include the if isn't null argument...also another tricky part is below where you specify these if selected (the inputdataset <- reactive({ part...), you need to add parentheses, so uploads1() and uploads2() !!!
   uploads1 <- reactive({
-    if (!is.null(input$calfile1)) {
-    upload1 <- read.delim(input$calfile1$datapath)
+    if (!is.null(input$yourfile1)) {
+    upload1 <- read_tsv(input$yourfile1$datapath) %>% as.data.frame()
+    # upload1 <- read.delim(input$yourfile1$datapath)
     # upload1$sequence_id <- as.character(upload1$sequence_id)
     # upload1$cdr3_aa_imgt <- as.character(upload1$cdr3_aa_imgt)
     upload1
@@ -159,8 +272,9 @@ server <- function(input, output, session) {
   })
 
   uploads2 <- reactive({
-    if (!is.null(input$calfile2)) {
-      upload2 <- read.delim(input$calfile2$datapath)
+    if (!is.null(input$yourfile2)) {
+      upload2 <- read_tsv(input$yourfile2$datapath) %>% as.data.frame()
+      # upload1 <- read.delim(input$yourfile1$datapath)
       # upload2$sequence_id <- as.character(upload2$sequence_id)
       # upload2$cdr3_aa_imgt <- as.character(upload2$cdr3_aa_imgt)
       upload2
@@ -173,23 +287,37 @@ server <- function(input, output, session) {
   convert1 <- reactive({
     uploaded_dataset1 <- uploads1()
     if (is.null(uploaded_dataset1$gf_jgene)) {
-      upload1afterconv <- shinyprocess(uploaded_dataset1)
+      upload1afterconv <- AIRRscapeprocess(uploaded_dataset1)
       } else {
         upload1afterconv <- uploaded_dataset1
+        upload1afterconv$cregion <- gsub('IG','Ig',upload1afterconv$cregion)
+        ## adding conversion to standardize light chain naming if necessary...
+        upload1afterconv$cregion <- gsub("IgK","Kappa",upload1afterconv$cregion)
+        upload1afterconv$cregion <- gsub("IgL","Lambda",upload1afterconv$cregion)
       }
-    upload1afterconv$sequence_id <- as.character(upload1afterconv$sequence_id)
-    upload1afterconv$cdr3_aa_imgt <- as.character(upload1afterconv$cdr3_aa_imgt)
+    # upload1afterconv$sequence_id <- as.character(upload1afterconv$sequence_id)
+    # upload1afterconv$cdr3_aa_imgt <- as.character(upload1afterconv$cdr3_aa_imgt)
+    if (!("id" %in% names(upload1afterconv))) {
+      upload1afterconv$id <- "uploaded_dataset1"
+    }
     upload1afterconv
     })
   convert2 <- reactive({
     uploaded_dataset2 <- uploads2()
     if (is.null(uploaded_dataset2$gf_jgene)) {
-      upload2afterconv <- shinyprocess(uploaded_dataset2)
+      upload2afterconv <- AIRRscapeprocess(uploaded_dataset2)
     } else {
       upload2afterconv <- uploaded_dataset2
+      upload2afterconv$cregion <- gsub('IG','Ig',upload2afterconv$cregion)
+      ## adding conversion to standardize light chain naming if necessary...
+      upload2afterconv$cregion <- gsub("IgK","Kappa",upload2afterconv$cregion)
+      upload2afterconv$cregion <- gsub("IgL","Lambda",upload2afterconv$cregion)
     }
-    upload2afterconv$sequence_id <- as.character(upload2afterconv$sequence_id)
-    upload2afterconv$cdr3_aa_imgt <- as.character(upload2afterconv$cdr3_aa_imgt)
+    # upload2afterconv$sequence_id <- as.character(upload2afterconv$sequence_id)
+    # upload2afterconv$cdr3_aa_imgt <- as.character(upload2afterconv$cdr3_aa_imgt)
+    if (!("id" %in% names(upload2afterconv))) {
+      upload2afterconv$id <- "uploaded_dataset2"
+    }
     upload2afterconv
   })
 
