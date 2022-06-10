@@ -282,8 +282,8 @@ server <- function(input, output, session) {
   })
   
 ## JW idea: add an else if, running the convert function if needed...? but also need to combine datasets, not just convert...
-  # convert1 <- NULL
-  # convert2 <- NULL
+  convert1 <- NULL
+  convert2 <- NULL
   convert1 <- reactive({
     uploaded_dataset1 <- uploads1()
     if (is.null(uploaded_dataset1$gf_jgene)) {
@@ -298,7 +298,7 @@ server <- function(input, output, session) {
     # upload1afterconv$sequence_id <- as.character(upload1afterconv$sequence_id)
     # upload1afterconv$cdr3_aa_imgt <- as.character(upload1afterconv$cdr3_aa_imgt)
     if (!("id" %in% names(upload1afterconv))) {
-      upload1afterconv$id <- "uploaded_dataset1"
+      upload1afterconv$id <- "Uploaded Dataset"
     }
     upload1afterconv
     })
@@ -316,7 +316,7 @@ server <- function(input, output, session) {
     # upload2afterconv$sequence_id <- as.character(upload2afterconv$sequence_id)
     # upload2afterconv$cdr3_aa_imgt <- as.character(upload2afterconv$cdr3_aa_imgt)
     if (!("id" %in% names(upload2afterconv))) {
-      upload2afterconv$id <- "uploaded_dataset2"
+      upload2afterconv$id <- "Uploaded Dataset"
     }
     upload2afterconv
   })
