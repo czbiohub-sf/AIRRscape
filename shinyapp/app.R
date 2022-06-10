@@ -263,8 +263,8 @@ server <- function(input, output, session) {
 ## this only works if you include the if isn't null argument...also another tricky part is below where you specify these if selected (the inputdataset <- reactive({ part...), you need to add parentheses, so uploads1() and uploads2() !!!
   uploads1 <- reactive({
     if (!is.null(input$yourfile1)) {
-    upload1 <- read_tsv(input$yourfile1$datapath) %>% as.data.frame()
-    # upload1 <- read.delim(input$yourfile1$datapath)
+    # upload1 <- read_tsv(input$yourfile1$datapath) %>% as.data.frame()
+    upload1 <- read.delim(input$yourfile1$datapath)
     # upload1$sequence_id <- as.character(upload1$sequence_id)
     # upload1$cdr3_aa_imgt <- as.character(upload1$cdr3_aa_imgt)
     upload1
@@ -273,8 +273,8 @@ server <- function(input, output, session) {
 
   uploads2 <- reactive({
     if (!is.null(input$yourfile2)) {
-      upload2 <- read_tsv(input$yourfile2$datapath) %>% as.data.frame()
-      # upload1 <- read.delim(input$yourfile1$datapath)
+      # upload2 <- read_tsv(input$yourfile2$datapath) %>% as.data.frame()
+      upload2 <- read.delim(input$yourfile2$datapath)
       # upload2$sequence_id <- as.character(upload2$sequence_id)
       # upload2$cdr3_aa_imgt <- as.character(upload2$cdr3_aa_imgt)
       upload2
@@ -285,6 +285,7 @@ server <- function(input, output, session) {
   convert1 <- NULL
   convert2 <- NULL
   convert1 <- reactive({
+    if (!is.null(uploads1())) {
     uploaded_dataset1 <- uploads1()
     if (is.null(uploaded_dataset1$gf_jgene)) {
       upload1afterconv <- AIRRscapeprocess(uploaded_dataset1)
@@ -295,14 +296,16 @@ server <- function(input, output, session) {
         upload1afterconv$cregion <- gsub("IgK","Kappa",upload1afterconv$cregion)
         upload1afterconv$cregion <- gsub("IgL","Lambda",upload1afterconv$cregion)
       }
-    # upload1afterconv$sequence_id <- as.character(upload1afterconv$sequence_id)
-    # upload1afterconv$cdr3_aa_imgt <- as.character(upload1afterconv$cdr3_aa_imgt)
     if (!("id" %in% names(upload1afterconv))) {
       upload1afterconv$id <- "Uploaded Dataset"
     }
+    upload1afterconv$sequence_id <- as.character(upload1afterconv$sequence_id)
+    upload1afterconv$cdr3_aa_imgt <- as.character(upload1afterconv$cdr3_aa_imgt)
     upload1afterconv
+    }
     })
   convert2 <- reactive({
+    if (!is.null(uploads2())) {
     uploaded_dataset2 <- uploads2()
     if (is.null(uploaded_dataset2$gf_jgene)) {
       upload2afterconv <- AIRRscapeprocess(uploaded_dataset2)
@@ -313,12 +316,13 @@ server <- function(input, output, session) {
       upload2afterconv$cregion <- gsub("IgK","Kappa",upload2afterconv$cregion)
       upload2afterconv$cregion <- gsub("IgL","Lambda",upload2afterconv$cregion)
     }
-    # upload2afterconv$sequence_id <- as.character(upload2afterconv$sequence_id)
-    # upload2afterconv$cdr3_aa_imgt <- as.character(upload2afterconv$cdr3_aa_imgt)
     if (!("id" %in% names(upload2afterconv))) {
       upload2afterconv$id <- "Uploaded Dataset"
     }
+    upload2afterconv$sequence_id <- as.character(upload2afterconv$sequence_id)
+    upload2afterconv$cdr3_aa_imgt <- as.character(upload2afterconv$cdr3_aa_imgt)
     upload2afterconv
+    }
   })
 
   facetvar1 <- reactive({
