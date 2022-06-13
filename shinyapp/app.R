@@ -137,6 +137,16 @@ AIRRscapeprocess <- function(x, filter_columns = TRUE, filter_to_HC = TRUE, renu
   return(x)
 }
 
+## 2 more functions
+Mode <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
+
+
+is.wholenumber <- function(x, tol = .Machine$double.eps^0.5) {
+  abs(x - round(x)) < tol
+}
 
 ## datasets to load
 toshiny.cov2.abdab <- read_tsv("toshiny_cov2_abdab.tab")
@@ -182,9 +192,12 @@ toshiny.cov2.all$id <- factor(toshiny.cov2.all$id, levels = c("SARS-CoV2 mAbs", 
 toshiny.cov2hiv$id <- factor(toshiny.cov2hiv$id, levels = c("SARS-CoV2 mAbs", "HIV mAbs"))
 toshiny.den.all$id <- factor(toshiny.den.all$id, levels = c("Dengue plasmablasts", "Dengue patient d13 bulk repertoire", "Dengue Parameswaran 2013 patient bulk repertoires"))
 
+## June 2022 - adding AIRRscapeInput functionality as a tabsetPanel - see https://shiny.rstudio.com/articles/layout-guide.html
+## think can keep the sidebarPanel as is - in new AIRRscapeInput tab all ui can be in the 'main panel' under the tabset
+## catch is can all outputs be in same server function - need to rename some at minimum...
 
 ui <- fluidPage(
-  
+  titlePanel("AIRRscape"),
   sidebarLayout(
     
     sidebarPanel(
@@ -228,105 +241,393 @@ ui <- fluidPage(
     ),
     
     mainPanel(
-      plotOutput("ggplot1", width = "120%", height = "800px", hover = hoverOpts(id = "plot_hover", delay = 300, delayType = c("debounce", "throttle")), click = "plot_click", brush = "plot_brush"),
-      uiOutput("hover_info"),
-      # uiOutput("hover_info", style = "pointer-events: none"),
-      DT::dataTableOutput("brush_info"),
-      DT::dataTableOutput("click_info"),
-      actionButton("go", "Make topology of selected CDR3 AA motifs"), 
-      downloadButton("downloadfilter","Download all data in the clicked bin"),
-      downloadButton("downloadfilter2","Download only selected rows"),
-      downloadButton("downloadfilter3","Download distance matrix of all data in the clicked bin"),
-      selectInput("plottab", "Topology:",
-                  c("NJ",
-                    "Parsimony",
-                    "up to 500 nearest sequences to a single selected mAb - Parsimony; 100% CDR3 identity (Briney 2019)",
-                    "up to 500 nearest sequences to a single selected mAb - Parsimony; 80% CDR3 identity (Soto 2019)",
-                    "up to 500 nearest sequences to a single selected mAb - Parsimony; 70% CDR3 identity (Setliff 2018)",
-                    "up to 500 nearest sequences to a single selected mAb - Parsimony; 50% CDR3 identity"), selectize = FALSE),
-      div(style="display: inline-block; width: 300px;",
-          sliderInput("height", "Topology height", min = 200, max = 4200, value = 1000)),
-      div(style="display: inline-block; width: 300px;",
-          sliderInput("width2", "Topology width (wider -> narrower)", min = 1, max = 150, value = 5)),
-      # div(style="display: inline-block; width: 300px;",
-      #     sliderInput("width", "Topology width2", min = 100, max = 3000, value = 1600)),
-      div(HTML("<br>")),br(),
-      plotOutput("phyloPlot", inline = TRUE),
-      ## new code ot take screenshots from https://deanattali.com/blog/shinyscreenshot-release/
-      actionButton("screensht", "Take a screenshot")
+      tabsetPanel(
+        tabPanel("Import Data",
+                 p("First upload each of your separate datasets (maximum 6). As long as they are in AIRR format (tab or tsv), they will be automatically converted for viewing in AIRRscape"),
+                 br(),
+                 p("Next input the name of each dataset - these names will be in each faceted dataset."),
+                 br(),
+                 p("Then click the combine button to make 2 combined HC datasets (each dataset separately labelled & all data combined."),
+                 br(),
+                 p("Finally click the download button to get the two files. You can then upload these two files in the main AIRRScape tab for viewing."),
+                 br(),
+                 fileInput(
+                   inputId = "calfile1", 
+                   label = "Select tsv or tab AIRR formatted dataset 1", 
+                   multiple = TRUE,
+                   accept = c(".tsv",".tab")),
+                 textInput("name1", "What's the title of dataset 1?"),
+                 fileInput(
+                   inputId = "calfile2", 
+                   label = "Select tsv or tab AIRR formatted dataset 2", 
+                   multiple = TRUE,
+                   accept = c(".tsv",".tab")),
+                 textInput("name2", "What's the title of dataset 2?"),
+                 fileInput(
+                   inputId = "calfile3", 
+                   label = "Select tsv or tab AIRR formatted dataset 3", 
+                   multiple = TRUE,
+                   accept = c(".tsv",".tab")),
+                 textInput("name3", "What's the title of dataset 3?"),
+                 fileInput(
+                   inputId = "calfile4", 
+                   label = "Select tsv or tab AIRR formatted dataset 4", 
+                   multiple = TRUE,
+                   accept = c(".tsv",".tab")),
+                 textInput("name4", "What's the title of dataset 4?"),
+                 fileInput(
+                   inputId = "calfile5", 
+                   label = "Select tsv or tab AIRR formatted dataset 5", 
+                   multiple = TRUE,
+                   accept = c(".tsv",".tab")),
+                 textInput("name5", "What's the title of dataset 5?"),
+                 fileInput(
+                   inputId = "calfile6", 
+                   label = "Select tsv or tab AIRR formatted dataset 6", 
+                   multiple = TRUE,
+                   accept = c(".tsv",".tab")),
+                 textInput("name6", "What's the title of dataset 6?"),
+                 actionButton("go0", "Combine!"), 
+                 downloadButton("downloadfilter01","Download combined datasets - but with separate ids"),
+                 downloadButton("downloadfilter02","Download combined datasets - fully combined")
+                 ),
+        tabPanel("AIRRscape",
+                 plotOutput("ggplot1", width = "120%", height = "800px", hover = hoverOpts(id = "plot_hover", delay = 300, delayType = c("debounce", "throttle")), click = "plot_click", brush = "plot_brush"),
+                 uiOutput("hover_info"),
+                 # uiOutput("hover_info", style = "pointer-events: none"),
+                 DT::dataTableOutput("brush_info"),
+                 DT::dataTableOutput("click_info"),
+                 actionButton("go", "Make topology of selected CDR3 AA motifs"), 
+                 downloadButton("downloadfilter","Download all data in the clicked bin"),
+                 downloadButton("downloadfilter2","Download only selected rows"),
+                 downloadButton("downloadfilter3","Download distance matrix of all data in the clicked bin"),
+                 selectInput("plottab", "Topology:",
+                             c("NJ",
+                               "Parsimony",
+                               "up to 500 nearest sequences to a single selected mAb - Parsimony; 100% CDR3 identity (Briney 2019)",
+                               "up to 500 nearest sequences to a single selected mAb - Parsimony; 80% CDR3 identity (Soto 2019)",
+                               "up to 500 nearest sequences to a single selected mAb - Parsimony; 70% CDR3 identity (Setliff 2018)",
+                               "up to 500 nearest sequences to a single selected mAb - Parsimony; 50% CDR3 identity"), selectize = FALSE),
+                 div(style="display: inline-block; width: 300px;",
+                     sliderInput("height", "Topology height", min = 200, max = 4200, value = 1000)),
+                 div(style="display: inline-block; width: 300px;",
+                     sliderInput("width2", "Topology width (wider -> narrower)", min = 1, max = 150, value = 5)),
+                 # div(style="display: inline-block; width: 300px;",
+                 #     sliderInput("width", "Topology width2", min = 100, max = 3000, value = 1600)),
+                 div(HTML("<br>")),br(),
+                 plotOutput("phyloPlot", inline = TRUE),
+                 actionButton("screensht", "Take a screenshot")
+        )
     )
   )
 )
-
+)
 
 server <- function(input, output, session) {
   options(width = 180, DT.options = list(pageLength = 10)) # Increase text width for printing table ALSO ADDING DEFAULT NUMBER OF 10 ROWS IN DATATABLE
   ## early in server now defining facets here - this is where all of the sidebar dataset options are tied to a dataset
   
-## this only works if you include the if isn't null argument...also another tricky part is below where you specify these if selected (the inputdataset <- reactive({ part...), you need to add parentheses, so uploads1() and uploads2() !!!
+
+  ## JUNE 2022 - ADDING ALL OF AIRRscapeInput APP (SERVER PART) HERE...
+  ############################################################################################################
+        ######################## INPUT COMPONENT #######################
+  ############################################################################################################
+  ## need to add uploads1 <- NULL ???
+  ## this only works if you include the if isn't null argument...also another tricky part is below where you specify these if selected (the inputdataset <- reactive({ part...), you need to add parentheses, so uploads1() and uploads2() !!!
   uploads1 <- reactive({
-    if (!is.null(input$yourfile1)) {
-    # upload1 <- read_tsv(input$yourfile1$datapath) %>% as.data.frame()
-    upload1 <- read.delim(input$yourfile1$datapath)
-    # upload1$sequence_id <- as.character(upload1$sequence_id)
-    # upload1$cdr3_aa_imgt <- as.character(upload1$cdr3_aa_imgt)
-    upload1
+    if (!is.null(input$calfile1)) {
+      upload1 <- read.delim(input$calfile1$datapath)
+      # upload1$sequence_id <- as.character(upload1$sequence_id)
+      # upload1$cdr3_aa_imgt <- as.character(upload1$cdr3_aa_imgt)
+      upload1
     }
   })
-
   uploads2 <- reactive({
-    if (!is.null(input$yourfile2)) {
-      # upload2 <- read_tsv(input$yourfile2$datapath) %>% as.data.frame()
-      upload2 <- read.delim(input$yourfile2$datapath)
+    if (!is.null(input$calfile2)) {
+      upload2 <- read.delim(input$calfile2$datapath)
       # upload2$sequence_id <- as.character(upload2$sequence_id)
       # upload2$cdr3_aa_imgt <- as.character(upload2$cdr3_aa_imgt)
       upload2
     }
   })
+  uploads3 <- reactive({
+    if (!is.null(input$calfile3)) {
+      upload3 <- read.delim(input$calfile3$datapath)
+      upload3
+    }
+  })
+  uploads4 <- reactive({
+    if (!is.null(input$calfile4)) {
+      upload4 <- read.delim(input$calfile4$datapath)
+      upload4
+    }
+  })
+  uploads5 <- reactive({
+    if (!is.null(input$calfile5)) {
+      upload5 <- read.delim(input$calfile5$datapath)
+      upload5
+    }
+  })
+  uploads6 <- reactive({
+    if (!is.null(input$calfile6)) {
+      upload6 <- read.delim(input$calfile6$datapath)
+      upload6
+    }
+  })
   
-## JW idea: add an else if, running the convert function if needed...? but also need to combine datasets, not just convert...
+  ## JW idea: add an else if, running the convert function if needed...? but also need to combine datasets, not just convert...
   convert1 <- NULL
   convert2 <- NULL
+  convert3 <- NULL
+  convert4 <- NULL
+  convert5 <- NULL
+  convert6 <- NULL
   convert1 <- reactive({
     if (!is.null(uploads1())) {
-    uploaded_dataset1 <- uploads1()
-    if (is.null(uploaded_dataset1$gf_jgene)) {
-      upload1afterconv <- AIRRscapeprocess(uploaded_dataset1)
+      uploaded_dataset1 <- uploads1()
+      if (is.null(uploaded_dataset1$gf_jgene)) {
+        upload1afterconv <- AIRRscapeprocess(uploaded_dataset1)
+        # upload1afterconv$id <- gsub("uploaded-dataset1",paste0(input$name1),upload1afterconv$id)  ## if running AIRRscapeprocess, want to rename sequences
       } else {
         upload1afterconv <- uploaded_dataset1
-        upload1afterconv$cregion <- gsub('IG','Ig',upload1afterconv$cregion)
-        ## adding conversion to standardize light chain naming if necessary...
-        upload1afterconv$cregion <- gsub("IgK","Kappa",upload1afterconv$cregion)
-        upload1afterconv$cregion <- gsub("IgL","Lambda",upload1afterconv$cregion)
       }
-    if (!("id" %in% names(upload1afterconv))) {
-      upload1afterconv$id <- "Uploaded Dataset"
-      upload1afterconv <- upload1afterconv %>% relocate(id)
+      upload1afterconv$sequence_id <- as.character(upload1afterconv$sequence_id)
+      upload1afterconv$cdr3_aa_imgt <- as.character(upload1afterconv$cdr3_aa_imgt)
+      upload1afterconv
     }
-    upload1afterconv$sequence_id <- as.character(upload1afterconv$sequence_id)
-    upload1afterconv$cdr3_aa_imgt <- as.character(upload1afterconv$cdr3_aa_imgt)
-    upload1afterconv
-    }
-    })
+  })
   convert2 <- reactive({
     if (!is.null(uploads2())) {
-    uploaded_dataset2 <- uploads2()
+      uploaded_dataset2 <- uploads2()
+      if (is.null(uploaded_dataset2$gf_jgene)) {
+        upload2afterconv <- AIRRscapeprocess(uploaded_dataset2)
+        # upload2afterconv$id <- gsub("uploaded-dataset2",paste0(input$name1),upload2afterconv$id)  ## if running AIRRscapeprocess, want to rename sequences
+      } else {
+        upload2afterconv <- uploaded_dataset2
+      }
+      upload2afterconv$sequence_id <- as.character(upload2afterconv$sequence_id)
+      upload2afterconv$cdr3_aa_imgt <- as.character(upload2afterconv$cdr3_aa_imgt)
+      upload2afterconv
+    }
+  })
+  
+  convert3 <- reactive({
+    if (!is.null(uploads3())) {
+      uploaded_dataset3 <- uploads3()
+      if (is.null(uploaded_dataset3$gf_jgene)) {
+        upload3afterconv <- AIRRscapeprocess(uploaded_dataset3)
+        # upload3afterconv$id <- gsub("uploaded-dataset3",paste0(input$name1),upload3afterconv$id)  ## if running AIRRscapeprocess, want to rename sequences
+      } else {
+        upload3afterconv <- uploaded_dataset3
+      }
+      upload3afterconv$sequence_id <- as.character(upload3afterconv$sequence_id)
+      upload3afterconv$cdr3_aa_imgt <- as.character(upload3afterconv$cdr3_aa_imgt)
+      upload3afterconv
+    }
+  })
+  convert4 <- reactive({
+    if (!is.null(uploads4())) {
+      uploaded_dataset4 <- uploads4()
+      if (is.null(uploaded_dataset4$gf_jgene)) {
+        upload4afterconv <- AIRRscapeprocess(uploaded_dataset4)
+        # upload4afterconv$id <- gsub("uploaded-dataset4",paste0(input$name1),upload4afterconv$id)  ## if running AIRRscapeprocess, want to rename sequences
+      } else {
+        upload4afterconv <- uploaded_dataset4
+      }
+      upload4afterconv$sequence_id <- as.character(upload4afterconv$sequence_id)
+      upload4afterconv$cdr3_aa_imgt <- as.character(upload4afterconv$cdr3_aa_imgt)
+      upload4afterconv
+    }
+  })
+  
+  convert5 <- reactive({
+    if (!is.null(uploads5())) {
+      uploaded_dataset5 <- uploads5()
+      if (is.null(uploaded_dataset5$gf_jgene)) {
+        upload5afterconv <- AIRRscapeprocess(uploaded_dataset5)
+        # upload5afterconv$id <- gsub("uploaded-dataset5",paste0(input$name1),upload5afterconv$id)  ## if running AIRRscapeprocess, want to rename sequences
+      } else {
+        upload5afterconv <- uploaded_dataset5
+      }
+      upload5afterconv$sequence_id <- as.character(upload5afterconv$sequence_id)
+      upload5afterconv$cdr3_aa_imgt <- as.character(upload5afterconv$cdr3_aa_imgt)
+      upload5afterconv
+    }
+  })
+  convert6 <- reactive({
+    if (!is.null(uploads6())) {
+      uploaded_dataset6 <- uploads6()
+      if (is.null(uploaded_dataset6$gf_jgene)) {
+        upload6afterconv <- AIRRscapeprocess(uploaded_dataset6)
+        # upload6afterconv$id <- gsub("uploaded-dataset6",paste0(input$name1),upload6afterconv$id)  ## if running AIRRscapeprocess, want to rename sequences
+      } else {
+        upload6afterconv <- uploaded_dataset6
+      }
+      upload6afterconv$sequence_id <- as.character(upload6afterconv$sequence_id)
+      upload6afterconv$cdr3_aa_imgt <- as.character(upload6afterconv$cdr3_aa_imgt)
+      upload6afterconv
+    }
+  })
+
+  # toshiny.yourdataset.all.renamed <- reactive({  - changing to eventReactive per example in chapter 3 mastering shiny
+  toshiny.yourdataset.all.renamed <- eventReactive(input$go0, {
+    
+    # dataset1 <- input$name1
+    # dataset2 <- input$name2
+    # dataset3 <- input$name3
+    # dataset4 <- input$name4
+    # dataset5 <- input$name5
+    # dataset6 <- input$name6
+    toshiny.yourdataset.all <- bind_rows(convert1(), convert2(), convert3(), convert4(), convert5(), convert6(), .id = "id")
+    ## removing numbers to better substitute any input  
+    toshiny.yourdataset.all$id <- gsub("1","1-numberone",toshiny.yourdataset.all$id)
+    toshiny.yourdataset.all$id <- gsub("2","2-numbertwo",toshiny.yourdataset.all$id)
+    toshiny.yourdataset.all$id <- gsub("3","3-numberthree",toshiny.yourdataset.all$id)
+    toshiny.yourdataset.all$id <- gsub("4","4-numberfour",toshiny.yourdataset.all$id)
+    toshiny.yourdataset.all$id <- gsub("5","5-numberfive",toshiny.yourdataset.all$id)
+    toshiny.yourdataset.all$id <- gsub("6","6-numbersix",toshiny.yourdataset.all$id)
+    ## now here add in user inputs...  
+    ## ordering doesn't seem to work - instead add numbers to id??
+    toshiny.yourdataset.all$id <- gsub("numberone",paste0(input$name1),toshiny.yourdataset.all$id)
+    toshiny.yourdataset.all$id <- gsub("numbertwo",paste0(input$name2),toshiny.yourdataset.all$id)
+    toshiny.yourdataset.all$id <- gsub("numberthree",paste0(input$name3),toshiny.yourdataset.all$id)
+    toshiny.yourdataset.all$id <- gsub("numberfour",paste0(input$name4),toshiny.yourdataset.all$id)
+    toshiny.yourdataset.all$id <- gsub("numberfive",paste0(input$name5),toshiny.yourdataset.all$id)
+    toshiny.yourdataset.all$id <- gsub("numbersix",paste0(input$name6),toshiny.yourdataset.all$id)
+    toshiny.yourdataset.all$sequence_id <- gsub("uploaded-dataset1",paste0(input$name1),toshiny.yourdataset.all$sequence_id) ## moving from above
+    toshiny.yourdataset.all$sequence_id <- gsub("uploaded-dataset2",paste0(input$name2),toshiny.yourdataset.all$sequence_id) ## moving from above
+    toshiny.yourdataset.all$sequence_id <- gsub("uploaded-dataset3",paste0(input$name3),toshiny.yourdataset.all$sequence_id) ## moving from above
+    toshiny.yourdataset.all$sequence_id <- gsub("uploaded-dataset4",paste0(input$name4),toshiny.yourdataset.all$sequence_id) ## moving from above
+    toshiny.yourdataset.all$sequence_id <- gsub("uploaded-dataset5",paste0(input$name5),toshiny.yourdataset.all$sequence_id) ## moving from above
+    toshiny.yourdataset.all$sequence_id <- gsub("uploaded-dataset6",paste0(input$name6),toshiny.yourdataset.all$sequence_id) ## moving from above
+    toshiny.yourdataset.all$sequence_id <- gsub("\\_","\\-",toshiny.yourdataset.all$sequence_id)
+    toshiny.yourdataset.all$sequence_id <- gsub(" ","-",toshiny.yourdataset.all$sequence_id)
+    toshiny.yourdataset.all$cregion <- gsub('IG','Ig',toshiny.yourdataset.all$cregion)
+    ## adding conversion to standardize light chain naming if necessary...
+    toshiny.yourdataset.all$cregion <- gsub("IgK","Kappa",toshiny.yourdataset.all$cregion)
+    toshiny.yourdataset.all$cregion <- gsub("IgL","Lambda",toshiny.yourdataset.all$cregion)
+    ## this will filter to heavy chains only...
+    toshiny.yourdataset.all <- toshiny.yourdataset.all %>% filter(cregion == "IgH" | cregion == "IgA" | cregion == "IgD" | cregion == "IgE" | cregion == "IgG" | cregion == "IgM")
+    ## add factor?? - note need to add the , exclude=NULL - need to set levels first levels = ordering
+    ## doesn't seem to work - instead and numbers to id?
+    # ordering <- unique(c(paste0(input$name1),paste0(input$name2),paste0(input$name3),paste0(input$name4),paste0(input$name5),paste0(input$name6)))
+    # toshiny.yourdataset.all$id <- factor(toshiny.yourdataset.all$id, levels = ordering)
+    toshiny.yourdataset.all
+    # first maybe don't need if usign eventReactive rather than just Reactive, on second thought yes do need
+  })
+  
+  
+  # toshiny.yourdataset.allc.renamed <- reactive({
+  toshiny.yourdataset.allc.renamed <- eventReactive(input$go0, {
+    toshiny.yourdataset.allc <- toshiny.yourdataset.all.renamed()
+    toshiny.yourdataset.allc$ncount <- NULL
+    toshiny.yourdataset.allc$shm_mean <- NULL
+    toshiny.yourdataset.allc$shm_max <- NULL
+    toshiny.yourdataset.allc$cregion0 <- toshiny.yourdataset.allc$cregion
+    toshiny.yourdataset.allc$cregion <- "IgH"
+    toshiny.yourdataset.allc <- toshiny.yourdataset.allc %>%
+      add_count(gf_jgene,cdr3length_imgt) %>%
+      rename(ncount = n) %>%
+      group_by(gf_jgene,cdr3length_imgt) %>%
+      mutate(shm_mean = mean(shm, na.rm = TRUE)) %>%
+      # ADD MAX SHM AS WELL..
+      mutate(shm_max = max(shm, na.rm = TRUE)) %>% 
+      mutate(shm_mean = na_if(shm_mean, "NaN")) %>% 
+      mutate(shm_max = na_if(shm_max, "-Inf")) %>% 
+      mutate(across(shm, round, 2)) %>% 
+      mutate(across(shm_max, round, 2)) %>% 
+      mutate(across(shm_mean, round, 2))
+    toshiny.yourdataset.allc
+  })
+  
+  
+  ## this allows user to download all sequences in clicked bin (first filter) or only selected rows (second filter)
+  output$downloadfilter01 <- downloadHandler(
+    filename = function() {
+      paste('yourdata_filteredcombined_separateids', Sys.Date(), '.tsv', sep = '')
+    },
+    content = function(file){
+      write.table(toshiny.yourdataset.all.renamed(),file, sep = "\t", row.names = FALSE)
+    }
+  )
+  
+  output$downloadfilter02 <- downloadHandler(
+    filename = function() {
+      paste('yourdata_filteredcombined_fullycombined', Sys.Date(), '.tsv', sep = '')
+    },
+    content = function(file){
+      write.table(toshiny.yourdataset.allc.renamed(),file, sep = "\t", row.names = FALSE)
+    }
+  )      
+  
+  ############################################################################################################
+        ######################### END INPUT COMPONENT #########################  
+  ############################################################################################################
+  
+## this only works if you include the if isn't null argument...also another tricky part is below where you specify these if selected (the inputdataset <- reactive({ part...), you need to add parentheses, so uploads11() and uploads12() !!!
+  uploads11 <- reactive({
+    if (!is.null(input$yourfile1)) {
+    # upload11 <- read_tsv(input$yourfile1$datapath) %>% as.data.frame()
+    upload11 <- read.delim(input$yourfile1$datapath)
+    # upload11$sequence_id <- as.character(upload11$sequence_id)
+    # upload11$cdr3_aa_imgt <- as.character(upload11$cdr3_aa_imgt)
+    upload11
+    }
+  })
+
+  uploads12 <- reactive({
+    if (!is.null(input$yourfile2)) {
+      # upload12 <- read_tsv(input$yourfile2$datapath) %>% as.data.frame()
+      upload12 <- read.delim(input$yourfile2$datapath)
+      # upload12$sequence_id <- as.character(upload12$sequence_id)
+      # upload12$cdr3_aa_imgt <- as.character(upload12$cdr3_aa_imgt)
+      upload12
+    }
+  })
+  
+## JW idea: add an else if, running the convert function if needed...? but also need to combine datasets, not just convert...
+  convert11 <- NULL
+  convert12 <- NULL
+  convert11 <- reactive({
+    if (!is.null(uploads11())) {
+    uploaded_dataset1 <- uploads11()
+    if (is.null(uploaded_dataset1$gf_jgene)) {
+      upload11afterconv <- AIRRscapeprocess(uploaded_dataset1)
+      } else {
+        upload11afterconv <- uploaded_dataset1
+        upload11afterconv$cregion <- gsub('IG','Ig',upload11afterconv$cregion)
+        ## adding conversion to standardize light chain naming if necessary...
+        upload11afterconv$cregion <- gsub("IgK","Kappa",upload11afterconv$cregion)
+        upload11afterconv$cregion <- gsub("IgL","Lambda",upload11afterconv$cregion)
+      }
+    if (!("id" %in% names(upload11afterconv))) {
+      upload11afterconv$id <- "Uploaded Dataset"
+      upload11afterconv <- upload11afterconv %>% relocate(id)
+    }
+    upload11afterconv$sequence_id <- as.character(upload11afterconv$sequence_id)
+    upload11afterconv$cdr3_aa_imgt <- as.character(upload11afterconv$cdr3_aa_imgt)
+    upload11afterconv
+    }
+    })
+  convert12 <- reactive({
+    if (!is.null(uploads12())) {
+    uploaded_dataset2 <- uploads12()
     if (is.null(uploaded_dataset2$gf_jgene)) {
-      upload2afterconv <- AIRRscapeprocess(uploaded_dataset2)
+      upload12afterconv <- AIRRscapeprocess(uploaded_dataset2)
     } else {
-      upload2afterconv <- uploaded_dataset2
-      upload2afterconv$cregion <- gsub('IG','Ig',upload2afterconv$cregion)
+      upload12afterconv <- uploaded_dataset2
+      upload12afterconv$cregion <- gsub('IG','Ig',upload12afterconv$cregion)
       ## adding conversion to standardize light chain naming if necessary...
-      upload2afterconv$cregion <- gsub("IgK","Kappa",upload2afterconv$cregion)
-      upload2afterconv$cregion <- gsub("IgL","Lambda",upload2afterconv$cregion)
+      upload12afterconv$cregion <- gsub("IgK","Kappa",upload12afterconv$cregion)
+      upload12afterconv$cregion <- gsub("IgL","Lambda",upload12afterconv$cregion)
     }
-    if (!("id" %in% names(upload2afterconv))) {
-      upload2afterconv$id <- "Uploaded Dataset"
-      upload2afterconv <- upload2afterconv %>% relocate(id)
+    if (!("id" %in% names(upload12afterconv))) {
+      upload12afterconv$id <- "Uploaded Dataset"
+      upload12afterconv <- upload12afterconv %>% relocate(id)
     }
-    upload2afterconv$sequence_id <- as.character(upload2afterconv$sequence_id)
-    upload2afterconv$cdr3_aa_imgt <- as.character(upload2afterconv$cdr3_aa_imgt)
-    upload2afterconv
+    upload12afterconv$sequence_id <- as.character(upload12afterconv$sequence_id)
+    upload12afterconv$cdr3_aa_imgt <- as.character(upload12afterconv$cdr3_aa_imgt)
+    upload12afterconv
     }
   })
 
@@ -340,7 +641,7 @@ server <- function(input, output, session) {
   
   inputdataset <- reactive({
     ## using new names that reduce variables, round
-    switch(input$dataset, "SARS-CoV2 mAbs - heavy chains & light chains" = toshiny.cov2.abdab, "SARS-CoV2 mAbs - IgH by binding" = toshiny.cov2.abdab.h, "SARS-CoV2 mAbs - IgH by neutralization" = toshiny.cov2.abdab.h, "SARS-CoV2 mAbs vs. 4 COVID-19 patient bulk repertoires vs. Healthy control bulk repertoire - IgH" = toshiny.cov2.all, "SARS-CoV2 mAbs vs. 4 COVID-19 patient bulk repertoires vs. Healthy control bulk repertoire - IgH combined" = toshiny.cov2.allc, "SARS-CoV2 mAbs vs. HIV mAbs - IgH" = toshiny.cov2hiv, "SARS-CoV2 mAbs vs. HIV mAbs - IgH combined" = toshiny.cov2hivc, "HIV mAbs vs. HIV patient MT1214 bulk repertoire vs. HIV patient NIH45 bulk repertoire vs. HIV Setliff 2018 patient bulk repertoires - IgH" = toshiny.hiv.all, "HIV mAbs vs. HIV patient MT1214 bulk repertoire vs. HIV patient NIH45 bulk repertoire vs. HIV Setliff 2018 patient bulk repertoires - IgH combined" = toshiny.hiv.allc, "Dengue mAbs vs. Dengue patient d13 bulk repertoire vs. Dengue Parameswaran 2013 patient bulk repertoires - IgH" = toshiny.den.all, "Dengue mAbs vs. Dengue patient d13 bulk repertoire vs. Dengue Parameswaran 2013 patient bulk repertoires - IgH combined" = toshiny.den.allc, "Your datasets - IgH" = convert1(), "Your datasets - IgH combined" = convert2())
+    switch(input$dataset, "SARS-CoV2 mAbs - heavy chains & light chains" = toshiny.cov2.abdab, "SARS-CoV2 mAbs - IgH by binding" = toshiny.cov2.abdab.h, "SARS-CoV2 mAbs - IgH by neutralization" = toshiny.cov2.abdab.h, "SARS-CoV2 mAbs vs. 4 COVID-19 patient bulk repertoires vs. Healthy control bulk repertoire - IgH" = toshiny.cov2.all, "SARS-CoV2 mAbs vs. 4 COVID-19 patient bulk repertoires vs. Healthy control bulk repertoire - IgH combined" = toshiny.cov2.allc, "SARS-CoV2 mAbs vs. HIV mAbs - IgH" = toshiny.cov2hiv, "SARS-CoV2 mAbs vs. HIV mAbs - IgH combined" = toshiny.cov2hivc, "HIV mAbs vs. HIV patient MT1214 bulk repertoire vs. HIV patient NIH45 bulk repertoire vs. HIV Setliff 2018 patient bulk repertoires - IgH" = toshiny.hiv.all, "HIV mAbs vs. HIV patient MT1214 bulk repertoire vs. HIV patient NIH45 bulk repertoire vs. HIV Setliff 2018 patient bulk repertoires - IgH combined" = toshiny.hiv.allc, "Dengue mAbs vs. Dengue patient d13 bulk repertoire vs. Dengue Parameswaran 2013 patient bulk repertoires - IgH" = toshiny.den.all, "Dengue mAbs vs. Dengue patient d13 bulk repertoire vs. Dengue Parameswaran 2013 patient bulk repertoires - IgH combined" = toshiny.den.allc, "Your datasets - IgH" = convert11(), "Your datasets - IgH combined" = convert12())
   })
   ## extra filter for downloading
   filteredDS <- reactive({
