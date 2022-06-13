@@ -129,6 +129,9 @@ AIRRscapeprocess <- function(x, filter_columns = TRUE, filter_to_HC = TRUE, renu
     x <- x %>% relocate(sequence_id)
     # x$sequence_id <- gsub("\\_","\\-",x$sequence_id) ## moved to always run
   }
+  ## also adding as.character to the function - doesn't seem necessary here
+  # x$sequence_id <- as.character(x$sequence_id)
+  # x$cdr3_aa_imgt <- as.character(x$cdr3_aa_imgt)
   ## need to always check and remove underscores from all names
   x$sequence_id <- gsub("\\_","\\-",x$sequence_id)
   return(x)
@@ -298,6 +301,7 @@ server <- function(input, output, session) {
       }
     if (!("id" %in% names(upload1afterconv))) {
       upload1afterconv$id <- "Uploaded Dataset"
+      upload1afterconv <- upload1afterconv %>% relocate(id)
     }
     upload1afterconv$sequence_id <- as.character(upload1afterconv$sequence_id)
     upload1afterconv$cdr3_aa_imgt <- as.character(upload1afterconv$cdr3_aa_imgt)
@@ -318,6 +322,7 @@ server <- function(input, output, session) {
     }
     if (!("id" %in% names(upload2afterconv))) {
       upload2afterconv$id <- "Uploaded Dataset"
+      upload2afterconv <- upload2afterconv %>% relocate(id)
     }
     upload2afterconv$sequence_id <- as.character(upload2afterconv$sequence_id)
     upload2afterconv$cdr3_aa_imgt <- as.character(upload2afterconv$cdr3_aa_imgt)
