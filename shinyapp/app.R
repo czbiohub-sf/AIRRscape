@@ -236,8 +236,8 @@ ui <- fluidPage(
       tabsetPanel(
         tabPanel("Import Data",
                  br(),
-                 p("First upload each of your separate datasets (maximum 6). As long as they are in AIRR format (tab or tsv), they will be automatically converted for viewing in AIRRscape"),
-                 p("Next input the name of each dataset - these names will be in each faceted dataset.", style = "text-indent: 1em;"),
+                 p("First upload each of your separate datasets (maximum 6). As long as they are in AIRR format (tab or tsv), they will be automatically converted for viewing in AIRRscape."),
+                 p("Next input the name of each dataset - these names will be in each faceted dataset."),
                  p("Then click the combine button to make 2 combined HC datasets (both with each dataset separately labelled & with all data combined.", style = "text-indent: 1em;"),
                  p("Finally click the download button to get the two files. You can then upload these two files in the main AIRRScape tab for viewing.", style = "text-indent: 1em;"),
                  column(4,
