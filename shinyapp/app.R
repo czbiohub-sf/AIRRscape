@@ -222,12 +222,12 @@ ui <- fluidPage(
       fileInput(
         inputId = "yourfile1", 
         label = "Select converted & combined tsv/tab files - first the separate datasets", 
-        multiple = TRUE,
+        multiple = FALSE,
         accept = c(".tsv",".tab")),
       fileInput(
         inputId = "yourfile2", 
         label = "Select converted & combined tsv/tab files - then the combined datasets", 
-        multiple = TRUE,
+        multiple = FALSE,
         accept = c(".tsv",".tab")),
       p("When plots appear, click on a bin to get a list of antibodies in the lower table. Hovering over a bin will show some basic stats."),
       br(),
@@ -236,63 +236,72 @@ ui <- fluidPage(
       p("From the lower table you can download all or selected antibodies in the chosen bin, download the distance matrix of all antibodies, or create topologies of selected antibodies. The last topology options are to find the nearest sequences (up to 500) of a single selected antibody, with four possible distance thresholds. Note that you can change the window size of the topology using the slider."),
       br(),
       p("Finally make sure to check all antibodies in the table have the same CDR3 length or the topology calculation will fail."),
-      width = 2
+      width = 3
       
     ),
-    
+
     mainPanel(
       tabsetPanel(
         tabPanel("Import Data",
-                 p("First upload each of your separate datasets (maximum 6). As long as they are in AIRR format (tab or tsv), they will be automatically converted for viewing in AIRRscape"),
-                 br(),
-                 p("Next input the name of each dataset - these names will be in each faceted dataset."),
-                 br(),
-                 p("Then click the combine button to make 2 combined HC datasets (each dataset separately labelled & all data combined."),
-                 br(),
-                 p("Finally click the download button to get the two files. You can then upload these two files in the main AIRRScape tab for viewing."),
-                 br(),
-                 fileInput(
-                   inputId = "calfile1", 
-                   label = "Select tsv or tab AIRR formatted dataset 1", 
-                   multiple = TRUE,
-                   accept = c(".tsv",".tab")),
-                 textInput("name1", "What's the title of dataset 1?"),
-                 fileInput(
-                   inputId = "calfile2", 
-                   label = "Select tsv or tab AIRR formatted dataset 2", 
-                   multiple = TRUE,
-                   accept = c(".tsv",".tab")),
-                 textInput("name2", "What's the title of dataset 2?"),
-                 fileInput(
-                   inputId = "calfile3", 
-                   label = "Select tsv or tab AIRR formatted dataset 3", 
-                   multiple = TRUE,
-                   accept = c(".tsv",".tab")),
-                 textInput("name3", "What's the title of dataset 3?"),
-                 fileInput(
-                   inputId = "calfile4", 
-                   label = "Select tsv or tab AIRR formatted dataset 4", 
-                   multiple = TRUE,
-                   accept = c(".tsv",".tab")),
-                 textInput("name4", "What's the title of dataset 4?"),
-                 fileInput(
-                   inputId = "calfile5", 
-                   label = "Select tsv or tab AIRR formatted dataset 5", 
-                   multiple = TRUE,
-                   accept = c(".tsv",".tab")),
-                 textInput("name5", "What's the title of dataset 5?"),
-                 fileInput(
-                   inputId = "calfile6", 
-                   label = "Select tsv or tab AIRR formatted dataset 6", 
-                   multiple = TRUE,
-                   accept = c(".tsv",".tab")),
-                 textInput("name6", "What's the title of dataset 6?"),
-                 actionButton("go0", "Combine!"), 
-                 downloadButton("downloadfilter01","Download combined datasets - but with separate ids"),
-                 downloadButton("downloadfilter02","Download combined datasets - fully combined")
+                 column(8,
+                        br(),
+                        p("First upload each of your separate datasets (maximum 6). As long as they are in AIRR format (tab or tsv), they will be automatically converted for viewing in AIRRscape"),
+                        p("Next input the name of each dataset - these names will be in each faceted dataset."),
+                        p("Then click the combine button to make 2 combined HC datasets (each dataset separately labelled & all data combined."),
+                        p("Finally click the download button to get the two files. You can then upload these two files in the main AIRRScape tab for viewing."),
+                        fileInput(
+                          inputId = "calfile1", 
+                          label = "Select tsv or tab AIRR formatted dataset 1", 
+                          multiple = FALSE,
+                          accept = c(".tsv",".tab")),
+                        textInput("name1", "What's the title of dataset 1?"),
+                        fileInput(
+                          inputId = "calfile2", 
+                          label = "Select tsv or tab AIRR formatted dataset 2", 
+                          multiple = FALSE,
+                          accept = c(".tsv",".tab")),
+                        textInput("name2", "What's the title of dataset 2?"),
+                        fileInput(
+                          inputId = "calfile3", 
+                          label = "Select tsv or tab AIRR formatted dataset 3", 
+                          multiple = FALSE,
+                          accept = c(".tsv",".tab")),
+                        textInput("name3", "What's the title of dataset 3?"),
+                        br(),
+                        br(),
+                        actionButton("go0", "Combine!"), 
+                        downloadButton("downloadfilter01","Download combined datasets - but with separate ids"),
+                        downloadButton("downloadfilter02","Download combined datasets - fully combined")
+                        ),
+                 column(4,
+                        br(),
+                        br(),
+                        br(),
+                        br(),
+                        br(),
+                        br(),
+                        fileInput(
+                          inputId = "calfile4", 
+                          label = "Select tsv or tab AIRR formatted dataset 4", 
+                          multiple = FALSE,
+                          accept = c(".tsv",".tab")),
+                        textInput("name4", "What's the title of dataset 4?"),
+                        fileInput(
+                          inputId = "calfile5", 
+                          label = "Select tsv or tab AIRR formatted dataset 5", 
+                          multiple = FALSE,
+                          accept = c(".tsv",".tab")),
+                        textInput("name5", "What's the title of dataset 5?"),
+                        fileInput(
+                          inputId = "calfile6", 
+                          label = "Select tsv or tab AIRR formatted dataset 6", 
+                          multiple = FALSE,
+                          accept = c(".tsv",".tab")),
+                        textInput("name6", "What's the title of dataset 6?")
+                        )
                  ),
         tabPanel("AIRRscape",
-                 plotOutput("ggplot1", width = "120%", height = "800px", hover = "plot_hover", click = "plot_click", brush = "plot_brush"),
+                 plotOutput("ggplot1", width = "120%", height = "800px", hover = hoverOpts(id = "plot_hover", delay = 400, delayType = c("debounce", "throttle")), click = "plot_click", brush = "plot_brush"),
                  uiOutput("hover_info"),
                  # uiOutput("hover_info", style = "pointer-events: none"),
                  DT::dataTableOutput("brush_info"),
@@ -650,7 +659,17 @@ server <- function(input, output, session) {
   
   ## isolating the hover x & y for highlighting - note works but makes hover pop up window very momentary
   ## tried to below within renderPlot, doesn't change (trying isolate - same issue, then observe & isolate - breaks)
-
+  highlightedpointsDSx <- reactive({
+    dat <- inputdataset()
+    highlightedpoint <- nearPoints(dat, input$plot_hover, threshold = 5, maxpoints = 1, addDist = FALSE)
+    highlightedpoint$gf_jgene
+  })
+  highlightedpointsDSy <- reactive({
+    dat <- inputdataset()
+    highlightedpoint <- nearPoints(dat, input$plot_hover, threshold = 5, maxpoints = 1, addDist = FALSE)
+    highlightedpoint$cdr3length_imgt
+  })
+  
   ### added code to allow for trees of subsetted data:
   # Thanks to @yihui this is now possible using the DT package and input$tableId_rows_all 
   # where tableID is the id assigned to your table. See the link for details. http://rstudio.github.io/DT/shiny.html
@@ -698,6 +717,8 @@ server <- function(input, output, session) {
   ### Hover output: popup window
   output$hover_info <- renderUI({
     hover <- input$plot_hover
+    ## below line also added per https://github.com/rstudio/shiny/issues/2286
+    if(is.null(hover)) return(NULL)
     dat <- inputdataset()
     ## first line for picking among different graphs- NOTE CHANGE TO 'DAT'
     point <- nearPoints(dat, input$plot_hover, threshold = 5, maxpoints = 1, addDist = TRUE)
@@ -725,7 +746,8 @@ server <- function(input, output, session) {
     # create style property for tooltip
     # background color is set so tooltip is a bit transparent
     # z-index is set so we are sure are tooltip will be on top
-    style <- paste0("position:absolute; z-index:100; background-color: rgba(245, 245, 245, 0.85); ",
+    ## adding pointer-events per https://github.com/rstudio/shiny/issues/2286
+    style <- paste0("position:absolute; z-index:100; pointer-events:none; background-color: rgba(245, 245, 245, 0.85); ",
                     "left:", left_px, "px; top:", top_px + 20, "px;")
     # actual tooltip created as wellPanel - TO ACTUALLY GET COUNTS NEED TO GET FROM STAT_BIN ANALYSIS...
     wellPanel(
@@ -745,11 +767,11 @@ server <- function(input, output, session) {
     dat <- inputdataset()
     #    note at end of the 3 plot commands below has a final geom_point plotting step to add a green square under the hover, currently it disappears after a moment - tried adding an isolate command, didn't solve
     data2 <- if (input$plotcolors == "Average SHM") {
-      toplot <- ggplot(dat, aes(gf_jgene,cdr3length_imgt)) + geom_tile(aes(fill = shm_mean)) + scale_y_continuous(limits = c(3, 42)) + theme_bw(base_size = 16) + ylab("CDR3 Length (aa)") + xlab("V-gene & J-gene") + facet_wrap(facet_formula, ncol = 1, scales = facetvar2()) + scale_fill_viridis_c(name = "Mean \nSHM (%)", option = "C") + theme(axis.text.x = element_text(angle=45, hjust=1, size=8)) + ggtitle("Bins of V+J gene families vs. CDR3 length, with Mean Somatic Hypermutation as fill color") + theme(plot.title = element_text(size = 20, face = "bold"))
+      toplot <- ggplot(dat, aes(gf_jgene,cdr3length_imgt)) + geom_tile(aes(fill = shm_mean)) + scale_y_continuous(limits = c(3, 42)) + theme_bw(base_size = 16) + ylab("CDR3 Length (aa)") + xlab("V-gene & J-gene") + facet_wrap(facet_formula, ncol = 1, scales = facetvar2()) + scale_fill_viridis_c(name = "Mean \nSHM (%)", option = "C") + theme(axis.text.x = element_text(angle=45, hjust=1, size=8)) + ggtitle("Bins of V+J gene families vs. CDR3 length, with Mean Somatic Hypermutation as fill color") + theme(plot.title = element_text(size = 20, face = "bold")) #+ geom_point(data=subset(dat, gf_jgene ==  highlightedpointsDSx() & cdr3length_imgt == highlightedpointsDSy()), color = "green", shape = "square", size = 4)
     } else if (input$plotcolors == "Maximum SHM") {
-      toplot <- ggplot(dat, aes(gf_jgene,cdr3length_imgt)) + geom_tile(aes(fill = shm_max)) + scale_y_continuous(limits = c(3, 42)) + theme_bw(base_size = 16) + ylab("CDR3 Length (aa)") + xlab("V-gene & J-gene") + facet_wrap(facet_formula, ncol = 1, scales = facetvar2()) + scale_fill_viridis_c(name = "Max \nSHM (%)", option = "C") + theme(axis.text.x = element_text(angle=45, hjust=1, size=8)) + ggtitle("Bins of V+J gene families vs. CDR3 length, with Maximum Somatic Hypermutation as fill color") + theme(plot.title = element_text(size = 20, face = "bold"))
+      toplot <- ggplot(dat, aes(gf_jgene,cdr3length_imgt)) + geom_tile(aes(fill = shm_max)) + scale_y_continuous(limits = c(3, 42)) + theme_bw(base_size = 16) + ylab("CDR3 Length (aa)") + xlab("V-gene & J-gene") + facet_wrap(facet_formula, ncol = 1, scales = facetvar2()) + scale_fill_viridis_c(name = "Max \nSHM (%)", option = "C") + theme(axis.text.x = element_text(angle=45, hjust=1, size=8)) + ggtitle("Bins of V+J gene families vs. CDR3 length, with Maximum Somatic Hypermutation as fill color") + theme(plot.title = element_text(size = 20, face = "bold")) #+ geom_point(data=subset(dat, gf_jgene ==  highlightedpointsDSx() & cdr3length_imgt == highlightedpointsDSy()), color = "green", shape = "square", size = 4)
     } else {
-      toplot <- ggplot(dat, aes(gf_jgene,cdr3length_imgt)) + geom_bin2d(bins = 40, aes(fill= (..count..)*100/tapply(..count..,..PANEL..,sum)[..PANEL..])) + scale_y_continuous(limits = c(3, 42)) + theme_bw(base_size = 16) + ylab("CDR3 Length (aa)") + xlab("V-gene & J-gene") + facet_wrap(facet_formula, ncol = 1, scales = facetvar2()) + scale_fill_viridis_c(name = "% of \nReads  ", option = "C") + theme(axis.text.x = element_text(angle=45, hjust=1, size=8)) + ggtitle("Bins of V+J gene families vs. CDR3 length, with Percentage of total antibody sequences as fill color") + theme(plot.title = element_text(size = 20, face = "bold"))
+      toplot <- ggplot(dat, aes(gf_jgene,cdr3length_imgt)) + geom_bin2d(bins = 40, aes(fill= (..count..)*100/tapply(..count..,..PANEL..,sum)[..PANEL..])) + scale_y_continuous(limits = c(3, 42)) + theme_bw(base_size = 16) + ylab("CDR3 Length (aa)") + xlab("V-gene & J-gene") + facet_wrap(facet_formula, ncol = 1, scales = facetvar2()) + scale_fill_viridis_c(name = "% of \nReads  ", option = "C") + theme(axis.text.x = element_text(angle=45, hjust=1, size=8)) + ggtitle("Bins of V+J gene families vs. CDR3 length, with Percentage of total antibody sequences as fill color") + theme(plot.title = element_text(size = 20, face = "bold")) #+ geom_point(data=subset(dat, gf_jgene ==  highlightedpointsDSx() & cdr3length_imgt == highlightedpointsDSy()), color = "green", shape = "square", size = 4)
     }     
     toplot
   }, width = 1200, height = "auto")
@@ -988,5 +1010,5 @@ server <- function(input, output, session) {
   })  
   
 }
-
+onStop(function() { print("bye")})
 shinyApp(ui = ui, server = server)
