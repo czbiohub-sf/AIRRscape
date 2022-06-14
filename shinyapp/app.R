@@ -19,20 +19,10 @@ library(phangorn)
 library(ape)
 library(shinyscreenshot)
 
-setwd("~/data_carpentry/AIRRscape/shinyapp")
 options(shiny.maxRequestSize=5000*1024^2)
 ##########
 
-## 2 more functions
-Mode <- function(x) {
-  ux <- unique(x)
-  ux[which.max(tabulate(match(x, ux)))]
-}
 
-
-is.wholenumber <- function(x, tol = .Machine$double.eps^0.5) {
-  abs(x - round(x)) < tol
-}
 ### single processing function
 ##################################################################################################################
 
@@ -164,7 +154,7 @@ toshiny.hiv.allc <- read_tsv("toshiny_hiv_allc.tab")
 toshiny.den.all <- read_tsv("toshiny_den_all.tab")
 toshiny.den.allc <- read_tsv("toshiny_den_allc.tab")
 
-#toshiny.cov2hivden.allc <- read.delim("toshiny_cov2hivden_allc.tab")
+toshiny.cov2hivden.allc <- read.delim("toshiny_cov2hivden_allc.tab")
 
 ## then for each dataframe change sequence_id & cdr3_aa_imgt columns to character
 ## if using read_tsv do not need, but also need to change to non-tibble df for treebuilding
@@ -183,8 +173,8 @@ toshiny.hiv.allc <- toshiny.hiv.allc %>% as.data.frame()
 toshiny.den.all <- toshiny.den.all %>% as.data.frame()
 toshiny.den.allc <- toshiny.den.allc %>% as.data.frame()
 
-# toshiny.cov2hivden.allc$sequence_id <- as.character(toshiny.cov2hivden.allc$sequence_id)
-# toshiny.cov2hivden.allc$cdr3_aa_imgt <- as.character(toshiny.cov2hivden.allc$cdr3_aa_imgt)
+toshiny.cov2hivden.allc$sequence_id <- as.character(toshiny.cov2hivden.allc$sequence_id)
+toshiny.cov2hivden.allc$cdr3_aa_imgt <- as.character(toshiny.cov2hivden.allc$cdr3_aa_imgt)
 
 ## to re-order any rows for plotting re-run here
 toshiny.cov2.abdab.h$binding <- factor(toshiny.cov2.abdab.h$binding, levels = c("RBD", "non-RBD"))
@@ -199,9 +189,8 @@ toshiny.den.all$id <- factor(toshiny.den.all$id, levels = c("Dengue plasmablasts
 ui <- fluidPage(
   titlePanel("AIRRscape"),
   sidebarLayout(
-    
     sidebarPanel(
-      img(src="AIRRscape_logo.png", height = 300, width = 300, align = "center"),
+      img(src="AIRRscape_logo.png", height = 250, width = 250, align = "center"),
       selectInput("dataset", "Dataset:",
                   c("SARS-CoV2 mAbs - heavy chains & light chains",
                     "SARS-CoV2 mAbs - IgH by binding",
@@ -214,6 +203,7 @@ ui <- fluidPage(
                     "HIV mAbs vs. HIV patient MT1214 bulk repertoire vs. HIV patient NIH45 bulk repertoire vs. HIV Setliff 2018 patient bulk repertoires - IgH combined",
                     "Dengue mAbs vs. Dengue patient d13 bulk repertoire vs. Dengue Parameswaran 2013 patient bulk repertoires - IgH",
                     "Dengue mAbs vs. Dengue patient d13 bulk repertoire vs. Dengue Parameswaran 2013 patient bulk repertoires - IgH combined",
+                    "SARS-CoV2 HIV & Dengue datasets - IgH combined",
                     "Your datasets - IgH",
                     "Your datasets - IgH combined"), selectize = FALSE),
       selectInput("plotcolors", "Plot Colors:",
@@ -230,15 +220,14 @@ ui <- fluidPage(
         label = "Select converted & combined tsv/tab files - then the 'fullycombined' file", 
         multiple = FALSE,
         accept = c(".tsv",".tab")),
-      h5("Import Data tab"),
+      h5("Import Data tab:"),
       p("This is only necessary if you have AIRR-C data you wish to convert and combine for visualizing in AIRRscape."),
-      h5("AIRRscape visualization tab"),
+      h5("AIRRscape visualization tab:"),
       p("When plots appear, click on a bin to get a list of antibodies in the lower table. Hovering over a bin will show some basic stats."),
       p("Alternately if you want to see more than a bin you can create a box and all antibodies within will appear in the top table."),
       p("From the lower table you can download all or selected antibodies in the chosen bin, download the distance matrix of all antibodies, or create topologies of selected antibodies. The last topology options are to find the nearest sequences (up to 500) of a single selected antibody, with four possible distance thresholds. Note that you can change the window size of the topology using the slider."),
       p("Finally make sure to check all antibodies in the table have the same CDR3 length or the topology calculation will fail."),
-      width = 3
-      
+      width = 4
     ),
 
     mainPanel(
@@ -324,7 +313,7 @@ ui <- fluidPage(
                  div(style="display: inline-block; width: 300px;",
                      sliderInput("height", "Topology height", min = 200, max = 4200, value = 1000)),
                  div(style="display: inline-block; width: 300px;",
-                     sliderInput("width2", "Topology width (wider -> narrower)", min = 1, max = 181, value = 5)),
+                     sliderInput("width2", "Topology width (wider -> narrower)", min = 1, max = 501, value = 10)),
                  # div(style="display: inline-block; width: 300px;",
                  #     sliderInput("width", "Topology width2", min = 100, max = 3000, value = 1600)),
                  div(HTML("<br>")),br(),
@@ -341,10 +330,10 @@ server <- function(input, output, session) {
   ## early in server now defining facets here - this is where all of the sidebar dataset options are tied to a dataset
   
 
-  ## JUNE 2022 - ADDING ALL OF AIRRscapeInput APP (SERVER PART) HERE...
-  ############################################################################################################
-        ######################## INPUT COMPONENT #######################
-  ############################################################################################################
+  ## ADDING AIRRscapeInput APP (SERVER PART) HERE...
+############################################################################################################
+########################################### INPUT COMPONENT ################################################  
+############################################################################################################
   ## need to add uploads1 <- NULL ???
   ## this only works if you include the if isn't null argument...also another tricky part is below where you specify these if selected (the inputdataset <- reactive({ part...), you need to add parentheses, so uploads1() and uploads2() !!!
   uploads1 <- reactive({
@@ -573,9 +562,9 @@ server <- function(input, output, session) {
     }
   )      
   
-  ############################################################################################################
-        ######################### END INPUT COMPONENT #########################  
-  ############################################################################################################
+############################################################################################################
+####################################### END INPUT COMPONENT ################################################  
+############################################################################################################
   
 ## this only works if you include the if isn't null argument...also another tricky part is below where you specify these if selected (the inputdataset <- reactive({ part...), you need to add parentheses, so uploads11() and uploads12() !!!
   uploads11 <- reactive({
@@ -645,7 +634,7 @@ server <- function(input, output, session) {
   })
 
   facetvar1 <- reactive({
-    switch(input$dataset, "SARS-CoV2 mAbs - heavy chains & light chains" = "cregion", "SARS-CoV2 mAbs - IgH by binding" = "binding", "SARS-CoV2 mAbs - IgH by neutralization" = "neutralization", "SARS-CoV2 mAbs vs. 4 COVID-19 patient bulk repertoires vs. Healthy control bulk repertoire - IgH" = "id", "SARS-CoV2 mAbs vs. 4 COVID-19 patient bulk repertoires vs. Healthy control bulk repertoire - IgH combined" = "cregion", "SARS-CoV2 mAbs vs. HIV mAbs - IgH" = "id", "SARS-CoV2 mAbs vs. HIV mAbs - IgH combined" = "cregion", "HIV mAbs vs. HIV patient MT1214 bulk repertoire vs. HIV patient NIH45 bulk repertoire vs. HIV Setliff 2018 patient bulk repertoires - IgH" = "id", "HIV mAbs vs. HIV patient MT1214 bulk repertoire vs. HIV patient NIH45 bulk repertoire vs. HIV Setliff 2018 patient bulk repertoires - IgH combined" = "cregion", "Dengue mAbs vs. Dengue patient d13 bulk repertoire vs. Dengue Parameswaran 2013 patient bulk repertoires - IgH" = "id", "Dengue mAbs vs. Dengue patient d13 bulk repertoire vs. Dengue Parameswaran 2013 patient bulk repertoires - IgH combined" = "cregion", "Your datasets - IgH" = "id", "Your datasets - IgH combined" = "cregion")
+    switch(input$dataset, "SARS-CoV2 mAbs - heavy chains & light chains" = "cregion", "SARS-CoV2 mAbs - IgH by binding" = "binding", "SARS-CoV2 mAbs - IgH by neutralization" = "neutralization", "SARS-CoV2 mAbs vs. 4 COVID-19 patient bulk repertoires vs. Healthy control bulk repertoire - IgH" = "id", "SARS-CoV2 mAbs vs. 4 COVID-19 patient bulk repertoires vs. Healthy control bulk repertoire - IgH combined" = "cregion", "SARS-CoV2 mAbs vs. HIV mAbs - IgH" = "id", "SARS-CoV2 mAbs vs. HIV mAbs - IgH combined" = "cregion", "HIV mAbs vs. HIV patient MT1214 bulk repertoire vs. HIV patient NIH45 bulk repertoire vs. HIV Setliff 2018 patient bulk repertoires - IgH" = "id", "HIV mAbs vs. HIV patient MT1214 bulk repertoire vs. HIV patient NIH45 bulk repertoire vs. HIV Setliff 2018 patient bulk repertoires - IgH combined" = "cregion", "Dengue mAbs vs. Dengue patient d13 bulk repertoire vs. Dengue Parameswaran 2013 patient bulk repertoires - IgH" = "id", "Dengue mAbs vs. Dengue patient d13 bulk repertoire vs. Dengue Parameswaran 2013 patient bulk repertoires - IgH combined" = "cregion", "SARS-CoV2 HIV & Dengue datasets - IgH combined" = "cregion","Your datasets - IgH" = "id", "Your datasets - IgH combined" = "cregion")
   })
   ## to change x-axis columns vs. leaving fixed (for IgH only datasets) - note if you leave out default is fixed...
   facetvar2 <- reactive({
@@ -654,7 +643,7 @@ server <- function(input, output, session) {
   
   inputdataset <- reactive({
     ## using new names that reduce variables, round
-    switch(input$dataset, "SARS-CoV2 mAbs - heavy chains & light chains" = toshiny.cov2.abdab, "SARS-CoV2 mAbs - IgH by binding" = toshiny.cov2.abdab.h, "SARS-CoV2 mAbs - IgH by neutralization" = toshiny.cov2.abdab.h, "SARS-CoV2 mAbs vs. 4 COVID-19 patient bulk repertoires vs. Healthy control bulk repertoire - IgH" = toshiny.cov2.all, "SARS-CoV2 mAbs vs. 4 COVID-19 patient bulk repertoires vs. Healthy control bulk repertoire - IgH combined" = toshiny.cov2.allc, "SARS-CoV2 mAbs vs. HIV mAbs - IgH" = toshiny.cov2hiv, "SARS-CoV2 mAbs vs. HIV mAbs - IgH combined" = toshiny.cov2hivc, "HIV mAbs vs. HIV patient MT1214 bulk repertoire vs. HIV patient NIH45 bulk repertoire vs. HIV Setliff 2018 patient bulk repertoires - IgH" = toshiny.hiv.all, "HIV mAbs vs. HIV patient MT1214 bulk repertoire vs. HIV patient NIH45 bulk repertoire vs. HIV Setliff 2018 patient bulk repertoires - IgH combined" = toshiny.hiv.allc, "Dengue mAbs vs. Dengue patient d13 bulk repertoire vs. Dengue Parameswaran 2013 patient bulk repertoires - IgH" = toshiny.den.all, "Dengue mAbs vs. Dengue patient d13 bulk repertoire vs. Dengue Parameswaran 2013 patient bulk repertoires - IgH combined" = toshiny.den.allc, "Your datasets - IgH" = convert11(), "Your datasets - IgH combined" = convert12())
+    switch(input$dataset, "SARS-CoV2 mAbs - heavy chains & light chains" = toshiny.cov2.abdab, "SARS-CoV2 mAbs - IgH by binding" = toshiny.cov2.abdab.h, "SARS-CoV2 mAbs - IgH by neutralization" = toshiny.cov2.abdab.h, "SARS-CoV2 mAbs vs. 4 COVID-19 patient bulk repertoires vs. Healthy control bulk repertoire - IgH" = toshiny.cov2.all, "SARS-CoV2 mAbs vs. 4 COVID-19 patient bulk repertoires vs. Healthy control bulk repertoire - IgH combined" = toshiny.cov2.allc, "SARS-CoV2 mAbs vs. HIV mAbs - IgH" = toshiny.cov2hiv, "SARS-CoV2 mAbs vs. HIV mAbs - IgH combined" = toshiny.cov2hivc, "HIV mAbs vs. HIV patient MT1214 bulk repertoire vs. HIV patient NIH45 bulk repertoire vs. HIV Setliff 2018 patient bulk repertoires - IgH" = toshiny.hiv.all, "HIV mAbs vs. HIV patient MT1214 bulk repertoire vs. HIV patient NIH45 bulk repertoire vs. HIV Setliff 2018 patient bulk repertoires - IgH combined" = toshiny.hiv.allc, "Dengue mAbs vs. Dengue patient d13 bulk repertoire vs. Dengue Parameswaran 2013 patient bulk repertoires - IgH" = toshiny.den.all, "Dengue mAbs vs. Dengue patient d13 bulk repertoire vs. Dengue Parameswaran 2013 patient bulk repertoires - IgH combined" = toshiny.den.allc, "SARS-CoV2 HIV & Dengue datasets - IgH combined" = toshiny.cov2hivden.allc, "Your datasets - IgH" = convert11(), "Your datasets - IgH combined" = convert12())
   })
   ## extra filter for downloading
   filteredDS <- reactive({
