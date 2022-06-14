@@ -201,6 +201,7 @@ ui <- fluidPage(
   sidebarLayout(
     
     sidebarPanel(
+      img(src="AIRRscape_logo.png", height = 300, width = 300, align = "center"),
       selectInput("dataset", "Dataset:",
                   c("SARS-CoV2 mAbs - heavy chains & light chains",
                     "SARS-CoV2 mAbs - IgH by binding",
@@ -221,20 +222,20 @@ ui <- fluidPage(
                     "Percentage of total antibody sequences"), selectize = FALSE), 
       fileInput(
         inputId = "yourfile1", 
-        label = "Select converted & combined tsv/tab files - first the separate datasets", 
+        label = "Select converted & combined tsv/tab files - first the 'separateids' file", 
         multiple = FALSE,
         accept = c(".tsv",".tab")),
       fileInput(
         inputId = "yourfile2", 
-        label = "Select converted & combined tsv/tab files - then the combined datasets", 
+        label = "Select converted & combined tsv/tab files - then the 'fullycombined' file", 
         multiple = FALSE,
         accept = c(".tsv",".tab")),
+      h5("Import Data tab"),
+      p("This is only necessary if you have AIRR-C data you wish to convert and combine for visualizing in AIRRscape."),
+      h5("AIRRscape visualization tab"),
       p("When plots appear, click on a bin to get a list of antibodies in the lower table. Hovering over a bin will show some basic stats."),
-      br(),
       p("Alternately if you want to see more than a bin you can create a box and all antibodies within will appear in the top table."),
-      br(),
       p("From the lower table you can download all or selected antibodies in the chosen bin, download the distance matrix of all antibodies, or create topologies of selected antibodies. The last topology options are to find the nearest sequences (up to 500) of a single selected antibody, with four possible distance thresholds. Note that you can change the window size of the topology using the slider."),
-      br(),
       p("Finally make sure to check all antibodies in the table have the same CDR3 length or the topology calculation will fail."),
       width = 3
       
@@ -245,9 +246,9 @@ ui <- fluidPage(
         tabPanel("Import Data",
                  br(),
                  p("First upload each of your separate datasets (maximum 6). As long as they are in AIRR format (tab or tsv), they will be automatically converted for viewing in AIRRscape"),
-                 p("Next input the name of each dataset - these names will be in each faceted dataset."),
-                 p("Then click the combine button to make 2 combined HC datasets (each dataset separately labelled & all data combined."),
-                 p("Finally click the download button to get the two files. You can then upload these two files in the main AIRRScape tab for viewing."),
+                 p("Next input the name of each dataset - these names will be in each faceted dataset.", style = "text-indent: 1em;"),
+                 p("Then click the combine button to make 2 combined HC datasets (both with each dataset separately labelled & with all data combined.", style = "text-indent: 1em;"),
+                 p("Finally click the download button to get the two files. You can then upload these two files in the main AIRRScape tab for viewing.", style = "text-indent: 1em;"),
                  column(4,
                         br(),
                         fileInput(
@@ -323,7 +324,7 @@ ui <- fluidPage(
                  div(style="display: inline-block; width: 300px;",
                      sliderInput("height", "Topology height", min = 200, max = 4200, value = 1000)),
                  div(style="display: inline-block; width: 300px;",
-                     sliderInput("width2", "Topology width (wider -> narrower)", min = 1, max = 150, value = 5)),
+                     sliderInput("width2", "Topology width (wider -> narrower)", min = 1, max = 181, value = 5)),
                  # div(style="display: inline-block; width: 300px;",
                  #     sliderInput("width", "Topology width2", min = 100, max = 3000, value = 1600)),
                  div(HTML("<br>")),br(),
