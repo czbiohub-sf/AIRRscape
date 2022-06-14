@@ -154,7 +154,7 @@ toshiny.hiv.allc <- read_tsv("toshiny_hiv_allc.tab")
 toshiny.den.all <- read_tsv("toshiny_den_all.tab")
 toshiny.den.allc <- read_tsv("toshiny_den_allc.tab")
 
-toshiny.cov2hivden.allc <- read.delim("toshiny_cov2hivden_allc.tab")
+toshiny.cov2hivden.allc <- read_tsv("toshiny_cov2hivden_allc.tab")
 
 ## then for each dataframe change sequence_id & cdr3_aa_imgt columns to character
 ## if using read_tsv do not need, but also need to change to non-tibble df for treebuilding
@@ -173,8 +173,10 @@ toshiny.hiv.allc <- toshiny.hiv.allc %>% as.data.frame()
 toshiny.den.all <- toshiny.den.all %>% as.data.frame()
 toshiny.den.allc <- toshiny.den.allc %>% as.data.frame()
 
-toshiny.cov2hivden.allc$sequence_id <- as.character(toshiny.cov2hivden.allc$sequence_id)
-toshiny.cov2hivden.allc$cdr3_aa_imgt <- as.character(toshiny.cov2hivden.allc$cdr3_aa_imgt)
+toshiny.cov2hivden.allc <- toshiny.cov2hivden.allc %>% as.data.frame()
+
+# toshiny.cov2hivden.allc$sequence_id <- as.character(toshiny.cov2hivden.allc$sequence_id)
+# toshiny.cov2hivden.allc$cdr3_aa_imgt <- as.character(toshiny.cov2hivden.allc$cdr3_aa_imgt)
 
 ## to re-order any rows for plotting re-run here
 toshiny.cov2.abdab.h$binding <- factor(toshiny.cov2.abdab.h$binding, levels = c("RBD", "non-RBD"))
