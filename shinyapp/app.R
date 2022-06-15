@@ -276,7 +276,7 @@ ui <- fluidPage(
                         br(),
                         actionButton("go0", "Combine!"),
                         br(),
-                        downloadButton("downloadfilter01","Download combined datasets - but with separate ids"),
+                        downloadButton("downloadfilter01","Download combined datasets - with separate ids"),
                         downloadButton("downloadfilter02","Download combined datasets - fully combined")
                         ),
                  column(4,
