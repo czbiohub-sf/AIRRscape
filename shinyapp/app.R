@@ -55,6 +55,7 @@ AIRRscapeprocess <- function(x, filter_columns = TRUE, filter_to_HC = TRUE, renu
   x$gene <- getGene(x$v_call, first=TRUE, strip_d=TRUE)
   x$gf <- substring(x$gene, 1,5)
   x$jgene <- getGene(x$j_call, first=TRUE, strip_d=TRUE)
+  x$jgene <- substring(x$jgene, 1,5)
   ## this creates new column gf_jgene which is used in all shiny plots
   x <- x %>% unite(gf_jgene, gf, jgene, sep = "_", remove = FALSE, na.rm = TRUE)
   ## this removes any rows without CDR3, or with junctions that are not 3-mers
