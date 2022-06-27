@@ -858,7 +858,7 @@ hiv.iedb.fullv$cregion <- gsub('IG','Ig',hiv.iedb.fullv$cregion)
 ## resulting file is CATNAP_seqs_germ-pass.tsv
 
 hiv.mabs.catnap <- read_tsv("CATNAP_seqs_germ-pass.tsv")
-toshiny.hiv.mabs.catnap <- shinyprocess(hiv.mabs.catnap, renumber_sequences = FALSE, filter_after_counting = FALSE)  # shinyprocess function is at bottom of this script
+toshiny.hiv.mabs.catnap <- AIRRscapeprocess(hiv.mabs.catnap, renumber_sequences = FALSE, filter_after_counting = FALSE)  # shinyprocess function is at bottom of this script
 #write.table(toshiny.hiv.mabs.catnap, "toshiny_hiv_mabs_catnap.tab", sep = "\t", row.names = FALSE, quote = FALSE)
 
 ## then manually combined IEDB mabs with CATNAP
@@ -874,7 +874,7 @@ toshiny.hiv.mabs.catnap <- shinyprocess(hiv.mabs.catnap, renumber_sequences = FA
 ## resulting file is yacoob_seqs_germ-pass.tsv
 
 hiv.mabs.yacoob <- read_tsv("yacoob_seqs_germ-pass.tsv")
-toshiny.hiv.mabs.yacoob <- shinyprocess(hiv.mabs.yacoob, renumber_sequences = FALSE, filter_after_counting = FALSE) # shinyprocess function is at bottom of this script
+toshiny.hiv.mabs.yacoob <- AIRRscapeprocess(hiv.mabs.yacoob, renumber_sequences = FALSE, filter_after_counting = FALSE) # shinyprocess function is at bottom of this script
 #write.table(toshiny.hiv.mabs.yacoob, "toshiny_hiv_mabs_yacoob.tab", sep = "\t", row.names = FALSE, quote = FALSE)
 
 ## then combine IEDB, CATNAP & Yacoob mabs
@@ -1016,7 +1016,7 @@ cov2.abdab.fullvtoaddshm <- left_join(cov2.abdab.fullvtoaddshm, cov2.abdab.withf
 
 
 ## then run shinyprocess - if not already loaded, function is at bottom...
-toshiny.cov2.abdab.fullvtoaddshm <- shinyprocess(cov2.abdab.fullvtoaddshm, renumber_sequences = FALSE)
+toshiny.cov2.abdab.fullvtoaddshm <- AIRRscapeprocess(cov2.abdab.fullvtoaddshm, renumber_sequences = FALSE)
 
 toshiny.cov2.abdab.fullvtoaddshm <- toshiny.cov2.abdab.fullvtoaddshm %>% relocate(sequence_id)
 ## need to recover 257 sequences lost during shinyprocess computation
@@ -1076,97 +1076,109 @@ toshiny.cov2.abdab$fullv <- NULL
 # toshiny.cov2.abdab <- read_tsv("shinyapp/toshiny_cov2_abdab.tab")
 
 ##############################################################################################################################
-## shinyprocess function
+## shinyprocess function updated to AIRRscapeprocess
 ##############################################################################################################################
 
-shinyprocess <- function(x, filter_columns = TRUE, renumber_sequences = TRUE, filter_after_counting = TRUE) {
-   colname <- substitute(x)
-   ## this removes columns with all NAs
-   x <- x[!map_lgl(x, ~ all(is.na(.)))]
-   ## this calculates SHM but depending on whether v_identity is from 0 to 1 or 0 to 100
-   if (mean(x$v_identity) < 1) {
-      x$shm <- (100 - (x$v_identity * 100))
-   } else {
-      x$shm <- (100 - x$v_identity)
-   }
-   ## this makes new standard cdr3 column (sometimes already exists, but there should always be a junction_aa) by removing both ends of the junction_aa column
-   x$cdr3_aa_imgt <- x$junction_aa
-   str_sub(x$cdr3_aa_imgt, -1, -1) <- ""
-   str_sub(x$cdr3_aa_imgt, 1, 1) <- ""
-   ## this calculates the CDR3 length
-   x$cdr3length_imgt <- nchar(x$cdr3_aa_imgt)
-   ## removing non-productive, out of frame, stop codons, any X in CDR3 (was 'nnnn' in sequence)
-   x <- x %>% filter(productive != "FALSE") %>%
-      filter(vj_in_frame != "FALSE") %>%
-      filter(productive != "F") %>%
-      filter(vj_in_frame != "F")
-   x <- x[ grep("\\*", x$junction_aa, invert = TRUE) , ]
-   x <- x[ grep("\\X", x$junction_aa, invert = TRUE) , ]
-   ### removing all sequences with IMGT CDR3 less than 3
-   x <- x %>% filter(cdr3length_imgt > 2.8)  
-   ## next lines create V gene family, J gene columns
-   x$gene <- getGene(x$v_call, first=TRUE, strip_d=TRUE)
-   x$gf <- substring(x$gene, 1,5)
-   x$jgene <- getGene(x$j_call, first=TRUE, strip_d=TRUE)
-   ## this creates new column gf_jgene which is used in all shiny plots
-   x <- x %>% unite(gf_jgene, gf, jgene, sep = "_", remove = FALSE, na.rm = TRUE)
-   ## this removes any rows without CDR3, or with junctions that are not 3-mers
-   x <- x %>% filter(!is.na(cdr3length_imgt)) %>% 
-      filter(is.wholenumber(cdr3length_imgt))
-   # if there is a clone_id column this will make a count of reads_per_clone
-   if ("clone_id" %in% names(x)) {
-      x <- x %>% add_count(clone_id) %>%
-         rename(reads_per_clone = n)
-   }
-   ## if no cregion column, make one  !(x %in% y)
-   if (!("cregion" %in% names(x))) {
-      x$cregion <- str_sub(x$v_call, end=3)
-      x$cregion <- gsub('IG','Ig',x$cregion)
-   }
-   ## making more important columns used in plotting, also a rounding step
-   x <- x %>%
+AIRRscapeprocess <- function(x, filter_columns = TRUE, filter_to_HC = TRUE, renumber_sequences = TRUE, filter_after_counting = TRUE) {
+  colname <- substitute(x)
+  ## this removes columns with all NAs
+  x <- x[!map_lgl(x, ~ all(is.na(.)))]
+  ## this calculates SHM but depending on whether v_identity is from 0 to 1 or 0 to 100
+  if (mean(x$v_identity) < 1) {
+    x$shm <- (100 - (x$v_identity * 100))
+  } else {
+    x$shm <- (100 - x$v_identity)
+  }
+  ## this makes new standard cdr3 column (sometimes already exists, but there should always be a junction_aa) by removing both ends of the junction_aa column
+  x$cdr3_aa_imgt <- x$junction_aa
+  str_sub(x$cdr3_aa_imgt, -1, -1) <- ""
+  str_sub(x$cdr3_aa_imgt, 1, 1) <- ""
+  ## this calculates the CDR3 length
+  x$cdr3length_imgt <- nchar(x$cdr3_aa_imgt)
+  ## removing non-productive, out of frame, stop codons, any X in CDR3 (was 'nnnn' in sequence)
+  x <- x %>% filter(productive != "FALSE") %>%
+    filter(vj_in_frame != "FALSE") %>%
+    filter(productive != "F") %>%
+    filter(vj_in_frame != "F")
+  x <- x[ grep("\\*", x$junction_aa, invert = TRUE) , ]
+  x <- x[ grep("\\X", x$junction_aa, invert = TRUE) , ]
+  ### removing all sequences with IMGT CDR3 less than 3
+  x <- x %>% filter(cdr3length_imgt > 2.8)  
+  ## next lines create V gene family, J gene columns
+  x$gene <- getGene(x$v_call, first=TRUE, strip_d=TRUE)
+  x$gf <- substring(x$gene, 1,5)
+  x$jgene <- getGene(x$j_call, first=TRUE, strip_d=TRUE)
+  x$jgene <- substring(x$jgene, 1,5)
+  ## this creates new column gf_jgene which is used in all shiny plots
+  x <- x %>% unite(gf_jgene, gf, jgene, sep = "_", remove = FALSE, na.rm = TRUE)
+  ## this removes any rows without CDR3, or with junctions that are not 3-mers
+  x <- x %>% filter(!is.na(cdr3length_imgt)) %>% 
+    filter(is.wholenumber(cdr3length_imgt))
+  # if there is a clone_id column this will make a count of reads_per_clone
+  if ("clone_id" %in% names(x)) {
+    x <- x %>% add_count(clone_id) %>%
+      rename(reads_per_clone = n)
+  }
+  ## if no cregion column, make one  !(x %in% y) - moving substitution from IG to Ig outside of the if to always have it...
+  if (!("cregion" %in% names(x))) {
+    x$cregion <- str_sub(x$v_call, end=3)
+    # x$cregion <- gsub('IG','Ig',x$cregion)
+  }
+  x$cregion <- gsub('IG','Ig',x$cregion)
+  ## adding conversion to standardize light chain naming if necessary...
+  x$cregion <- gsub("IgK","Kappa",x$cregion)
+  x$cregion <- gsub("IgL","Lambda",x$cregion)
+  ## making more important columns used in plotting, also a rounding step
+  x <- x %>%
+    add_count(gf_jgene,cdr3length_imgt) %>% 
+    rename(ncount = n) %>% 
+    group_by(gf_jgene,cdr3length_imgt) %>% 
+    mutate(shm_mean = mean(shm, na.rm = TRUE)) %>% 
+    # NOTE ADDIN MAX SHM AS WELL..
+    mutate(shm_max = max(shm, na.rm = TRUE)) %>% 
+    mutate(across(shm, round, 2)) %>% 
+    mutate(across(shm_max, round, 2)) %>% 
+    mutate(across(shm_mean, round, 2))
+  ## this will filter the dataset if filter_columns option is set to true - note the any_of which allows columns to be missing
+  vars2 <- c("sequence_id", "binding", "neutralization", "cregion", "cdr3_aa_imgt","gene", "gf_jgene", "gf","jgene", "cdr3length_imgt", "shm", "shm_max", "shm_mean", "ncount", "reads_per_clone")
+  if (filter_columns) {
+    x <- x %>% select(any_of(vars2))
+  }
+  ## this will filter to heavy chains only...
+  if (filter_to_HC) {
+    x <- x %>% filter(cregion == "IgH" | cregion == "IgA" | cregion == "IgD" | cregion == "IgE" | cregion == "IgG" | cregion == "IgM")
+  }
+  ## this will remove all redundant sequences with same gf/gene & cdr3 motif...note we count above so okay to collapse here!!
+  if (filter_after_counting) {
+    x <- x %>%
+      group_by(cdr3_aa_imgt,gf_jgene) %>%
+      summarize_all(first) %>%
+      rename(ncountfull = ncount) %>% 
+      ungroup() %>%
       add_count(gf_jgene,cdr3length_imgt) %>% 
-      rename(ncount = n) %>% 
-      group_by(gf_jgene,cdr3length_imgt) %>% 
-      mutate(shm_mean = mean(shm, na.rm = TRUE)) %>% 
-      # NOTE ADDIN MAX SHM AS WELL..
-      mutate(shm_max = max(shm, na.rm = TRUE)) %>% 
-      mutate(across(shm, round, 2)) %>% 
-      mutate(across(shm_max, round, 2)) %>% 
-      mutate(across(shm_mean, round, 2))
-   ## this will filter the dataset if filter_columns option is set to true - note the any_of which allows columns to be missing
-   vars2 <- c("sequence_id", "binding", "neutralization", "cregion", "cdr3_aa_imgt","gene", "gf_jgene", "gf","jgene", "cdr3length_imgt", "shm", "shm_max", "shm_mean", "ncount", "reads_per_clone")
-   if (filter_columns) {
-      x <- x %>% select(any_of(vars2))
-   }
-   ## this will remove all redundant sequences with same gf/gene & cdr3 motif...note we count above so okay to collapse here!!
-   if (filter_after_counting) {
-      x <- x %>%
-         group_by(cdr3_aa_imgt,gf_jgene) %>%
-         summarize_all(first) %>%
-         rename(ncountfull = ncount) %>% 
-         ungroup() %>%
-         add_count(gf_jgene,cdr3length_imgt) %>% 
-         rename(ncount = n) %>%
-         relocate(ncount, .before = shm_mean)
-   }
-   ## this will make a new sequence_id column with new row names if renumber_sequences option is set to true MOVING LAST TO CHANGE X DEFINITION
-   if (renumber_sequences) {
-      ## NOTE THIS NOW WORKS, TRICK WAS TO ASSIGN COLNAME VERY EARLY ON BEFORE ANYTHING ELSE...
-      ## adding change from underscores to dashes...
-      x$dataset <- deparse(substitute(colname))
-      x$dataset <- gsub('"','',x$dataset)
-      x$dataset <- gsub("\\.","\\-",x$dataset)
-      x$dataset <- gsub("\\_","\\-",x$dataset)
-      x$obs <- 1:nrow(x) 
-      x <- x %>% unite(sequence_id, dataset, obs, sep = "_", remove = TRUE, na.rm = TRUE)
-      # x <- x %>% relocate(sequence_id, .before = cregion)  ## changed to default i.e. move to make first column
-      x <- x %>% relocate(sequence_id)
-      # x$sequence_id <- gsub("\\_","\\-",x$sequence_id) ## moved to always run
-   }
-   ## need to always check and remove underscores from all names
-   x$sequence_id <- gsub("\\_","\\-",x$sequence_id)
-   return(x)
+      rename(ncount = n) %>%
+      relocate(ncount, .before = shm_mean)
+  }
+  ## this will make a new sequence_id column with new row names if renumber_sequences option is set to true MOVING LAST TO CHANGE X DEFINITION
+  if (renumber_sequences) {
+    ## NOTE THIS NOW WORKS, TRICK WAS TO ASSIGN COLNAME VERY EARLY ON BEFORE ANYTHING ELSE...
+    ## adding change from underscores to dashes...
+    x$dataset <- deparse(substitute(colname))
+    x$dataset <- gsub('"','',x$dataset)
+    x$dataset <- gsub("\\.","\\-",x$dataset)
+    x$dataset <- gsub("\\_","\\-",x$dataset)
+    x$obs <- 1:nrow(x) 
+    x <- x %>% unite(sequence_id, dataset, obs, sep = "_", remove = TRUE, na.rm = TRUE)
+    # x <- x %>% relocate(sequence_id, .before = cregion)  ## changed to default i.e. move to make first column
+    x <- x %>% relocate(sequence_id)
+    # x$sequence_id <- gsub("\\_","\\-",x$sequence_id) ## moved to always run
+  }
+  ## also adding as.character to the function - doesn't seem necessary here
+  # x$sequence_id <- as.character(x$sequence_id)
+  # x$cdr3_aa_imgt <- as.character(x$cdr3_aa_imgt)
+  ## need to always check and remove underscores from all names
+  x$sequence_id <- gsub("\\_","\\-",x$sequence_id)
+  return(x)
 }
 
 ##############################################################################################################################

@@ -70,9 +70,10 @@ is.wholenumber <- function(x, tol = .Machine$double.eps^0.5) {
 ## function has this conversion near end
 
 ### single function to do all of this pre-processing:
+### updated to AIRRscapeprocess
 ##################################################################################################################
 
-shinyprocess <- function(x, filter_columns = TRUE, renumber_sequences = TRUE, filter_after_counting = TRUE) {
+AIRRscapeprocess <- function(x, filter_columns = TRUE, filter_to_HC = TRUE, renumber_sequences = TRUE, filter_after_counting = TRUE) {
   colname <- substitute(x)
   ## this removes columns with all NAs
   x <- x[!map_lgl(x, ~ all(is.na(.)))]
@@ -101,6 +102,7 @@ shinyprocess <- function(x, filter_columns = TRUE, renumber_sequences = TRUE, fi
   x$gene <- getGene(x$v_call, first=TRUE, strip_d=TRUE)
   x$gf <- substring(x$gene, 1,5)
   x$jgene <- getGene(x$j_call, first=TRUE, strip_d=TRUE)
+  x$jgene <- substring(x$jgene, 1,5)
   ## this creates new column gf_jgene which is used in all shiny plots
   x <- x %>% unite(gf_jgene, gf, jgene, sep = "_", remove = FALSE, na.rm = TRUE)
   ## this removes any rows without CDR3, or with junctions that are not 3-mers
@@ -111,11 +113,15 @@ shinyprocess <- function(x, filter_columns = TRUE, renumber_sequences = TRUE, fi
     x <- x %>% add_count(clone_id) %>%
       rename(reads_per_clone = n)
   }
-  ## if no cregion column, make one  !(x %in% y)
+  ## if no cregion column, make one  !(x %in% y) - moving substitution from IG to Ig outside of the if to always have it...
   if (!("cregion" %in% names(x))) {
     x$cregion <- str_sub(x$v_call, end=3)
-    x$cregion <- gsub('IG','Ig',x$cregion)
+    # x$cregion <- gsub('IG','Ig',x$cregion)
   }
+  x$cregion <- gsub('IG','Ig',x$cregion)
+  ## adding conversion to standardize light chain naming if necessary...
+  x$cregion <- gsub("IgK","Kappa",x$cregion)
+  x$cregion <- gsub("IgL","Lambda",x$cregion)
   ## making more important columns used in plotting, also a rounding step
   x <- x %>%
     add_count(gf_jgene,cdr3length_imgt) %>% 
@@ -127,10 +133,14 @@ shinyprocess <- function(x, filter_columns = TRUE, renumber_sequences = TRUE, fi
     mutate(across(shm, round, 2)) %>% 
     mutate(across(shm_max, round, 2)) %>% 
     mutate(across(shm_mean, round, 2))
-## this will filter the dataset if filter_columns option is set to true - note the any_of which allows columns to be missing
+  ## this will filter the dataset if filter_columns option is set to true - note the any_of which allows columns to be missing
   vars2 <- c("sequence_id", "binding", "neutralization", "cregion", "cdr3_aa_imgt","gene", "gf_jgene", "gf","jgene", "cdr3length_imgt", "shm", "shm_max", "shm_mean", "ncount", "reads_per_clone")
   if (filter_columns) {
     x <- x %>% select(any_of(vars2))
+  }
+  ## this will filter to heavy chains only...
+  if (filter_to_HC) {
+    x <- x %>% filter(cregion == "IgH" | cregion == "IgA" | cregion == "IgD" | cregion == "IgE" | cregion == "IgG" | cregion == "IgM")
   }
   ## this will remove all redundant sequences with same gf/gene & cdr3 motif...note we count above so okay to collapse here!!
   if (filter_after_counting) {
@@ -157,11 +167,13 @@ shinyprocess <- function(x, filter_columns = TRUE, renumber_sequences = TRUE, fi
     x <- x %>% relocate(sequence_id)
     # x$sequence_id <- gsub("\\_","\\-",x$sequence_id) ## moved to always run
   }
+  ## also adding as.character to the function - doesn't seem necessary here
+  # x$sequence_id <- as.character(x$sequence_id)
+  # x$cdr3_aa_imgt <- as.character(x$cdr3_aa_imgt)
   ## need to always check and remove underscores from all names
   x$sequence_id <- gsub("\\_","\\-",x$sequence_id)
   return(x)
 }
-
 
 ### LOADING AND CONVERTING INTERMEDIATE DATASETS
 cov2.bulk.binder.p11 <- read_tsv("paper_assets/intermediate_files/Binder_p11_germ-pass.tsv.gz")   # v_identity between 0.60 and 1, sequences renamed, have clone_id & germline_alignment_d_mask, NOT cdr3_aa
@@ -204,32 +216,32 @@ hc.BXmay.10mstim$sequence_id[1]
 ## PROCESSING OF THESE INTERMEDIATE FILES USING SHINYPROCESS
 ## after running function remove large intermediate files
 
-toshiny.den.bulk.d13enrich <- shinyprocess(den.bulk.d13enrich)
-toshiny.den.bulk.d13stim <- shinyprocess(den.bulk.d13stim)
-toshiny.den.bulk.OAS <- shinyprocess(den.bulk.OAS, renumber_sequences = FALSE)
+toshiny.den.bulk.d13enrich <- AIRRscapeprocess(den.bulk.d13enrich)
+toshiny.den.bulk.d13stim <- AIRRscapeprocess(den.bulk.d13stim)
+toshiny.den.bulk.OAS <- AIRRscapeprocess(den.bulk.OAS, renumber_sequences = FALSE)
 rm(den.bulk.OAS)
 rm(den.bulk.d13enrich)
 rm(den.bulk.d13stim)
 
-toshiny.hiv.bulk.mt1214 <- shinyprocess(hiv.bulk.mt1214)
-toshiny.hiv.bulk.nih45 <- shinyprocess(hiv.bulk.nih45)
+toshiny.hiv.bulk.mt1214 <- AIRRscapeprocess(hiv.bulk.mt1214)
+toshiny.hiv.bulk.nih45 <- AIRRscapeprocess(hiv.bulk.nih45)
 rm(hiv.bulk.nih45)
 rm(hiv.bulk.mt1214)
 
-toshiny.hc.BXmay.10mstim <- shinyprocess(hc.BXmay.10mstim)
+toshiny.hc.BXmay.10mstim <- AIRRscapeprocess(hc.BXmay.10mstim)
 rm(hc.BXmay.10mstim)
 
-toshiny.cov2.bulk.binder.p11 <- shinyprocess(cov2.bulk.binder.p11)
-toshiny.cov2.bulk.galson.p1 <- shinyprocess(cov2.bulk.galson.p1)
-toshiny.cov2.bulk.nielsen.p7450 <- shinyprocess(cov2.bulk.nielsen.p7450)
-toshiny.cov2.bulk.kc.m5.allreps <- shinyprocess(cov2.bulk.kc.m5.allreps)
+toshiny.cov2.bulk.binder.p11 <- AIRRscapeprocess(cov2.bulk.binder.p11)
+toshiny.cov2.bulk.galson.p1 <- AIRRscapeprocess(cov2.bulk.galson.p1)
+toshiny.cov2.bulk.nielsen.p7450 <- AIRRscapeprocess(cov2.bulk.nielsen.p7450)
+toshiny.cov2.bulk.kc.m5.allreps <- AIRRscapeprocess(cov2.bulk.kc.m5.allreps)
 rm(cov2.bulk.binder.p11)
 rm(cov2.bulk.nielsen.p7450)
 rm(cov2.bulk.galson.p1)
 rm(cov2.bulk.kc.m5.allreps)
 
 ## dengue maps need processing, HIV & CoV2 are processed in airrscape_preprocessing script
-toshiny.den.mabs <- shinyprocess(den.mabs, renumber_sequences = FALSE, filter_after_counting = FALSE)
+toshiny.den.mabs <- AIRRscapeprocess(den.mabs, renumber_sequences = FALSE, filter_after_counting = FALSE)
 
 ## for Setliff datasets, run Shinyprocess on each timepoint individually
 ## breaking in two sets of six...
@@ -240,12 +252,12 @@ hiv.bulk.cap301.6m <- read_tsv("paper_assets/intermediate_files/hiv_bulk_cap301_
 hiv.bulk.cap312.3y <- read_tsv("paper_assets/intermediate_files/hiv_bulk_cap312_3y.tab.gz")
 hiv.bulk.cap312.6m <- read_tsv("paper_assets/intermediate_files/hiv_bulk_cap312_6m.tab.gz")
 
-toshiny.hiv.bulk.cap287.3y <- shinyprocess(hiv.bulk.cap287.3y)
-toshiny.hiv.bulk.cap287.6m <- shinyprocess(hiv.bulk.cap287.6m)
-toshiny.hiv.bulk.cap301.3y <- shinyprocess(hiv.bulk.cap301.3y)
-toshiny.hiv.bulk.cap301.6m <- shinyprocess(hiv.bulk.cap301.6m)
-toshiny.hiv.bulk.cap312.3y <- shinyprocess(hiv.bulk.cap312.3y)
-toshiny.hiv.bulk.cap312.6m <- shinyprocess(hiv.bulk.cap312.6m)
+toshiny.hiv.bulk.cap287.3y <- AIRRscapeprocess(hiv.bulk.cap287.3y)
+toshiny.hiv.bulk.cap287.6m <- AIRRscapeprocess(hiv.bulk.cap287.6m)
+toshiny.hiv.bulk.cap301.3y <- AIRRscapeprocess(hiv.bulk.cap301.3y)
+toshiny.hiv.bulk.cap301.6m <- AIRRscapeprocess(hiv.bulk.cap301.6m)
+toshiny.hiv.bulk.cap312.3y <- AIRRscapeprocess(hiv.bulk.cap312.3y)
+toshiny.hiv.bulk.cap312.6m <- AIRRscapeprocess(hiv.bulk.cap312.6m)
 
 ## after running function remove large intermediate files
 rm(hiv.bulk.cap287.3y)
@@ -263,12 +275,12 @@ hiv.bulk.cap335.6m <- read_tsv("paper_assets/intermediate_files/hiv_bulk_cap335_
 hiv.bulk.cap351.3y <- read_tsv("paper_assets/intermediate_files/hiv_bulk_cap351_3y.tab.gz")
 hiv.bulk.cap351.6m <- read_tsv("paper_assets/intermediate_files/hiv_bulk_cap351_6m.tab.gz")
 
-toshiny.hiv.bulk.cap322.3y <- shinyprocess(hiv.bulk.cap322.3y)
-toshiny.hiv.bulk.cap322.6m <- shinyprocess(hiv.bulk.cap322.6m)
-toshiny.hiv.bulk.cap335.3y <- shinyprocess(hiv.bulk.cap335.3y)
-toshiny.hiv.bulk.cap335.6m <- shinyprocess(hiv.bulk.cap335.6m)
-toshiny.hiv.bulk.cap351.3y <- shinyprocess(hiv.bulk.cap351.3y)
-toshiny.hiv.bulk.cap351.6m <- shinyprocess(hiv.bulk.cap351.6m)
+toshiny.hiv.bulk.cap322.3y <- AIRRscapeprocess(hiv.bulk.cap322.3y)
+toshiny.hiv.bulk.cap322.6m <- AIRRscapeprocess(hiv.bulk.cap322.6m)
+toshiny.hiv.bulk.cap335.3y <- AIRRscapeprocess(hiv.bulk.cap335.3y)
+toshiny.hiv.bulk.cap335.6m <- AIRRscapeprocess(hiv.bulk.cap335.6m)
+toshiny.hiv.bulk.cap351.3y <- AIRRscapeprocess(hiv.bulk.cap351.3y)
+toshiny.hiv.bulk.cap351.6m <- AIRRscapeprocess(hiv.bulk.cap351.6m)
 
 ## after running function remove large intermediate files
 rm(hiv.bulk.cap322.3y)
