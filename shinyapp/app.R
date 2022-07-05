@@ -19,7 +19,7 @@ library(phangorn)
 library(ape)
 library(shinyscreenshot)
 
-options(shiny.maxRequestSize=5000*1024^2)
+options(shiny.maxRequestSize=5000*1024^2, warn = -1)
 ##########
 
 
