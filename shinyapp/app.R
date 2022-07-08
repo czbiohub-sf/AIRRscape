@@ -1,3 +1,4 @@
+########### required packages ##########
 #install.packages("shiny")
 #install.packages("ggplot2")
 #install.packages("alakazam")
@@ -19,12 +20,10 @@ library(phangorn)
 library(ape)
 library(shinyscreenshot)
 
+## options for allowing for large uploads of datasets, and hiding warnings during Shiny
 options(shiny.maxRequestSize=5000*1024^2, warn = -1)
-##########
 
-
-### single processing function
-##################################################################################################################
+########### AIRRscape processing function ##########
 
 AIRRscapeprocess <- function(x, filter_columns = TRUE, filter_to_HC = TRUE, renumber_sequences = TRUE, filter_after_counting = TRUE) {
   colname <- substitute(x)
@@ -134,12 +133,11 @@ Mode <- function(x) {
   ux[which.max(tabulate(match(x, ux)))]
 }
 
-
 is.wholenumber <- function(x, tol = .Machine$double.eps^0.5) {
   abs(x - round(x)) < tol
 }
 
-## datasets to load
+########### datasets to load ##########
 toshiny.cov2.abdab <- read_tsv("toshiny_cov2_abdab.tab")
 toshiny.cov2.abdab.h <- read_tsv("toshiny_cov2_abdab_h.tab")
 
@@ -184,6 +182,8 @@ toshiny.cov2.abdab.h$binding <- factor(toshiny.cov2.abdab.h$binding, levels = c(
 toshiny.cov2.all$id <- factor(toshiny.cov2.all$id, levels = c("SARS-CoV2 mAbs", "DEN patient 13 bulk repertoire", "COVID-19 patient Binder p11 bulk repertoire", "COVID-19 patient Galson p1 bulk repertoire","COVID-19 patient Kuri-Cervantes m5 bulk repertoire", "COVID-19 patient Nielsen p7450 bulk repertoire", "Healthy control bulk repertoire"))
 toshiny.cov2hiv$id <- factor(toshiny.cov2hiv$id, levels = c("SARS-CoV2 mAbs", "HIV mAbs"))
 toshiny.den.all$id <- factor(toshiny.den.all$id, levels = c("Dengue plasmablasts", "Dengue patient d13 bulk repertoire", "Dengue Parameswaran 2013 patient bulk repertoires"))
+
+########### ui layout ##########
 
 ## June 2022 - adding AIRRscapeInput functionality as a tabsetPanel - see https://shiny.rstudio.com/articles/layout-guide.html
 ## think can keep the sidebarPanel as is - in new AIRRscapeInput tab all ui can be in the 'main panel' under the tabset
@@ -328,15 +328,15 @@ ui <- fluidPage(
 )
 )
 
+########### all the rest is server code ##########
 server <- function(input, output, session) {
   options(width = 180, DT.options = list(pageLength = 10)) # Increase text width for printing table ALSO ADDING DEFAULT NUMBER OF 10 ROWS IN DATATABLE
   ## early in server now defining facets here - this is where all of the sidebar dataset options are tied to a dataset
   
-
   ## ADDING AIRRscapeInput APP (SERVER PART) HERE...
-############################################################################################################
 ########################################### INPUT COMPONENT ################################################  
-############################################################################################################
+########### importing/combining data code ##########
+  
   ## need to add uploads1 <- NULL ???
   ## this only works if you include the if isn't null argument...also another tricky part is below where you specify these if selected (the inputdataset <- reactive({ part...), you need to add parentheses, so uploads1() and uploads2() !!!
   uploads1 <- reactive({
@@ -545,7 +545,6 @@ server <- function(input, output, session) {
     toshiny.yourdataset.allc
   })
   
-  
   ## this allows user to download all sequences in clicked bin (first filter) or only selected rows (second filter)
   output$downloadfilter01 <- downloadHandler(
     filename = function() {
@@ -565,10 +564,10 @@ server <- function(input, output, session) {
     }
   )      
   
-############################################################################################################
 ####################################### END INPUT COMPONENT ################################################  
-############################################################################################################
+########### adding importing/combined datasets to AIRRscape ##########
   
+## more recent addition - where converted/combined datasets are added to AIRRscape  
 ## this only works if you include the if isn't null argument...also another tricky part is below where you specify these if selected (the inputdataset <- reactive({ part...), you need to add parentheses, so uploads11() and uploads12() !!!
   uploads11 <- reactive({
     if (!is.null(input$yourfile1)) {
@@ -591,6 +590,8 @@ server <- function(input, output, session) {
   })
   
 ## JW idea: add an else if, running the convert function if needed...? but also need to combine datasets, not just convert...
+  ## it turns out best to convert+combine in the first tab, then just input the combined datasest at this stage
+  ## if one tries to convert here, sometimes errors will arise...
   convert11 <- NULL
   convert12 <- NULL
   convert11 <- reactive({
@@ -636,6 +637,9 @@ server <- function(input, output, session) {
     }
   })
 
+########### original AIRRscape visualization code ##########
+## original code for visualizing (but adding users datasets as last 2 dataset options)
+  
   facetvar1 <- reactive({
     switch(input$dataset, "SARS-CoV2 mAbs - heavy chains & light chains" = "cregion", "SARS-CoV2 mAbs - IgH by binding" = "binding", "SARS-CoV2 mAbs - IgH by neutralization" = "neutralization", "SARS-CoV2 mAbs vs. 4 COVID-19 patient bulk repertoires vs. Healthy control bulk repertoire - IgH" = "id", "SARS-CoV2 mAbs vs. 4 COVID-19 patient bulk repertoires vs. Healthy control bulk repertoire - IgH combined" = "cregion", "SARS-CoV2 mAbs vs. HIV mAbs - IgH" = "id", "SARS-CoV2 mAbs vs. HIV mAbs - IgH combined" = "cregion", "HIV mAbs vs. HIV patient MT1214 bulk repertoire vs. HIV patient NIH45 bulk repertoire vs. HIV Setliff 2018 patient bulk repertoires - IgH" = "id", "HIV mAbs vs. HIV patient MT1214 bulk repertoire vs. HIV patient NIH45 bulk repertoire vs. HIV Setliff 2018 patient bulk repertoires - IgH combined" = "cregion", "Dengue mAbs vs. Dengue patient d13 bulk repertoire vs. Dengue Parameswaran 2013 patient bulk repertoires - IgH" = "id", "Dengue mAbs vs. Dengue patient d13 bulk repertoire vs. Dengue Parameswaran 2013 patient bulk repertoires - IgH combined" = "cregion", "SARS-CoV2 HIV & Dengue datasets - IgH combined" = "cregion","Your datasets - IgH" = "id", "Your datasets - IgH combined" = "cregion")
   })
@@ -774,18 +778,29 @@ server <- function(input, output, session) {
   
   
   ### datatable under plot 
+  ## adding changing row font color via https://stackoverflow.com/questions/56568144/r-dt-override-default-selection-color
+  # xxxx$cellcolor <- grepl('SARS-CoV2-mAb|HIV-IEDBmAb', xxxx$sequence_id)
+  # %>%
+  #   formatStyle("sequence_id", valueColumns = "cellcolor", color = styleEqual(TRUE, "blue"))
+  
   output$click_info <- DT::renderDataTable({
     dat <- inputdataset()
     old <- options(width = 1600); on.exit(options(old))
-    nearPoints(dat, input$plot_click, threshold = 5, maxpoints = 99999,
-               addDist = FALSE)
+    dat$cellcolor <- grepl('SARS-CoV2-mAb|HIV-IEDBmAb', dat$sequence_id)
+    thetable <- nearPoints(dat, input$plot_click, threshold = 5, maxpoints = 99999,
+                           addDist = FALSE)
+    datatable(thetable, options = list(search = list(regex = TRUE))) %>%
+      formatStyle("shm", valueColumns = "cellcolor", color = styleEqual(TRUE, "blue"))
   }, width = 1600)
   
   ## adding a datatable with all of the points when double-clicking plot_brush brush_info
   output$brush_info <- DT::renderDataTable({
     dat0 <- inputdataset()
     old <- options(width = 1600); on.exit(options(old))
-    brushedPoints(dat0, input$plot_brush, allRows = FALSE)
+    dat0$cellcolor <- grepl('SARS-CoV2-mAb|HIV-IEDBmAb', dat0$sequence_id)
+    thetable0 <- brushedPoints(dat0, input$plot_brush, allRows = FALSE)
+    datatable(thetable0, options = list(search = list(regex = TRUE))) %>%
+      formatStyle("shm", valueColumns = "cellcolor", color = styleEqual(TRUE, "blue"))
   }, width = 1600)
   
   
@@ -817,8 +832,9 @@ server <- function(input, output, session) {
       write.csv(matrixDSall2(),file, row.names = FALSE)
     }
   )          
-  
-  ## alternate phylogenies of CDR3 motifs of selected sequences from datatable
+
+########### original AIRRscape visualization code -  CDR3 motif toplogy plots ##########
+## alternate phylogenies of CDR3 motifs of selected sequences from datatable
   v <- reactiveValues(doPlot = FALSE)
   
   observeEvent(input$go, {
