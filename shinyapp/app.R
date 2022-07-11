@@ -51,12 +51,12 @@ AIRRscapeprocess <- function(x, filter_columns = TRUE, filter_to_HC = TRUE, renu
   ### removing all sequences with IMGT CDR3 less than 3
   x <- x %>% filter(cdr3length_imgt > 2.8)  
   ## next lines create V gene family, J gene columns
-  x$gene <- getGene(x$v_call, first=TRUE, strip_d=TRUE)
-  x$gf <- substring(x$gene, 1,5)
+  x$vgene <- getGene(x$v_call, first=TRUE, strip_d=TRUE)
+  x$vgf <- substring(x$vgene, 1,5)
   x$jgene <- getGene(x$j_call, first=TRUE, strip_d=TRUE)
   x$jgene <- substring(x$jgene, 1,5)
-  ## this creates new column gf_jgene which is used in all shiny plots
-  x <- x %>% unite(gf_jgene, gf, jgene, sep = "_", remove = FALSE, na.rm = TRUE)
+  ## this creates new column vgf_jgene which is used in all shiny plots
+  x <- x %>% unite(vgf_jgene, vgf, jgene, sep = "_", remove = FALSE, na.rm = TRUE)
   ## this removes any rows without CDR3, or with junctions that are not 3-mers
   x <- x %>% filter(!is.na(cdr3length_imgt)) %>% 
     filter(is.wholenumber(cdr3length_imgt))
@@ -76,9 +76,9 @@ AIRRscapeprocess <- function(x, filter_columns = TRUE, filter_to_HC = TRUE, renu
   x$cregion <- gsub("IgL","Lambda",x$cregion)
   ## making more important columns used in plotting, also a rounding step
   x <- x %>%
-    add_count(gf_jgene,cdr3length_imgt) %>% 
+    add_count(vgf_jgene,cdr3length_imgt) %>% 
     rename(ncount = n) %>% 
-    group_by(gf_jgene,cdr3length_imgt) %>% 
+    group_by(vgf_jgene,cdr3length_imgt) %>% 
     mutate(shm_mean = mean(shm, na.rm = TRUE)) %>% 
     # NOTE ADDIN MAX SHM AS WELL..
     mutate(shm_max = max(shm, na.rm = TRUE)) %>% 
@@ -86,7 +86,7 @@ AIRRscapeprocess <- function(x, filter_columns = TRUE, filter_to_HC = TRUE, renu
     mutate(across(shm_max, round, 2)) %>% 
     mutate(across(shm_mean, round, 2))
   ## this will filter the dataset if filter_columns option is set to true - note the any_of which allows columns to be missing
-  vars2 <- c("sequence_id", "binding", "neutralization", "cregion", "cdr3_aa_imgt","gene", "gf_jgene", "gf","jgene", "cdr3length_imgt", "shm", "shm_max", "shm_mean", "ncount", "reads_per_clone")
+  vars2 <- c("sequence_id", "binding", "neutralization", "cregion", "cdr3_aa_imgt","vgene", "vgf_jgene", "vgf","jgene", "cdr3length_imgt", "shm", "shm_max", "shm_mean", "ncount", "reads_per_clone")
   if (filter_columns) {
     x <- x %>% select(any_of(vars2))
   }
@@ -94,14 +94,14 @@ AIRRscapeprocess <- function(x, filter_columns = TRUE, filter_to_HC = TRUE, renu
   if (filter_to_HC) {
     x <- x %>% filter(cregion == "IgH" | cregion == "IgA" | cregion == "IgD" | cregion == "IgE" | cregion == "IgG" | cregion == "IgM")
   }
-  ## this will remove all redundant sequences with same gf/gene & cdr3 motif...note we count above so okay to collapse here!!
+  ## this will remove all redundant sequences with same vgf/gene & cdr3 motif...note we count above so okay to collapse here!!
   if (filter_after_counting) {
     x <- x %>%
-      group_by(cdr3_aa_imgt,gf_jgene) %>%
+      group_by(cdr3_aa_imgt,vgf_jgene) %>%
       summarize_all(first) %>%
       rename(ncountfull = ncount) %>% 
       ungroup() %>%
-      add_count(gf_jgene,cdr3length_imgt) %>% 
+      add_count(vgf_jgene,cdr3length_imgt) %>% 
       rename(ncount = n) %>%
       relocate(ncount, .before = shm_mean)
   }
@@ -390,7 +390,7 @@ server <- function(input, output, session) {
   convert1 <- reactive({
     if (!is.null(uploads1())) {
       uploaded_dataset1 <- uploads1()
-      if (is.null(uploaded_dataset1$gf_jgene)) {
+      if (is.null(uploaded_dataset1$vgf_jgene)) {
         upload1afterconv <- AIRRscapeprocess(uploaded_dataset1)
         # upload1afterconv$id <- gsub("uploaded-dataset1",paste0(input$name1),upload1afterconv$id)  ## if running AIRRscapeprocess, want to rename sequences
       } else {
@@ -404,7 +404,7 @@ server <- function(input, output, session) {
   convert2 <- reactive({
     if (!is.null(uploads2())) {
       uploaded_dataset2 <- uploads2()
-      if (is.null(uploaded_dataset2$gf_jgene)) {
+      if (is.null(uploaded_dataset2$vgf_jgene)) {
         upload2afterconv <- AIRRscapeprocess(uploaded_dataset2)
         # upload2afterconv$id <- gsub("uploaded-dataset2",paste0(input$name1),upload2afterconv$id)  ## if running AIRRscapeprocess, want to rename sequences
       } else {
@@ -419,7 +419,7 @@ server <- function(input, output, session) {
   convert3 <- reactive({
     if (!is.null(uploads3())) {
       uploaded_dataset3 <- uploads3()
-      if (is.null(uploaded_dataset3$gf_jgene)) {
+      if (is.null(uploaded_dataset3$vgf_jgene)) {
         upload3afterconv <- AIRRscapeprocess(uploaded_dataset3)
         # upload3afterconv$id <- gsub("uploaded-dataset3",paste0(input$name1),upload3afterconv$id)  ## if running AIRRscapeprocess, want to rename sequences
       } else {
@@ -433,7 +433,7 @@ server <- function(input, output, session) {
   convert4 <- reactive({
     if (!is.null(uploads4())) {
       uploaded_dataset4 <- uploads4()
-      if (is.null(uploaded_dataset4$gf_jgene)) {
+      if (is.null(uploaded_dataset4$vgf_jgene)) {
         upload4afterconv <- AIRRscapeprocess(uploaded_dataset4)
         # upload4afterconv$id <- gsub("uploaded-dataset4",paste0(input$name1),upload4afterconv$id)  ## if running AIRRscapeprocess, want to rename sequences
       } else {
@@ -448,7 +448,7 @@ server <- function(input, output, session) {
   convert5 <- reactive({
     if (!is.null(uploads5())) {
       uploaded_dataset5 <- uploads5()
-      if (is.null(uploaded_dataset5$gf_jgene)) {
+      if (is.null(uploaded_dataset5$vgf_jgene)) {
         upload5afterconv <- AIRRscapeprocess(uploaded_dataset5)
         # upload5afterconv$id <- gsub("uploaded-dataset5",paste0(input$name1),upload5afterconv$id)  ## if running AIRRscapeprocess, want to rename sequences
       } else {
@@ -462,7 +462,7 @@ server <- function(input, output, session) {
   convert6 <- reactive({
     if (!is.null(uploads6())) {
       uploaded_dataset6 <- uploads6()
-      if (is.null(uploaded_dataset6$gf_jgene)) {
+      if (is.null(uploaded_dataset6$vgf_jgene)) {
         upload6afterconv <- AIRRscapeprocess(uploaded_dataset6)
         # upload6afterconv$id <- gsub("uploaded-dataset6",paste0(input$name1),upload6afterconv$id)  ## if running AIRRscapeprocess, want to rename sequences
       } else {
@@ -531,9 +531,9 @@ server <- function(input, output, session) {
     toshiny.yourdataset.allc$cregion0 <- toshiny.yourdataset.allc$cregion
     toshiny.yourdataset.allc$cregion <- "IgH"
     toshiny.yourdataset.allc <- toshiny.yourdataset.allc %>%
-      add_count(gf_jgene,cdr3length_imgt) %>%
+      add_count(vgf_jgene,cdr3length_imgt) %>%
       rename(ncount = n) %>%
-      group_by(gf_jgene,cdr3length_imgt) %>%
+      group_by(vgf_jgene,cdr3length_imgt) %>%
       mutate(shm_mean = mean(shm, na.rm = TRUE)) %>%
       # ADD MAX SHM AS WELL..
       mutate(shm_max = max(shm, na.rm = TRUE)) %>% 
@@ -597,7 +597,7 @@ server <- function(input, output, session) {
   convert11 <- reactive({
     if (!is.null(uploads11())) {
     uploaded_dataset1 <- uploads11()
-    if (is.null(uploaded_dataset1$gf_jgene)) {
+    if (is.null(uploaded_dataset1$vgf_jgene)) {
       upload11afterconv <- AIRRscapeprocess(uploaded_dataset1)
       } else {
         upload11afterconv <- uploaded_dataset1
@@ -618,7 +618,7 @@ server <- function(input, output, session) {
   convert12 <- reactive({
     if (!is.null(uploads12())) {
     uploaded_dataset2 <- uploads12()
-    if (is.null(uploaded_dataset2$gf_jgene)) {
+    if (is.null(uploaded_dataset2$vgf_jgene)) {
       upload12afterconv <- AIRRscapeprocess(uploaded_dataset2)
     } else {
       upload12afterconv <- uploaded_dataset2
@@ -662,7 +662,7 @@ server <- function(input, output, session) {
   highlightedpointsDSx <- reactive({
     dat <- inputdataset()
     highlightedpoint <- nearPoints(dat, input$plot_hover, threshold = 5, maxpoints = 1, addDist = FALSE)
-    highlightedpoint$gf_jgene
+    highlightedpoint$vgf_jgene
   })
   highlightedpointsDSy <- reactive({
     dat <- inputdataset()
@@ -684,20 +684,20 @@ server <- function(input, output, session) {
   
   ## then rename sequence_id
   filteredDSpartial2 <- reactive({
-    partial2 <- filteredDSpartial() %>% select(sequence_id,cdr3_aa_imgt,gene,gf_jgene,cdr3length_imgt)
-    partial2$sequence_id <- paste(partial2$sequence_id,partial2$gene,partial2$cdr3_aa_imgt,sep="_")
+    partial2 <- filteredDSpartial() %>% select(sequence_id,cdr3_aa_imgt,gene,vgf_jgene,cdr3length_imgt)
+    partial2$sequence_id <- paste(partial2$sequence_id,partial2$vgene,partial2$cdr3_aa_imgt,sep="_")
     partial2
   })
   
   filteredDSall2 <- reactive({
-    all2 <- filteredDSall() %>% select(sequence_id,cdr3_aa_imgt,gene,gf_jgene,cdr3length_imgt)
-    all2$sequence_id <- paste(all2$sequence_id,all2$gene,all2$cdr3_aa_imgt,sep="_")
+    all2 <- filteredDSall() %>% select(sequence_id,cdr3_aa_imgt,gene,vgf_jgene,cdr3length_imgt)
+    all2$sequence_id <- paste(all2$sequence_id,all2$vgene,all2$cdr3_aa_imgt,sep="_")
     all2
   })
   
   filteredDSpartial2id <- reactive({
-    partial2id <- filteredDSpartial() %>% select(sequence_id,cdr3_aa_imgt,gene,gf_jgene,cdr3length_imgt)
-    partial2id$sequence_id <- paste(partial2id$sequence_id,partial2id$gene,partial2id$cdr3_aa_imgt,sep="_")
+    partial2id <- filteredDSpartial() %>% select(sequence_id,cdr3_aa_imgt,gene,vgf_jgene,cdr3length_imgt)
+    partial2id$sequence_id <- paste(partial2id$sequence_id,partial2id$vgene,partial2id$cdr3_aa_imgt,sep="_")
     partial2id$sequence_id
   })
   
@@ -752,7 +752,7 @@ server <- function(input, output, session) {
     # actual tooltip created as wellPanel - TO ACTUALLY GET COUNTS NEED TO GET FROM STAT_BIN ANALYSIS...
     wellPanel(
       style = style,
-      p(HTML(paste0("<b> V-gene & J-gene: </b>", point$gf_jgene, "<br/>",
+      p(HTML(paste0("<b> V-gene & J-gene: </b>", point$vgf_jgene, "<br/>",
                     "<b> CDR3 Length (aa): </b>", point$cdr3length_imgt, "<br/>",
                     "<b> Mean Somatic Hypermutation (%): </b>", point$shm_mean, "<br/>",
                     "<b> Max Somatic Hypermutation (%): </b>", point$shm_max, "<br/>",
@@ -767,11 +767,11 @@ server <- function(input, output, session) {
     dat <- inputdataset()
     #    note at end of the 3 plot commands below has a final geom_point plotting step to add a green square under the hover, currently it disappears after a moment - tried adding an isolate command, didn't solve
     data2 <- if (input$plotcolors == "Average SHM") {
-      toplot <- ggplot(dat, aes(gf_jgene,cdr3length_imgt)) + geom_tile(aes(fill = shm_mean)) + scale_y_continuous(limits = c(3, 42)) + theme_bw(base_size = 16) + ylab("CDR3 Length (aa)") + xlab("V-gene & J-gene") + facet_wrap(facet_formula, ncol = 1, scales = facetvar2()) + scale_fill_viridis_c(name = "Mean \nSHM (%)", option = "C") + theme(axis.text.x = element_text(angle=45, hjust=1, size=8)) + ggtitle("Bins of V+J gene families vs. CDR3 length, with Mean Somatic Hypermutation as fill color") + theme(plot.title = element_text(size = 20, face = "bold")) #+ geom_point(data=subset(dat, gf_jgene ==  highlightedpointsDSx() & cdr3length_imgt == highlightedpointsDSy()), color = "green", shape = "square", size = 4)
+      toplot <- ggplot(dat, aes(vgf_jgene,cdr3length_imgt)) + geom_tile(aes(fill = shm_mean)) + scale_y_continuous(limits = c(3, 42)) + theme_bw(base_size = 16) + ylab("CDR3 Length (aa)") + xlab("V-gene & J-gene") + facet_wrap(facet_formula, ncol = 1, scales = facetvar2()) + scale_fill_viridis_c(name = "Mean \nSHM (%)", option = "C") + theme(axis.text.x = element_text(angle=45, hjust=1, size=8)) + ggtitle("Bins of V+J gene families vs. CDR3 length, with Mean Somatic Hypermutation as fill color") + theme(plot.title = element_text(size = 20, face = "bold")) #+ geom_point(data=subset(dat, vgf_jgene ==  highlightedpointsDSx() & cdr3length_imgt == highlightedpointsDSy()), color = "green", shape = "square", size = 4)
     } else if (input$plotcolors == "Maximum SHM") {
-      toplot <- ggplot(dat, aes(gf_jgene,cdr3length_imgt)) + geom_tile(aes(fill = shm_max)) + scale_y_continuous(limits = c(3, 42)) + theme_bw(base_size = 16) + ylab("CDR3 Length (aa)") + xlab("V-gene & J-gene") + facet_wrap(facet_formula, ncol = 1, scales = facetvar2()) + scale_fill_viridis_c(name = "Max \nSHM (%)", option = "C") + theme(axis.text.x = element_text(angle=45, hjust=1, size=8)) + ggtitle("Bins of V+J gene families vs. CDR3 length, with Maximum Somatic Hypermutation as fill color") + theme(plot.title = element_text(size = 20, face = "bold")) #+ geom_point(data=subset(dat, gf_jgene ==  highlightedpointsDSx() & cdr3length_imgt == highlightedpointsDSy()), color = "green", shape = "square", size = 4)
+      toplot <- ggplot(dat, aes(vgf_jgene,cdr3length_imgt)) + geom_tile(aes(fill = shm_max)) + scale_y_continuous(limits = c(3, 42)) + theme_bw(base_size = 16) + ylab("CDR3 Length (aa)") + xlab("V-gene & J-gene") + facet_wrap(facet_formula, ncol = 1, scales = facetvar2()) + scale_fill_viridis_c(name = "Max \nSHM (%)", option = "C") + theme(axis.text.x = element_text(angle=45, hjust=1, size=8)) + ggtitle("Bins of V+J gene families vs. CDR3 length, with Maximum Somatic Hypermutation as fill color") + theme(plot.title = element_text(size = 20, face = "bold")) #+ geom_point(data=subset(dat, vgf_jgene ==  highlightedpointsDSx() & cdr3length_imgt == highlightedpointsDSy()), color = "green", shape = "square", size = 4)
     } else {
-      toplot <- ggplot(dat, aes(gf_jgene,cdr3length_imgt)) + geom_bin2d(bins = 40, aes(fill= (..count..)*100/tapply(..count..,..PANEL..,sum)[..PANEL..])) + scale_y_continuous(limits = c(3, 42)) + theme_bw(base_size = 16) + ylab("CDR3 Length (aa)") + xlab("V-gene & J-gene") + facet_wrap(facet_formula, ncol = 1, scales = facetvar2()) + scale_fill_viridis_c(name = "% of \nReads  ", option = "C") + theme(axis.text.x = element_text(angle=45, hjust=1, size=8)) + ggtitle("Bins of V+J gene families vs. CDR3 length, with Percentage of total antibody sequences as fill color") + theme(plot.title = element_text(size = 20, face = "bold")) #+ geom_point(data=subset(dat, gf_jgene ==  highlightedpointsDSx() & cdr3length_imgt == highlightedpointsDSy()), color = "green", shape = "square", size = 4)
+      toplot <- ggplot(dat, aes(vgf_jgene,cdr3length_imgt)) + geom_bin2d(bins = 40, aes(fill= (..count..)*100/tapply(..count..,..PANEL..,sum)[..PANEL..])) + scale_y_continuous(limits = c(3, 42)) + theme_bw(base_size = 16) + ylab("CDR3 Length (aa)") + xlab("V-gene & J-gene") + facet_wrap(facet_formula, ncol = 1, scales = facetvar2()) + scale_fill_viridis_c(name = "% of \nReads  ", option = "C") + theme(axis.text.x = element_text(angle=45, hjust=1, size=8)) + ggtitle("Bins of V+J gene families vs. CDR3 length, with Percentage of total antibody sequences as fill color") + theme(plot.title = element_text(size = 20, face = "bold")) #+ geom_point(data=subset(dat, vgf_jgene ==  highlightedpointsDSx() & cdr3length_imgt == highlightedpointsDSy()), color = "green", shape = "square", size = 4)
     }     
     toplot
   }, width = 1200, height = "auto")
@@ -893,7 +893,7 @@ server <- function(input, output, session) {
           dmall.matrix <- dmall.matrix %>% filter(DIST < 0.02) # now this will change in each else if
           #### end distance thresholding
           dmall.matrix <- dmall.matrix %>% select(sequence_id)
-          dm.matrix <- dmall.matrix %>% separate(sequence_id, into = c("SEQ", "gene", "cdr3_aa_imgt"), sep = "_", remove = FALSE, convert = TRUE, extra = "merge", fill = "left") %>%
+          dm.matrix <- dmall.matrix %>% separate(sequence_id, into = c("SEQ", "vgene", "cdr3_aa_imgt"), sep = "_", remove = FALSE, convert = TRUE, extra = "merge", fill = "left") %>%
             select(sequence_id, cdr3_aa_imgt) %>% slice_head(n = 500) ## okay if this is more than what is in the set!
           ## now with new subset make new matrix & tree
           filteredData.y <- t(sapply(strsplit(dm.matrix[,2],""), tolower))
@@ -924,7 +924,7 @@ server <- function(input, output, session) {
           dmall.matrix <- dmall.matrix %>% filter(DIST < 0.301) ## now this will change in each else if
           #### end distance thresholding
           dmall.matrix <- dmall.matrix %>% select(sequence_id)
-          dm.matrix <- dmall.matrix %>% separate(sequence_id, into = c("SEQ", "gene", "cdr3_aa_imgt"), sep = "_", remove = FALSE, convert = TRUE, extra = "merge", fill = "left") %>%
+          dm.matrix <- dmall.matrix %>% separate(sequence_id, into = c("SEQ", "vgene", "cdr3_aa_imgt"), sep = "_", remove = FALSE, convert = TRUE, extra = "merge", fill = "left") %>%
             select(sequence_id, cdr3_aa_imgt) %>% slice_head(n = 500) ## okay if this is more than what is in the set!
           ## now with new subset make new matrix & tree
           filteredData.y <- t(sapply(strsplit(dm.matrix[,2],""), tolower))
@@ -955,7 +955,7 @@ server <- function(input, output, session) {
           dmall.matrix <- dmall.matrix %>% filter(DIST < 0.451) ## now this will change in each else if
           #### end distance thresholding
           dmall.matrix <- dmall.matrix %>% select(sequence_id)
-          dm.matrix <- dmall.matrix %>% separate(sequence_id, into = c("SEQ", "gene", "cdr3_aa_imgt"), sep = "_", remove = FALSE, convert = TRUE, extra = "merge", fill = "left") %>%
+          dm.matrix <- dmall.matrix %>% separate(sequence_id, into = c("SEQ", "vgene", "cdr3_aa_imgt"), sep = "_", remove = FALSE, convert = TRUE, extra = "merge", fill = "left") %>%
             select(sequence_id, cdr3_aa_imgt) %>% slice_head(n = 500) ## okay if this is more than what is in the set!
           ## now with new subset make new matrix & tree
           filteredData.y <- t(sapply(strsplit(dm.matrix[,2],""), tolower))
@@ -986,7 +986,7 @@ server <- function(input, output, session) {
           dmall.matrix <- dmall.matrix %>% filter(DIST < 0.751)  ## now this will change in each else if
           #### end distance thresholding
           dmall.matrix <- dmall.matrix %>% select(sequence_id)
-          dm.matrix <- dmall.matrix %>% separate(sequence_id, into = c("SEQ", "gene", "cdr3_aa_imgt"), sep = "_", remove = FALSE, convert = TRUE, extra = "merge", fill = "left") %>%
+          dm.matrix <- dmall.matrix %>% separate(sequence_id, into = c("SEQ", "vgene", "cdr3_aa_imgt"), sep = "_", remove = FALSE, convert = TRUE, extra = "merge", fill = "left") %>%
             select(sequence_id, cdr3_aa_imgt) %>% slice_head(n = 500) ## okay if this is more than what is in the set!
           ## now with new subset make new matrix & tree
           filteredData.y <- t(sapply(strsplit(dm.matrix[,2],""), tolower))
@@ -1009,7 +1009,7 @@ server <- function(input, output, session) {
         add.scale.bar(cex = 1.2, font = 4, lwd = 2)  ## was x = 1, y = -0.1, not sure if this will always work or be meaningful  , x.lim = 15 can also try x.lim = 50 - seems to work only with nearest 50/500 not with NJ or parsimony
         gjcdr3.title <- filteredData
         gjcdr3.title$cdr3length_imgt <- as.numeric(gjcdr3.title$cdr3length_imgt)
-        gjcdr3.title$G_J_CDR3 <- paste("Topology of selected CDR3 motifs:", gjcdr3.title$gf_jgene, gjcdr3.title$cdr3length_imgt, "aa", sep=" ")
+        gjcdr3.title$G_J_CDR3 <- paste("Topology of selected CDR3 motifs:", gjcdr3.title$vgf_jgene, gjcdr3.title$cdr3length_imgt, "aa", sep=" ")
         gjcdr3.title <- gjcdr3.title %>%
           select(G_J_CDR3)
         gjcdr3.titleID <- gjcdr3.title$G_J_CDR3[1]

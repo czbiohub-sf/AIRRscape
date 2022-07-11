@@ -75,7 +75,7 @@ library(tidyverse)
 ## these are only in SRA, so need full processing through Immcantation
 ## d536M_r1_stim
 ## https://trace.ncbi.nlm.nih.gov/Traces/sra/?run=SRR8647465
-# fastq-dump --split-files --origfmt --gzip SRR8647465
+# fastq-dump --split-files --orivgfmt --gzip SRR8647465
 
 ## first step in converting raw 300x250 MiSeq data uses Immcantation:Presto
 ## see Waltari 2019 for details https://doi.org/10.3389/fimmu.2019.01452
@@ -102,8 +102,8 @@ library(tidyverse)
 ## https://trace.ncbi.nlm.nih.gov/Traces/sra/?run=SRR17417727
 ## d13-stimulated
 ## https://trace.ncbi.nlm.nih.gov/Traces/sra/?run=SRR17417728
-# fastq-dump --split-files --origfmt --gzip SRR17417727
-# fastq-dump --split-files --origfmt --gzip SRR17417728
+# fastq-dump --split-files --orivgfmt --gzip SRR17417727
+# fastq-dump --split-files --orivgfmt --gzip SRR17417728
 
 ## first step in converting raw 300x250 MiSeq data uses Immcantation:Presto
 ## see Waltari 2019 for details https://doi.org/10.3389/fimmu.2019.01452
@@ -812,17 +812,17 @@ hiv.iedb$sequence_id <- gsub("\\+","\\-",hiv.iedb$sequence_id)
 hiv.iedb$sequence_id <- gsub("\\ ","\\-",hiv.iedb$sequence_id)
 hiv.iedb$cdr3length_imgt <- nchar(hiv.iedb$cdr3_aa_imgt)
 ## next lines create V gene family, J gene columns
-hiv.iedb$gene <- getGene(hiv.iedb$v_call, first=TRUE, strip_d=TRUE)
-hiv.iedb$gf <- substring(hiv.iedb$gene, 1,5)
+hiv.iedb$vgene <- getGene(hiv.iedb$v_call, first=TRUE, strip_d=TRUE)
+hiv.iedb$vgf <- substring(hiv.iedb$vgene, 1,5)
 hiv.iedb$jgene <- getGene(hiv.iedb$j_call, first=TRUE, strip_d=TRUE)
-## this creates new column gf_jgene which is used in all shiny plots
-hiv.iedb <- hiv.iedb %>% unite(gf_jgene, gf, jgene, sep = "_", remove = FALSE, na.rm = TRUE)
+## this creates new column vgf_jgene which is used in all shiny plots
+hiv.iedb <- hiv.iedb %>% unite(vgf_jgene, vgf, jgene, sep = "_", remove = FALSE, na.rm = TRUE)
 ## this removes any rows without CDR3, or with junctions that are not 3-mers
 hiv.iedb <- hiv.iedb %>% filter(!is.na(cdr3length_imgt)) %>% 
    filter(is.wholenumber(cdr3length_imgt))
 
 ## this will filter the dataset to AIRRscape-specific columns (plus fullv sequence)
-vars2 <- c("sequence_id", "binding", "neutralization", "cregion", "cdr3_aa_imgt","gene", "gf_jgene", "gf","jgene", "cdr3length_imgt", "shm", "shm_max", "shm_mean", "ncount", "fullv")
+vars2 <- c("sequence_id", "binding", "neutralization", "cregion", "cdr3_aa_imgt","vgene", "vgf_jgene", "vgf","jgene", "cdr3length_imgt", "shm", "shm_max", "shm_mean", "ncount", "fullv")
 
 hiv.iedb.fullv <- hiv.iedb %>% select(any_of(vars2))
 
@@ -830,7 +830,7 @@ hiv.iedb.fullv <- hiv.iedb %>% select(any_of(vars2))
 hiv.iedb.fullv <- hiv.iedb.fullv %>% filter(cdr3_aa_imgt != "NA")
 
 ## add cregion
-hiv.iedb.fullv$cregion <- str_sub(hiv.iedb.fullv$gene, end=3)
+hiv.iedb.fullv$cregion <- str_sub(hiv.iedb.fullv$vgene, end=3)
 hiv.iedb.fullv$cregion <- gsub('IG','Ig',hiv.iedb.fullv$cregion)
 
 #write.table(hiv.iedb.fullv, "hiv_iedb_withfullv.tab", sep = "\t", row.names = FALSE, quote = FALSE)
@@ -979,21 +979,21 @@ cov2.abdab$cdr3length_imgt <- nchar(cov2.abdab$cdr3_aa_imgt)
 ### removing all sequences with IMGT CDR3 less than 3
 cov2.abdab <- cov2.abdab %>% filter(cdr3length_imgt > 2.8)  
 ## next lines create V gene family, J gene columns
-cov2.abdab$gene <- getGene(cov2.abdab$v_call, first=TRUE, strip_d=TRUE)
-cov2.abdab$gf <- substring(cov2.abdab$gene, 1,5)
+cov2.abdab$vgene <- getGene(cov2.abdab$v_call, first=TRUE, strip_d=TRUE)
+cov2.abdab$vgf <- substring(cov2.abdab$vgene, 1,5)
 cov2.abdab$jgene <- getGene(cov2.abdab$j_call, first=TRUE, strip_d=TRUE)
-## this creates new column gf_jgene which is used in all shiny plots
-cov2.abdab <- cov2.abdab %>% unite(gf_jgene, gf, jgene, sep = "_", remove = FALSE, na.rm = TRUE)
+## this creates new column vgf_jgene which is used in all shiny plots
+cov2.abdab <- cov2.abdab %>% unite(vgf_jgene, vgf, jgene, sep = "_", remove = FALSE, na.rm = TRUE)
 ## this removes any rows without CDR3, or with junctions that are not 3-mers
 cov2.abdab <- cov2.abdab %>% filter(!is.na(cdr3length_imgt)) %>% 
    filter(is.wholenumber(cdr3length_imgt))
 
 cov2.abdab <- cov2.abdab %>%
-   add_count(gf_jgene,cdr3length_imgt) %>% 
+   add_count(vgf_jgene,cdr3length_imgt) %>% 
    rename(ncount = n) %>% 
-   group_by(gf_jgene,cdr3length_imgt)
+   group_by(vgf_jgene,cdr3length_imgt)
 ## this will filter the dataset to AIRRscape-specific columns (plus fullv sequence)
-vars2 <- c("sequence_id", "binding", "neutralization", "cregion", "cdr3_aa_imgt","gene", "gf_jgene", "gf","jgene", "cdr3length_imgt", "shm", "shm_max", "shm_mean", "ncount", "fullv")
+vars2 <- c("sequence_id", "binding", "neutralization", "cregion", "cdr3_aa_imgt","vgene", "vgf_jgene", "vgf","jgene", "cdr3length_imgt", "shm", "shm_max", "shm_mean", "ncount", "fullv")
 
 cov2.abdab.fullv0 <- cov2.abdab %>% select(any_of(vars2))
 cov2.abdab.fullv <- cov2.abdab.fullv0 %>% filter(fullv != "ND")
@@ -1049,13 +1049,13 @@ toshiny.cov2.abdab.fullv <- toshiny.cov2.abdab.fullv %>% relocate(cdr3_aa_imgt, 
 
 toshiny.cov2.abdab.fullv <- toshiny.cov2.abdab.fullv %>% relocate(neutralization, .after = cdr3_aa_imgt)
 toshiny.cov2.abdab.fullv <- toshiny.cov2.abdab.fullv %>% relocate(binding, .after = cdr3_aa_imgt)
-toshiny.cov2.abdab.fullv <- toshiny.cov2.abdab.fullv %>% relocate(gf_jgene, .after = gene)
+toshiny.cov2.abdab.fullv <- toshiny.cov2.abdab.fullv %>% relocate(vgf_jgene, .after = gene)
 
 ## now add count, shm_mean, shm_max after all sequences are combined
 toshiny.cov2.abdab <- toshiny.cov2.abdab.fullv %>%
-   add_count(gf_jgene,cdr3length_imgt) %>%
+   add_count(vgf_jgene,cdr3length_imgt) %>%
    rename(ncount = n) %>%
-   group_by(gf_jgene,cdr3length_imgt) %>%
+   group_by(vgf_jgene,cdr3length_imgt) %>%
    mutate(shm_mean = mean(shm, na.rm = TRUE)) %>%
    # ADD MAX SHM AS WELL..
    mutate(shm_max = max(shm, na.rm = TRUE)) %>% 
@@ -1105,12 +1105,12 @@ AIRRscapeprocess <- function(x, filter_columns = TRUE, filter_to_HC = TRUE, renu
   ### removing all sequences with IMGT CDR3 less than 3
   x <- x %>% filter(cdr3length_imgt > 2.8)  
   ## next lines create V gene family, J gene columns
-  x$gene <- getGene(x$v_call, first=TRUE, strip_d=TRUE)
-  x$gf <- substring(x$gene, 1,5)
+  x$vgene <- getGene(x$v_call, first=TRUE, strip_d=TRUE)
+  x$vgf <- substring(x$vgene, 1,5)
   x$jgene <- getGene(x$j_call, first=TRUE, strip_d=TRUE)
   x$jgene <- substring(x$jgene, 1,5)
-  ## this creates new column gf_jgene which is used in all shiny plots
-  x <- x %>% unite(gf_jgene, gf, jgene, sep = "_", remove = FALSE, na.rm = TRUE)
+  ## this creates new column vgf_jgene which is used in all shiny plots
+  x <- x %>% unite(vgf_jgene, vgf, jgene, sep = "_", remove = FALSE, na.rm = TRUE)
   ## this removes any rows without CDR3, or with junctions that are not 3-mers
   x <- x %>% filter(!is.na(cdr3length_imgt)) %>% 
     filter(is.wholenumber(cdr3length_imgt))
@@ -1130,9 +1130,9 @@ AIRRscapeprocess <- function(x, filter_columns = TRUE, filter_to_HC = TRUE, renu
   x$cregion <- gsub("IgL","Lambda",x$cregion)
   ## making more important columns used in plotting, also a rounding step
   x <- x %>%
-    add_count(gf_jgene,cdr3length_imgt) %>% 
+    add_count(vgf_jgene,cdr3length_imgt) %>% 
     rename(ncount = n) %>% 
-    group_by(gf_jgene,cdr3length_imgt) %>% 
+    group_by(vgf_jgene,cdr3length_imgt) %>% 
     mutate(shm_mean = mean(shm, na.rm = TRUE)) %>% 
     # NOTE ADDIN MAX SHM AS WELL..
     mutate(shm_max = max(shm, na.rm = TRUE)) %>% 
@@ -1140,7 +1140,7 @@ AIRRscapeprocess <- function(x, filter_columns = TRUE, filter_to_HC = TRUE, renu
     mutate(across(shm_max, round, 2)) %>% 
     mutate(across(shm_mean, round, 2))
   ## this will filter the dataset if filter_columns option is set to true - note the any_of which allows columns to be missing
-  vars2 <- c("sequence_id", "binding", "neutralization", "cregion", "cdr3_aa_imgt","gene", "gf_jgene", "gf","jgene", "cdr3length_imgt", "shm", "shm_max", "shm_mean", "ncount", "reads_per_clone")
+  vars2 <- c("sequence_id", "binding", "neutralization", "cregion", "cdr3_aa_imgt","vgene", "vgf_jgene", "vgf","jgene", "cdr3length_imgt", "shm", "shm_max", "shm_mean", "ncount", "reads_per_clone")
   if (filter_columns) {
     x <- x %>% select(any_of(vars2))
   }
@@ -1148,14 +1148,14 @@ AIRRscapeprocess <- function(x, filter_columns = TRUE, filter_to_HC = TRUE, renu
   if (filter_to_HC) {
     x <- x %>% filter(cregion == "IgH" | cregion == "IgA" | cregion == "IgD" | cregion == "IgE" | cregion == "IgG" | cregion == "IgM")
   }
-  ## this will remove all redundant sequences with same gf/gene & cdr3 motif...note we count above so okay to collapse here!!
+  ## this will remove all redundant sequences with same vgf/gene & cdr3 motif...note we count above so okay to collapse here!!
   if (filter_after_counting) {
     x <- x %>%
-      group_by(cdr3_aa_imgt,gf_jgene) %>%
+      group_by(cdr3_aa_imgt,vgf_jgene) %>%
       summarize_all(first) %>%
       rename(ncountfull = ncount) %>% 
       ungroup() %>%
-      add_count(gf_jgene,cdr3length_imgt) %>% 
+      add_count(vgf_jgene,cdr3length_imgt) %>% 
       rename(ncount = n) %>%
       relocate(ncount, .before = shm_mean)
   }

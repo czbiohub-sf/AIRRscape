@@ -99,12 +99,12 @@ AIRRscapeprocess <- function(x, filter_columns = TRUE, filter_to_HC = TRUE, renu
   ### removing all sequences with IMGT CDR3 less than 3
   x <- x %>% filter(cdr3length_imgt > 2.8)  
   ## next lines create V gene family, J gene columns
-  x$gene <- getGene(x$v_call, first=TRUE, strip_d=TRUE)
-  x$gf <- substring(x$gene, 1,5)
+  x$vgene <- getGene(x$v_call, first=TRUE, strip_d=TRUE)
+  x$vgf <- substring(x$vgene, 1,5)
   x$jgene <- getGene(x$j_call, first=TRUE, strip_d=TRUE)
   x$jgene <- substring(x$jgene, 1,5)
-  ## this creates new column gf_jgene which is used in all shiny plots
-  x <- x %>% unite(gf_jgene, gf, jgene, sep = "_", remove = FALSE, na.rm = TRUE)
+  ## this creates new column vgf_jgene which is used in all shiny plots
+  x <- x %>% unite(vgf_jgene, vgf, jgene, sep = "_", remove = FALSE, na.rm = TRUE)
   ## this removes any rows without CDR3, or with junctions that are not 3-mers
   x <- x %>% filter(!is.na(cdr3length_imgt)) %>% 
     filter(is.wholenumber(cdr3length_imgt))
@@ -124,9 +124,9 @@ AIRRscapeprocess <- function(x, filter_columns = TRUE, filter_to_HC = TRUE, renu
   x$cregion <- gsub("IgL","Lambda",x$cregion)
   ## making more important columns used in plotting, also a rounding step
   x <- x %>%
-    add_count(gf_jgene,cdr3length_imgt) %>% 
+    add_count(vgf_jgene,cdr3length_imgt) %>% 
     rename(ncount = n) %>% 
-    group_by(gf_jgene,cdr3length_imgt) %>% 
+    group_by(vgf_jgene,cdr3length_imgt) %>% 
     mutate(shm_mean = mean(shm, na.rm = TRUE)) %>% 
     # NOTE ADDIN MAX SHM AS WELL..
     mutate(shm_max = max(shm, na.rm = TRUE)) %>% 
@@ -134,7 +134,7 @@ AIRRscapeprocess <- function(x, filter_columns = TRUE, filter_to_HC = TRUE, renu
     mutate(across(shm_max, round, 2)) %>% 
     mutate(across(shm_mean, round, 2))
   ## this will filter the dataset if filter_columns option is set to true - note the any_of which allows columns to be missing
-  vars2 <- c("sequence_id", "binding", "neutralization", "cregion", "cdr3_aa_imgt","gene", "gf_jgene", "gf","jgene", "cdr3length_imgt", "shm", "shm_max", "shm_mean", "ncount", "reads_per_clone")
+  vars2 <- c("sequence_id", "binding", "neutralization", "cregion", "cdr3_aa_imgt","vgene", "vgf_jgene", "vgf","jgene", "cdr3length_imgt", "shm", "shm_max", "shm_mean", "ncount", "reads_per_clone")
   if (filter_columns) {
     x <- x %>% select(any_of(vars2))
   }
@@ -142,14 +142,14 @@ AIRRscapeprocess <- function(x, filter_columns = TRUE, filter_to_HC = TRUE, renu
   if (filter_to_HC) {
     x <- x %>% filter(cregion == "IgH" | cregion == "IgA" | cregion == "IgD" | cregion == "IgE" | cregion == "IgG" | cregion == "IgM")
   }
-  ## this will remove all redundant sequences with same gf/gene & cdr3 motif...note we count above so okay to collapse here!!
+  ## this will remove all redundant sequences with same vgf/gene & cdr3 motif...note we count above so okay to collapse here!!
   if (filter_after_counting) {
     x <- x %>%
-      group_by(cdr3_aa_imgt,gf_jgene) %>%
+      group_by(cdr3_aa_imgt,vgf_jgene) %>%
       summarize_all(first) %>%
       rename(ncountfull = ncount) %>% 
       ungroup() %>%
-      add_count(gf_jgene,cdr3length_imgt) %>% 
+      add_count(vgf_jgene,cdr3length_imgt) %>% 
       rename(ncount = n) %>%
       relocate(ncount, .before = shm_mean)
   }
@@ -311,17 +311,17 @@ unique(toshiny.cov2.abdab$cregion)
 unique(toshiny.den.mabs$cregion)
 unique(toshiny.hiv.mabs.all$cregion)
 
-unique(toshiny.den.bulk.d13stim$gf)
-unique(toshiny.den.bulk.d13enrich$gf)
-unique(toshiny.den.bulk.OAS$gf)
-unique(toshiny.hiv.bulk.nih45$gf)  ## only HV1, HV3, HV4
-unique(toshiny.hiv.bulk.mt1214$gf) ## NA
-unique(toshiny.hiv.bulk.mt1214$gf)
-unique(toshiny.hc.BXmay.10mstim$gf)
-unique(toshiny.cov2.bulk.binder.p11$gf)
-unique(toshiny.cov2.bulk.nielsen.p7450$gf)
-unique(toshiny.cov2.bulk.galson.p1$gf)
-unique(toshiny.cov2.bulk.kc.m5.allreps$gf)
+unique(toshiny.den.bulk.d13stim$vgf)
+unique(toshiny.den.bulk.d13enrich$vgf)
+unique(toshiny.den.bulk.OAS$vgf)
+unique(toshiny.hiv.bulk.nih45$vgf)  ## only HV1, HV3, HV4
+unique(toshiny.hiv.bulk.mt1214$vgf) ## NA
+unique(toshiny.hiv.bulk.mt1214$vgf)
+unique(toshiny.hc.BXmay.10mstim$vgf)
+unique(toshiny.cov2.bulk.binder.p11$vgf)
+unique(toshiny.cov2.bulk.nielsen.p7450$vgf)
+unique(toshiny.cov2.bulk.galson.p1$vgf)
+unique(toshiny.cov2.bulk.kc.m5.allreps$vgf)
 
 unique(toshiny.cov2.abdab$jgene)
 unique(toshiny.den.mabs$jgene)
@@ -358,9 +358,9 @@ toshiny.hiv.bulk.cap$ncount <- NULL
 toshiny.hiv.bulk.cap$shm_mean <- NULL
 toshiny.hiv.bulk.cap$shm_max <- NULL
 toshiny.hiv.bulk.cap <- toshiny.hiv.bulk.cap %>%
-  add_count(gf_jgene,cdr3length_imgt) %>%
+  add_count(vgf_jgene,cdr3length_imgt) %>%
   rename(ncount = n) %>%
-  group_by(gf_jgene,cdr3length_imgt) %>%
+  group_by(vgf_jgene,cdr3length_imgt) %>%
   mutate(shm_mean = mean(shm, na.rm = TRUE)) %>%
   # ADD MAX SHM AS WELL..
   mutate(shm_max = max(shm, na.rm = TRUE)) %>% 
@@ -491,9 +491,9 @@ toshiny.cov2.allc$ncount <- NULL
 toshiny.cov2.allc$shm_mean <- NULL
 toshiny.cov2.allc$shm_max <- NULL
 toshiny.cov2.allc <- toshiny.cov2.allc %>%
-  add_count(gf_jgene,cdr3length_imgt) %>%
+  add_count(vgf_jgene,cdr3length_imgt) %>%
   rename(ncount = n) %>%
-  group_by(gf_jgene,cdr3length_imgt) %>%
+  group_by(vgf_jgene,cdr3length_imgt) %>%
   mutate(shm_mean = mean(shm, na.rm = TRUE)) %>%
   # ADD MAX SHM AS WELL..
   mutate(shm_max = max(shm, na.rm = TRUE)) %>% 
@@ -541,9 +541,9 @@ toshiny.cov2hivc$ncount <- NULL
 toshiny.cov2hivc$shm_mean <- NULL
 toshiny.cov2hivc$shm_max <- NULL
 toshiny.cov2hivc <- toshiny.cov2hivc %>%
-  add_count(gf_jgene,cdr3length_imgt) %>%
+  add_count(vgf_jgene,cdr3length_imgt) %>%
   rename(ncount = n) %>%
-  group_by(gf_jgene,cdr3length_imgt) %>%
+  group_by(vgf_jgene,cdr3length_imgt) %>%
   mutate(shm_mean = mean(shm, na.rm = TRUE)) %>%
   # ADD MAX SHM AS WELL..
   mutate(shm_max = max(shm, na.rm = TRUE)) %>% 
@@ -592,9 +592,9 @@ toshiny.hiv.allc$ncount <- NULL
 toshiny.hiv.allc$shm_mean <- NULL
 toshiny.hiv.allc$shm_max <- NULL
 toshiny.hiv.allc <- toshiny.hiv.allc %>%
-  add_count(gf_jgene,cdr3length_imgt) %>%
+  add_count(vgf_jgene,cdr3length_imgt) %>%
   rename(ncount = n) %>%
-  group_by(gf_jgene,cdr3length_imgt) %>%
+  group_by(vgf_jgene,cdr3length_imgt) %>%
   mutate(shm_mean = mean(shm, na.rm = TRUE)) %>%
   # ADD MAX SHM AS WELL..
   mutate(shm_max = max(shm, na.rm = TRUE)) %>% 
@@ -639,9 +639,9 @@ toshiny.den.allc$ncount <- NULL
 toshiny.den.allc$shm_mean <- NULL
 toshiny.den.allc$shm_max <- NULL
 toshiny.den.allc <- toshiny.den.allc %>%
-  add_count(gf_jgene,cdr3length_imgt) %>%
+  add_count(vgf_jgene,cdr3length_imgt) %>%
   rename(ncount = n) %>%
-  group_by(gf_jgene,cdr3length_imgt) %>%
+  group_by(vgf_jgene,cdr3length_imgt) %>%
   mutate(shm_mean = mean(shm, na.rm = TRUE)) %>%
   # ADD MAX SHM AS WELL..
   mutate(shm_max = max(shm, na.rm = TRUE)) %>% 
@@ -714,9 +714,9 @@ toshiny.cov2hivden.allc$ncount <- NULL
 toshiny.cov2hivden.allc$shm_mean <- NULL
 toshiny.cov2hivden.allc$shm_max <- NULL
 toshiny.cov2hivden.allc <- toshiny.cov2hivden.allc %>%
-  add_count(gf_jgene,cdr3length_imgt) %>%
+  add_count(vgf_jgene,cdr3length_imgt) %>%
   rename(ncount = n) %>%
-  group_by(gf_jgene,cdr3length_imgt) %>%
+  group_by(vgf_jgene,cdr3length_imgt) %>%
   mutate(shm_mean = mean(shm, na.rm = TRUE)) %>%
   # ADD MAX SHM AS WELL..
   mutate(shm_max = max(shm, na.rm = TRUE)) %>% 
