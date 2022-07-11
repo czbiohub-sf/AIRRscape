@@ -1,4 +1,4 @@
-id	sequence_id	cregion	cdr3_aa_imgt	binding	neutralization	gene	gf_jgene	gf	jgene	cdr3length_imgt	shm	ncountfull	reads_per_clone	ncount	shm_mean	shm_max	cregion0
+id	sequence_id	cregion	cdr3_aa_imgt	binding	neutralization	vgene	vgf_jgene	vgf	jgene	cdr3length_imgt	shm	ncountfull	reads_per_clone	ncount	shm_mean	shm_max	cregion0
 SARS-CoV2 mAbs	SARS-CoV2-mAb-COV2-2016	IgH	AAAPAVMTAGWFDP	RBD	non-neutralizing or unknown	IGHV1-24	IGHV1_IGHJ5	IGHV1	IGHJ5	14	2.03	4	1	17	2.89	4.08	IgH
 SARS-CoV2 mAbs	SARS-CoV2-mAb-2C08	IgH	AAAYCSGGSCSDGFDI	RBD	neutralizing	IGHV1-58	IGHV1_IGHJ3	IGHV1	IGHJ3	16	0.69	16	1	39	0.94	1.73	IgH
 SARS-CoV2 mAbs	SARS-CoV2-mAb-CQTS028	IgH	AADRMRIVGGKGYYYGMDV	RBD	non-neutralizing or unknown	IGHV1-58	IGHV1_IGHJ6	IGHV1	IGHJ6	19	1.35	10	1	32	5.44	12.5	IgH

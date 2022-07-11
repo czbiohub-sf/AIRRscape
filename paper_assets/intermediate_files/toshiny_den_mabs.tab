@@ -1,4 +1,4 @@
-sequence_id	cregion	cdr3_aa_imgt	gene	gf_jgene	gf	jgene	cdr3length_imgt	shm	shm_max	shm_mean	ncount	reads_per_clone
+sequence_id	cregion	cdr3_aa_imgt	vgene	vgf_jgene	vgf	jgene	cdr3length_imgt	shm	shm_max	shm_mean	ncount	reads_per_clone
 denmab403-M1-CF1	IgH	VRQNRNWFDS	IGHV4-39	IGHV4_IGHJ5	IGHV4	IGHJ5	10	10.77	10.77	6.25	3	3
 denmab503-B10-CF1	IgH	ARQDRNWFDS	IGHV4-39	IGHV4_IGHJ5	IGHV4	IGHJ5	10	2.68	10.77	6.25	3	3
 denmab503-D8-CF1	IgH	ARQDRNWFDS	IGHV4-39	IGHV4_IGHJ5	IGHV4	IGHJ5	10	5.3	10.77	6.25	3	3

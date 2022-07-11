@@ -1,4 +1,4 @@
-sequence_id	cdr3_aa_imgt	gf_jgene	cregion	gene	gf	jgene	cdr3length_imgt	shm	shm_max	ncount	shm_mean	ncountfull	reads_per_clone
+sequence_id	cdr3_aa_imgt	vgf_jgene	cregion	vgene	vgf	jgene	cdr3length_imgt	shm	shm_max	ncount	shm_mean	ncountfull	reads_per_clone
 cov2-bulk-binder-p11-1	AAACSSTSCQITGFDP	IGHV1_IGHJ5	IgH	IGHV1-58	IGHV1	IGHJ5	16	0.45	6.85	13	1.72	28	1
 cov2-bulk-binder-p11-2	AAAPDCGGGSCHSYPYYGLDV	IGHV3_IGHJ6	IgH	IGHV3-74	IGHV3	IGHJ6	21	14.21	14.21	138	2.91	388	3
 cov2-bulk-binder-p11-3	AAAPLSSDFDY	IGHV1_IGHJ4	IgH	IGHV1-58	IGHV1	IGHJ4	11	6.14	13.98	42	2.48	105	1

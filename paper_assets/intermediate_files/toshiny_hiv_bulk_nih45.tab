@@ -1,4 +1,4 @@
-sequence_id	cdr3_aa_imgt	gf_jgene	cregion	gene	gf	jgene	cdr3length_imgt	shm	shm_max	ncount	shm_mean	ncountfull
+sequence_id	cdr3_aa_imgt	vgf_jgene	cregion	vgene	vgf	jgene	cdr3length_imgt	shm	shm_max	ncount	shm_mean	ncountfull
 hiv-bulk-nih45-1	AAAAGTAMVSLYYYYYGMDV	IGHV1_IGHJ6	IgH	IGHV1-58	IGHV1	IGHJ6	20	0	37.06	293	2.22	1139
 hiv-bulk-nih45-2	AAAATVTTAALDAFDI	IGHV1_IGHJ3	IgH	IGHV1-58	IGHV1	IGHJ3	16	0	20	248	1.75	1349
 hiv-bulk-nih45-3	AAADTTVSPSYYYYGMDV	IGHV1_IGHJ6	IgH	IGHV1-58	IGHV1	IGHJ6	18	0	35.94	396	7.15	2646
