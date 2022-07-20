@@ -684,19 +684,19 @@ server <- function(input, output, session) {
   
   ## then rename sequence_id
   filteredDSpartial2 <- reactive({
-    partial2 <- filteredDSpartial() %>% select(sequence_id,cdr3_aa_imgt,gene,vgf_jgene,cdr3length_imgt)
+    partial2 <- filteredDSpartial() %>% select(sequence_id,cdr3_aa_imgt,vgene,vgf_jgene,cdr3length_imgt)
     partial2$sequence_id <- paste(partial2$sequence_id,partial2$vgene,partial2$cdr3_aa_imgt,sep="_")
     partial2
   })
   
   filteredDSall2 <- reactive({
-    all2 <- filteredDSall() %>% select(sequence_id,cdr3_aa_imgt,gene,vgf_jgene,cdr3length_imgt)
+    all2 <- filteredDSall() %>% select(sequence_id,cdr3_aa_imgt,vgene,vgf_jgene,cdr3length_imgt)
     all2$sequence_id <- paste(all2$sequence_id,all2$vgene,all2$cdr3_aa_imgt,sep="_")
     all2
   })
   
   filteredDSpartial2id <- reactive({
-    partial2id <- filteredDSpartial() %>% select(sequence_id,cdr3_aa_imgt,gene,vgf_jgene,cdr3length_imgt)
+    partial2id <- filteredDSpartial() %>% select(sequence_id,cdr3_aa_imgt,vgene,vgf_jgene,cdr3length_imgt)
     partial2id$sequence_id <- paste(partial2id$sequence_id,partial2id$vgene,partial2id$cdr3_aa_imgt,sep="_")
     partial2id$sequence_id
   })
