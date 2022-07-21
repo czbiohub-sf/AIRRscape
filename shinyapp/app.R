@@ -230,7 +230,7 @@ ui <- fluidPage(
       p("Alternately if you want to see more than a bin you can create a box and all antibodies within will appear in the top table."),
       p("From the lower table you can download all or selected antibodies in the chosen bin, download the distance matrix of all antibodies, or create topologies of selected antibodies. The last topology options are to find the nearest sequences (up to 500) of a single selected antibody, with four possible distance thresholds. Note that you can change the window size of the topology using the height & width sliders."),
       p("Finally make sure to check all antibodies in the table have the same CDR3 length or the topology calculation will fail."),
-      width = 3.5
+      width = 4
     ),
 
     mainPanel(
