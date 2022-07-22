@@ -232,7 +232,7 @@ ui <- fluidPage(
       p("Finally make sure to check all antibodies in the table have the same CDR3 length or the topology calculation will fail."),
       h5("GitHub repo & Citation:"),
       p("To run AIRRscape locally, AIRRscape is available on GitHub at https://github.com/czbiohub/AIRRscape. The AIRRscape publication is on bioRxiv at https://doi.org/10.1101/2022.03.24.485594."),
-      p("Questions? Please email: eric.waltari at czbiohub.org."),
+      h6("Questions? Please email: eric.waltari at czbiohub.org."),
       width = 4
     ),
 
@@ -1021,7 +1021,7 @@ server <- function(input, output, session) {
     })
   
   observeEvent(input$screensht, {
-    screenshot(filename = "AIRRscape_screenshot", scale = 5)
+    screenshot(filename = "AIRRscape_screenshot", scale = 3)
   })  
   
 }
