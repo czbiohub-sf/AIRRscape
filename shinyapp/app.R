@@ -231,7 +231,8 @@ ui <- fluidPage(
       p("From the lower table you can download all or selected antibodies in the chosen bin, download the distance matrix of all antibodies, or create topologies of selected antibodies. The last topology options are to find the nearest sequences (up to 500) of a single selected antibody, with four possible distance thresholds. Note that you can change the window size of the topology using the height & width sliders."),
       p("Finally make sure to check all antibodies in the table have the same CDR3 length or the topology calculation will fail."),
       h5("GitHub repo & Citation:"),
-      p("To run AIRRscape locally, AIRRscape is available on GitHub at https://github.com/czbiohub/AIRRscape. The AIRRscape publication is on bioRxiv at https://doi.org/10.1101/2022.03.24.485594."),
+      p("To run AIRRscape locally and for more detailed instructions, AIRRscape is available on GitHub at https://github.com/czbiohub/AIRRscape."),
+      p("The AIRRscape publication is on bioRxiv at https://doi.org/10.1101/2022.03.24.485594."),
       h6("Questions? Please email: eric.waltari at czbiohub.org."),
       width = 4
     ),
