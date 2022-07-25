@@ -2,7 +2,7 @@
 ![](fig2b_forcomms.png)
 
 ## Dependencies & R Session Info
-AIRRscape is available as a web tool, running at https://airrscape.czbiohub.org.
+*AIRRscape is available as a web tool, running at https://airrscape.czbiohub.org.*
 To run AIRRscape locally, have R & RStudio downloaded: https://www.rstudio.com/products/rstudio/download/.
 AIRRscape was initially developed using R v4.0.3, with subsequent updates made using R v4.2.0, and with RStudio v2022.02.2. The ```sessionInfo()``` shows:
 
@@ -13,10 +13,12 @@ Other attached packages:
 	_shinyscreenshot_0.2.0 phangorn_2.8.1 ape_5.6-2 seqinr_4.2-16 DT_0.23 forcats_0.5.1 stringr_1.4.0 dplyr_1.0.9 purrr_0.3.4 readr_2.1.2 tidyr_1.2.0 tibble_3.1.7 tidyverse_1.3.1 alakazam_1.2.0 ggplot2_3.3.6 shiny_1.7.1_
 
 ## Running AIRRscape
-AIRRscape is available as a web tool, running at https://airrscape.czbiohub.org.
+*AIRRscape is available as a web tool, running at https://airrscape.czbiohub.org.*
 To run AIRRscape locally, clone the repo and open the ```app.R``` file in your RStudio, then click "Run App". As a Shiny app, it can run as a window of RStudio, or as a tab in a web browser (recommended).
 
-Basic instructions are shown on the left hand side of the window. When you start AIRRscape you will first see the options for the _Import Data_ tab. If you click on the _AIRRscape_ tab you will see a set of heatmaps - to choose between datasets shown select the dataset from the options in the top selectable list. Datasets of multiple repertoires can be visualized either as separate heatmap panels, or as a single combined heatmap (labeled 'combined'). To view your own inputted datasets (in AIRR-C format saved as .tsv or .tab files), first use the _Import Data_ tab to convert+combine and then download. You can view these after uploading by selecting "Your datasets - IgH" or "Your datasets - IgH combined"
+Basic instructions are shown on the left hand side of the window.
+When you start AIRRscape you will first see the options for the _Import Data_ tab. If you click on the _AIRRscape_ tab you will see a set of heatmaps - to choose between datasets shown select the dataset from the options in the top selectable list on the left. Datasets of multiple repertoires can be visualized either as separate heatmap panels, or as a single combined heatmap (labeled 'combined').
+To view your own inputted datasets (in AIRR-C format saved as .tsv or .tab files), first use the _Import Data_ tab to convert+combine and then download. You can view these after uploading by selecting "Your datasets - IgH" or "Your datasets - IgH combined"
 
 ### _Import Data_ tab
 To import datasets, first upload each of your separate datasets (maximum 6). As long as they are in AIRR format (tab or tsv), they will be automatically converted for viewing in AIRRscape. You do not need any metadata, simply input the name of each dataset and these names will be in each faceted dataset. Next click the combine button (which will not immediately have a result). Finally click each download button separately to get the two files. You can then upload these two files in the main AIRRScape tab for viewing.
@@ -35,7 +37,8 @@ The repo is split into the AIRRscape app and loaded datasets (shinyapp folder), 
 
 ## Tips
 We recommend using AIRRscape as a tab on a web browser, as wide as possible. By removing reads with identical CDR3 motifs & germline assignments during processing, each pre-loaded repertoire contains up to 200,000 sequences. The heatmaps of these repertoires do not take more than a few seconds to load, but the option of all datasets "SARS-CoV2 HIV & Dengue datasets - IgH combined" will take longer to load.
-When building topologies there is an upper limit for making these on the fly. We recommend limiting these to no more than 500 sequences. When finding the most closely related CDR3 motifs to an antibody sequence of interest, note that the topology will be limited to 500 sequences. Similarly, when viewing the largest combined datasets, note the number of sequences in your bin of interest. On a typical laptop running RStudio searching a bin of 1000 sequences for the most closely related CDR3 motifs will take about 1 minute, and about 20 seconds using the web portal. However searches of the larger bins will take considerably longer - searching ~7,500 sequences will take 12-15 minutes and may not finish before timing out on the web portal.
+When building topologies there is an upper limit for making these on the fly. We recommend limiting these to no more than 500 sequences. When finding the most closely related CDR3 motifs to an antibody sequence of interest, note that the topology will be limited to 500 sequences. Similarly, when viewing the largest combined datasets, note the number of sequences in your bin of interest.
+On a typical laptop running RStudio searching a bin of 1000 sequences for the most closely related CDR3 motifs will take about 1 minute, and about 20 seconds using the web portal. However searches of the larger bins will take considerably longer - searching ~7,500 sequences will take 12-15 minutes and may not finish before timing out on the web portal.
 
 Note that after exploring one table for some time, it is possible to unwittingly have multiple antibodies selected but not in view - this will affect the topology-making options. A simple solution is to click on another bin, and then click back on the bin of interest thus refreshing the table. Also note that the topologies require the selected antibodies to all have the same CDR3 length - otherwise the calculation will fail with an error: ```Warning: Error in <-: length of 'dimnames' [1] not equal to array extent```.
 Other warnings may occur if there are only 1 or 2 closely related CDR3 motifs: ```Warning: Error in [[: subscript out of bounds``` & ```Warning: Error in nj: cannot build an NJ tree with less than 3 observations```.
@@ -43,8 +46,7 @@ Other warnings may occur if there are only 1 or 2 closely related CDR3 motifs: `
 ## Citation
 To cite AIRRscape in publications, use:
 
-AIRRscape: an interactive tool for exploring B-cell receptor repertoires and antibody responses
-
+*AIRRscape: an interactive tool for exploring B-cell receptor repertoires and antibody responses*
 Eric Waltari, Saba Nafees, Joan Wong, Krista M. McCutcheon, John E. Pak
 
 bioRxiv 2022.03.24.485594; doi: https://doi.org/10.1101/2022.03.24.485594
