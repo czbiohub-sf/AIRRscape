@@ -1,10 +1,10 @@
 # AIRRscape: an interactive tool for exploring B-cell receptor repertoires and antibody responses  
-
 ![](fig2b_forcomms.png)
 
 ## Dependencies & R Session Info
-Have RStudio downloaded: https://www.rstudio.com/products/rstudio/download/
-AIRRscape was initially developed using R v4.0.3, with subsequent updates made using R v4.2.0, and with RStudio v2022.02.2. The sessionInfo() shows:
+AIRRscape is available as a web tool, running at https://airrscape.czbiohub.org.
+To run AIRRscape locally, have R & RStudio downloaded: https://www.rstudio.com/products/rstudio/download/.
+AIRRscape was initially developed using R v4.0.3, with subsequent updates made using R v4.2.0, and with RStudio v2022.02.2. The ```sessionInfo()``` shows:
 
 Attached base packages:
 	_stats graphics grDevices utils datasets methods base_
@@ -37,10 +37,7 @@ The repo is split into the AIRRscape app and loaded datasets (shinyapp folder), 
 We recommend using AIRRscape as a tab on a web browser, as wide as possible. By removing reads with identical CDR3 motifs & germline assignments during processing, each pre-loaded repertoire contains up to 200,000 sequences. The heatmaps of these repertoires do not take more than a few seconds to load, but the option of all datasets "SARS-CoV2 HIV & Dengue datasets - IgH combined" will take longer to load.
 When building topologies there is an upper limit for making these on the fly. We recommend limiting these to no more than 500 sequences. When finding the most closely related CDR3 motifs to an antibody sequence of interest, note that the topology will be limited to 500 sequences. Similarly, when viewing the largest combined datasets, note the number of sequences in your bin of interest. On a typical laptop running RStudio searching a bin of 1000 sequences for the most closely related CDR3 motifs will take about 1 minute, and about 20 seconds using the web portal. However searches of the larger bins will take considerably longer - searching ~7,500 sequences will take 12-15 minutes and may not finish before timing out on the web portal.
 
-Note that after exploring one table for some time, it is possible to unwittingly have multiple antibodies selected but not in view - this will affect the topology-making options. A simple solution is to click on another bin, and then click back on the bin of interest thus refreshing the table. Also note that the topologies require the selected antibodies to all have the same CDR3 length - otherwise the calculation will fail with an error:
-```{r}
-Warning: Error in <-: length of 'dimnames' [1] not equal to array extent
-```
+Note that after exploring one table for some time, it is possible to unwittingly have multiple antibodies selected but not in view - this will affect the topology-making options. A simple solution is to click on another bin, and then click back on the bin of interest thus refreshing the table. Also note that the topologies require the selected antibodies to all have the same CDR3 length - otherwise the calculation will fail with an error: ```Warning: Error in <-: length of 'dimnames' [1] not equal to array extent```.
 Other warnings may occur if there are only 1 or 2 closely related CDR3 motifs: ```Warning: Error in [[: subscript out of bounds``` & ```Warning: Error in nj: cannot build an NJ tree with less than 3 observations```.
 
 ## Citation
