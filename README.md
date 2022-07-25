@@ -2,7 +2,7 @@
 ![](fig2b_forcomms.png)
 
 ## Dependencies & R Session Info
-*AIRRscape is available as a web tool, running at https://airrscape.czbiohub.org.*
+**AIRRscape is available as a web tool, running at https://airrscape.czbiohub.org.**
 To run AIRRscape locally, have R & RStudio downloaded: https://www.rstudio.com/products/rstudio/download/.
 AIRRscape was initially developed using R v4.0.3, with subsequent updates made using R v4.2.0, and with RStudio v2022.02.2. The ```sessionInfo()``` shows:
 
@@ -13,7 +13,7 @@ Other attached packages:
 	_shinyscreenshot_0.2.0 phangorn_2.8.1 ape_5.6-2 seqinr_4.2-16 DT_0.23 forcats_0.5.1 stringr_1.4.0 dplyr_1.0.9 purrr_0.3.4 readr_2.1.2 tidyr_1.2.0 tibble_3.1.7 tidyverse_1.3.1 alakazam_1.2.0 ggplot2_3.3.6 shiny_1.7.1_
 
 ## Running AIRRscape
-*AIRRscape is available as a web tool, running at https://airrscape.czbiohub.org.*
+**AIRRscape is available as a web tool, running at https://airrscape.czbiohub.org.**
 To run AIRRscape locally, clone the repo and open the ```app.R``` file in your RStudio, then click "Run App". As a Shiny app, it can run as a window of RStudio, or as a tab in a web browser (recommended).
 
 Basic instructions are shown on the left hand side of the window.
@@ -46,7 +46,8 @@ Other warnings may occur if there are only 1 or 2 closely related CDR3 motifs: `
 ## Citation
 To cite AIRRscape in publications, use:
 
-*AIRRscape: an interactive tool for exploring B-cell receptor repertoires and antibody responses*
+**AIRRscape: an interactive tool for exploring B-cell receptor repertoires and antibody responses**
+
 Eric Waltari, Saba Nafees, Joan Wong, Krista M. McCutcheon, John E. Pak
 
 bioRxiv 2022.03.24.485594; doi: https://doi.org/10.1101/2022.03.24.485594
