@@ -24,7 +24,6 @@ library(shinyscreenshot)
 options(shiny.maxRequestSize=5000*1024^2, warn = -1)
 
 ########### AIRRscape processing function ##########
-
 AIRRscapeprocess <- function(x, filter_columns = TRUE, filter_to_HC = TRUE, renumber_sequences = TRUE, filter_after_counting = TRUE) {
   colname <- substitute(x)
   ## this removes columns with all NAs
@@ -184,7 +183,6 @@ toshiny.cov2hiv$id <- factor(toshiny.cov2hiv$id, levels = c("SARS-CoV2 mAbs", "H
 toshiny.den.all$id <- factor(toshiny.den.all$id, levels = c("Dengue plasmablasts", "Dengue patient d13 bulk repertoire", "Dengue Parameswaran 2013 patient bulk repertoires"))
 
 ########### ui layout ##########
-
 ## June 2022 - adding AIRRscapeInput functionality as a tabsetPanel - see https://shiny.rstudio.com/articles/layout-guide.html
 ## think can keep the sidebarPanel as is - in new AIRRscapeInput tab all ui can be in the 'main panel' under the tabset
 ## catch is can all outputs be in same server function - need to rename some at minimum...
