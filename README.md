@@ -18,7 +18,7 @@ To run AIRRscape locally, clone the repo and open the ```app.R``` file in your R
 
 Basic instructions are shown on the left hand side of the window.
 When you start AIRRscape you will first see the options for the _Import Data_ tab. If you click on the _AIRRscape_ tab you will see a set of heatmaps - to choose between datasets shown select the dataset from the options in the top selectable list on the left. Datasets of multiple repertoires can be visualized either as separate heatmap panels, or as a single combined heatmap (labeled 'combined').
-To view your own inputted datasets (in AIRR-C format saved as .tsv or .tab files), first use the _Import Data_ tab to convert+combine and then download. You can view these after uploading by selecting "Your datasets - IgH" or "Your datasets - IgH combined"
+To view your own inputted datasets (in AIRR-C format saved as .tsv or .tab files), first use the _Import Data_ tab to convert+combine and then download. You can view these after uploading by selecting "Custom datasets - IgH" or "Custom datasets - IgH combined"
 
 ### _Import Data_ tab
 To import datasets, first upload each of your separate datasets (maximum 6). As long as they are in AIRR format (tab or tsv), they will be automatically converted for viewing in AIRRscape. You do not need any metadata, simply input the name of each dataset and these names will be in each faceted dataset. Next click the combine button (which will not immediately have a result). Finally click each download button separately to get the two files. You can then upload these two files in the main _AIRRscape_ tab for viewing.
