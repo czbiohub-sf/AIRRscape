@@ -192,7 +192,7 @@ ui <- fluidPage(
   sidebarLayout(
     sidebarPanel(
       img(src="AIRRscape_logo.png", height = 250, width = 250, align = "center"),
-      selectInput("dataset", "Dataset:",
+      selectInput("dataset", "Datasets:",
                   c("SARS-CoV2 mAbs - heavy chains & light chains",
                     "SARS-CoV2 mAbs - IgH by binding",
                     "SARS-CoV2 mAbs - IgH by neutralization",
@@ -200,25 +200,25 @@ ui <- fluidPage(
                     "SARS-CoV2 mAbs vs. 4 COVID-19 patient bulk repertoires vs. Healthy control bulk repertoire - IgH combined",
                     "SARS-CoV2 mAbs vs. HIV mAbs - IgH",
                     "SARS-CoV2 mAbs vs. HIV mAbs - IgH combined",
-                    "HIV mAbs vs. HIV patient MT1214 bulk repertoire vs. HIV patient NIH45 bulk repertoire vs. HIV Setliff 2018 patient bulk repertoires - IgH",
-                    "HIV mAbs vs. HIV patient MT1214 bulk repertoire vs. HIV patient NIH45 bulk repertoire vs. HIV Setliff 2018 patient bulk repertoires - IgH combined",
-                    "Dengue mAbs vs. Dengue patient d13 bulk repertoire vs. Dengue Parameswaran 2013 patient bulk repertoires - IgH",
-                    "Dengue mAbs vs. Dengue patient d13 bulk repertoire vs. Dengue Parameswaran 2013 patient bulk repertoires - IgH combined",
-                    "SARS-CoV2 HIV & Dengue datasets - IgH combined",
-                    "Your datasets - IgH",
-                    "Your datasets - IgH combined"), selectize = FALSE),
-      selectInput("plotcolors", "Plot Colors:",
+                    "HIV mAbs vs. 3 HIV patient bulk repertoires - IgH",
+                    "HIV mAbs vs. 3 HIV patient bulk repertoires - IgH combined",
+                    "Dengue mAbs vs. 2 Dengue patient bulk repertoires - IgH",
+                    "Dengue mAbs vs. 2 Dengue patient bulk repertoires - IgH combined",
+                    "SARS-CoV2, HIV, & Dengue datasets - IgH combined",
+                    "Custom datasets - IgH",
+                    "Custom datasets - IgH combined"), selectize = FALSE),
+      selectInput("plotcolors", "Bins colored by:",
                   c("Average SHM",
                     "Maximum SHM",
                     "Percentage of total antibody sequences"), selectize = FALSE), 
       fileInput(
         inputId = "yourfile1", 
-        label = "To view 'Your datasets - IgH', upload your converted & combined tsv/tab files from the Import Data tab - first the 'separateids' file", 
+        label = "To view 'Custom datasets - IgH', upload your converted & combined tsv/tab files from the Import Data tab - first the 'separateids' file", 
         multiple = FALSE,
         accept = c(".tsv",".tab")),
       fileInput(
         inputId = "yourfile2", 
-        label = "To view 'Your datasets - IgH combined', upload converted & combined tsv/tab files from the Import Data tab - then the 'fullycombined' file", 
+        label = "To view 'Custom datasets - IgH combined', upload converted & combined tsv/tab files from the Import Data tab - then the 'fullycombined' file", 
         multiple = FALSE,
         accept = c(".tsv",".tab")),
       h5("Import Data tab:"),
@@ -643,7 +643,7 @@ server <- function(input, output, session) {
 ## original code for visualizing (but adding users datasets as last 2 dataset options)
   
   facetvar1 <- reactive({
-    switch(input$dataset, "SARS-CoV2 mAbs - heavy chains & light chains" = "cregion", "SARS-CoV2 mAbs - IgH by binding" = "binding", "SARS-CoV2 mAbs - IgH by neutralization" = "neutralization", "SARS-CoV2 mAbs vs. 4 COVID-19 patient bulk repertoires vs. Healthy control bulk repertoire - IgH" = "id", "SARS-CoV2 mAbs vs. 4 COVID-19 patient bulk repertoires vs. Healthy control bulk repertoire - IgH combined" = "cregion", "SARS-CoV2 mAbs vs. HIV mAbs - IgH" = "id", "SARS-CoV2 mAbs vs. HIV mAbs - IgH combined" = "cregion", "HIV mAbs vs. HIV patient MT1214 bulk repertoire vs. HIV patient NIH45 bulk repertoire vs. HIV Setliff 2018 patient bulk repertoires - IgH" = "id", "HIV mAbs vs. HIV patient MT1214 bulk repertoire vs. HIV patient NIH45 bulk repertoire vs. HIV Setliff 2018 patient bulk repertoires - IgH combined" = "cregion", "Dengue mAbs vs. Dengue patient d13 bulk repertoire vs. Dengue Parameswaran 2013 patient bulk repertoires - IgH" = "id", "Dengue mAbs vs. Dengue patient d13 bulk repertoire vs. Dengue Parameswaran 2013 patient bulk repertoires - IgH combined" = "cregion", "SARS-CoV2 HIV & Dengue datasets - IgH combined" = "cregion","Your datasets - IgH" = "id", "Your datasets - IgH combined" = "cregion")
+    switch(input$dataset, "SARS-CoV2 mAbs - heavy chains & light chains" = "cregion", "SARS-CoV2 mAbs - IgH by binding" = "binding", "SARS-CoV2 mAbs - IgH by neutralization" = "neutralization", "SARS-CoV2 mAbs vs. 4 COVID-19 patient bulk repertoires vs. Healthy control bulk repertoire - IgH" = "id", "SARS-CoV2 mAbs vs. 4 COVID-19 patient bulk repertoires vs. Healthy control bulk repertoire - IgH combined" = "cregion", "SARS-CoV2 mAbs vs. HIV mAbs - IgH" = "id", "SARS-CoV2 mAbs vs. HIV mAbs - IgH combined" = "cregion", "HIV mAbs vs. 3 HIV patient bulk repertoires - IgH" = "id", "HIV mAbs vs. 3 HIV patient bulk repertoires - IgH combined" = "cregion", "Dengue mAbs vs. 2 Dengue patient bulk repertoires - IgH" = "id", "Dengue mAbs vs. 2 Dengue patient bulk repertoires - IgH combined" = "cregion", "SARS-CoV2, HIV, & Dengue datasets - IgH combined" = "cregion","Custom datasets - IgH" = "id", "Custom datasets - IgH combined" = "cregion")
   })
   ## to change x-axis columns vs. leaving fixed (for IgH only datasets) - note if you leave out default is fixed...
   facetvar2 <- reactive({
@@ -652,7 +652,7 @@ server <- function(input, output, session) {
   
   inputdataset <- reactive({
     ## using new names that reduce variables, round
-    switch(input$dataset, "SARS-CoV2 mAbs - heavy chains & light chains" = toshiny.cov2.abdab, "SARS-CoV2 mAbs - IgH by binding" = toshiny.cov2.abdab.h, "SARS-CoV2 mAbs - IgH by neutralization" = toshiny.cov2.abdab.h, "SARS-CoV2 mAbs vs. 4 COVID-19 patient bulk repertoires vs. Healthy control bulk repertoire - IgH" = toshiny.cov2.all, "SARS-CoV2 mAbs vs. 4 COVID-19 patient bulk repertoires vs. Healthy control bulk repertoire - IgH combined" = toshiny.cov2.allc, "SARS-CoV2 mAbs vs. HIV mAbs - IgH" = toshiny.cov2hiv, "SARS-CoV2 mAbs vs. HIV mAbs - IgH combined" = toshiny.cov2hivc, "HIV mAbs vs. HIV patient MT1214 bulk repertoire vs. HIV patient NIH45 bulk repertoire vs. HIV Setliff 2018 patient bulk repertoires - IgH" = toshiny.hiv.all, "HIV mAbs vs. HIV patient MT1214 bulk repertoire vs. HIV patient NIH45 bulk repertoire vs. HIV Setliff 2018 patient bulk repertoires - IgH combined" = toshiny.hiv.allc, "Dengue mAbs vs. Dengue patient d13 bulk repertoire vs. Dengue Parameswaran 2013 patient bulk repertoires - IgH" = toshiny.den.all, "Dengue mAbs vs. Dengue patient d13 bulk repertoire vs. Dengue Parameswaran 2013 patient bulk repertoires - IgH combined" = toshiny.den.allc, "SARS-CoV2 HIV & Dengue datasets - IgH combined" = toshiny.cov2hivden.allc, "Your datasets - IgH" = convert11(), "Your datasets - IgH combined" = convert12())
+    switch(input$dataset, "SARS-CoV2 mAbs - heavy chains & light chains" = toshiny.cov2.abdab, "SARS-CoV2 mAbs - IgH by binding" = toshiny.cov2.abdab.h, "SARS-CoV2 mAbs - IgH by neutralization" = toshiny.cov2.abdab.h, "SARS-CoV2 mAbs vs. 4 COVID-19 patient bulk repertoires vs. Healthy control bulk repertoire - IgH" = toshiny.cov2.all, "SARS-CoV2 mAbs vs. 4 COVID-19 patient bulk repertoires vs. Healthy control bulk repertoire - IgH combined" = toshiny.cov2.allc, "SARS-CoV2 mAbs vs. HIV mAbs - IgH" = toshiny.cov2hiv, "SARS-CoV2 mAbs vs. HIV mAbs - IgH combined" = toshiny.cov2hivc, "HIV mAbs vs. 3 HIV patient bulk repertoires - IgH" = toshiny.hiv.all, "HIV mAbs vs. 3 HIV patient bulk repertoires - IgH combined" = toshiny.hiv.allc, "Dengue mAbs vs. 2 Dengue patient bulk repertoires - IgH" = toshiny.den.all, "Dengue mAbs vs. 2 Dengue patient bulk repertoires - IgH combined" = toshiny.den.allc, "SARS-CoV2, HIV, & Dengue datasets - IgH combined" = toshiny.cov2hivden.allc, "Custom datasets - IgH" = convert11(), "Custom datasets - IgH combined" = convert12())
   })
   ## extra filter for downloading
   filteredDS <- reactive({
