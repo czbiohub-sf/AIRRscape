@@ -32,10 +32,10 @@ From the lower table of antibodies (after clicking on a selected bin), you can d
 
 The topologies default to a particular height and width that may not be optimal given the number of antibodies, or the size of your screen. You can adjust the height and width using the sliders just above the topology. The topology tips include the antibody names as well as the CDR3 motifs (in Courier New font so as to be aligned), and the V-gene assignments. Lastly, the button below the topology labeled "Take a screenshot" will save an image of the entire page including heatmaps, tables, and topology.
 
+![](airrscape_video_43seconds.gif)
+
 ## Datasets and code for manuscript
 The repository is split into the AIRRscape app and loaded datasets (shinyapp folder), and partially processed datasets & code used to process these loaded datasets for the manuscript (paper_assets folder). There are two R scripts in the paper_assets folder: the ```airrscape_preprocessing.R``` script includes the initial R code for combining datasets from repositories in AIRR format (datasets here include all columns). The ```airrscape_processing.R``` script includes code that will combine partially processed datasets to the loaded sets directly used in AIRRscape. This script also includes a custom function ```AIRRscapeprocess``` that does this trimming and calculation of AIRRscape-specific columns for any AIRR-formatted repertoire dataset (in a .tab format). Note that the  _Import Data_ tab includes this function to convert user-inputted datasets.
-
-![](airrscape_video_43seconds.gif)
 
 ## Tips
 We recommend using AIRRscape as a tab on a web browser, as wide as possible. By removing reads with identical CDR3 motifs & germline assignments during processing, each pre-loaded repertoire contains up to 200,000 sequences. The heatmaps of these repertoires do not take more than a few seconds to load, but the option of all datasets "SARS-CoV2 HIV & Dengue datasets - IgH combined" will take longer to load.
