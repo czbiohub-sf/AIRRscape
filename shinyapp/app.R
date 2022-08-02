@@ -880,7 +880,7 @@ server <- function(input, output, session) {
           tree <- pratchet(seqs, start = tree1, maxit=500,
                            minit=10, k=10, trace=0)
           tree <- acctran(tree1, seqs) # added
-        } else if (input$plottab == "up to 500 nearest sequences to a single selected mAb - Parsimony; 100% CDR3 identity (Briney 2019)") {
+        } else if (input$plottab == "up to 500 nearest sequences to a single selected mAb - Parsimony; 100% CDR3 AA identity (Briney 2019)") {
           filteredDataall <- isolate({filteredDSall2()})
           filteredDataall.y <- t(sapply(strsplit(filteredDataall[,2],""), tolower))
           rownames(filteredDataall.y) <- filteredDataall[,1]
@@ -911,7 +911,7 @@ server <- function(input, output, session) {
                            minit=10, k=10, trace=0)
           tree <- acctran(tree1, seqs) # added
           filteredData <- isolate({filteredDSpartial2()})  ### added because not in this option but now need for changing title below
-        } else if (input$plottab == "up to 500 nearest sequences to a single selected mAb - Parsimony; 80% CDR3 identity (Soto 2019)") {
+        } else if (input$plottab == "up to 500 nearest sequences to a single selected mAb - Parsimony; 80% CDR3 AA identity (Soto 2019)") {
           filteredDataall <- isolate({filteredDSall2()})
           filteredDataall.y <- t(sapply(strsplit(filteredDataall[,2],""), tolower))
           rownames(filteredDataall.y) <- filteredDataall[,1]
@@ -942,7 +942,7 @@ server <- function(input, output, session) {
                            minit=10, k=10, trace=0)
           tree <- acctran(tree1, seqs) # added
           filteredData <- isolate({filteredDSpartial2()})  ### added because not in this option but now need for changing title below
-        } else if (input$plottab == "up to 500 nearest sequences to a single selected mAb - Parsimony; 70% CDR3 identity (Setliff 2018)") {
+        } else if (input$plottab == "up to 500 nearest sequences to a single selected mAb - Parsimony; 70% CDR3 AA identity (Setliff 2018)") {
           filteredDataall <- isolate({filteredDSall2()})
           filteredDataall.y <- t(sapply(strsplit(filteredDataall[,2],""), tolower))
           rownames(filteredDataall.y) <- filteredDataall[,1]
