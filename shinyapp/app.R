@@ -178,7 +178,7 @@ toshiny.cov2hivden.allc <- toshiny.cov2hivden.allc %>% as.data.frame()
 
 ## to re-order any rows for plotting re-run here
 toshiny.cov2.abdab.h$binding <- factor(toshiny.cov2.abdab.h$binding, levels = c("RBD", "non-RBD"))
-toshiny.cov2.all$id <- factor(toshiny.cov2.all$id, levels = c("SARS-CoV2 mAbs", "DEN patient 13 bulk repertoire", "COVID-19 patient Binder p11 bulk repertoire", "COVID-19 patient Galson p1 bulk repertoire","COVID-19 patient Kuri-Cervantes m5 bulk repertoire", "COVID-19 patient Nielsen p7450 bulk repertoire", "Healthy control"))
+toshiny.cov2.all$id <- factor(toshiny.cov2.all$id, levels = c("SARS-CoV2 mAbs", "DEN patient 13 bulk repertoire", "COVID-19 patient Binder p11 bulk repertoire", "COVID-19 patient Galson p1 bulk repertoire","COVID-19 patient Kuri-Cervantes m5 bulk repertoire", "COVID-19 patient Nielsen p7450 bulk repertoire", "Healthy control bulk repertoire"))
 toshiny.cov2hiv$id <- factor(toshiny.cov2hiv$id, levels = c("SARS-CoV2 mAbs", "HIV mAbs"))
 toshiny.den.all$id <- factor(toshiny.den.all$id, levels = c("Dengue plasmablasts", "Dengue patient d13 bulk repertoire", "Dengue Parameswaran 2013 patient bulk repertoires"))
 
@@ -196,14 +196,14 @@ ui <- fluidPage(
                   c("SARS-CoV2 mAbs - heavy chains & light chains",
                     "SARS-CoV2 mAbs - IgH by binding",
                     "SARS-CoV2 mAbs - IgH by neutralization",
-                    "SARS-CoV2 mAbs vs. 4 COVID-19 patient bulk repertoires vs. Healthy control - IgH",
-                    "SARS-CoV2 mAbs vs. 4 COVID-19 patient bulk repertoires vs. Healthy control - IgH combined",
+                    "SARS-CoV2 mAbs vs. COVID-19 patient bulk repertoires vs. Healthy control - IgH",
+                    "SARS-CoV2 mAbs vs. COVID-19 patient bulk repertoires vs. Healthy control - IgH combined",
                     "SARS-CoV2 mAbs vs. HIV mAbs - IgH",
                     "SARS-CoV2 mAbs vs. HIV mAbs - IgH combined",
-                    "HIV mAbs vs. 3 HIV patient bulk repertoires - IgH",
-                    "HIV mAbs vs. 3 HIV patient bulk repertoires - IgH combined",
-                    "Dengue mAbs vs. 2 Dengue patient bulk repertoires - IgH",
-                    "Dengue mAbs vs. 2 Dengue patient bulk repertoires - IgH combined",
+                    "HIV mAbs vs. HIV patient bulk repertoires - IgH",
+                    "HIV mAbs vs. HIV patient bulk repertoires - IgH combined",
+                    "Dengue mAbs vs. Dengue patient bulk repertoires - IgH",
+                    "Dengue mAbs vs. Dengue patient bulk repertoires - IgH combined",
                     "SARS-CoV2, HIV, & Dengue datasets - IgH combined",
                     "Custom datasets - IgH",
                     "Custom datasets - IgH combined"), selectize = FALSE),
@@ -222,7 +222,7 @@ ui <- fluidPage(
                     "Maximum SHM",
                     "Percentage of total antibody sequences"), selectize = FALSE), 
       h4("Import Data tab:"),
-      p("Use only to convert and combine AIRR-C data for visualization in AIRRscape."),
+      p("Use only to convert and combine AIRR-seq data for visualization in AIRRscape."),
       h4("AIRRscape tab:"),
       p("- Plots appear here. Hover over a bin to view some basic stats."),
       p("- Click on a bin to display a list of its antibodies in the lower table. Alternatively, create a bounding box encompassing multiple bins to display these antibodies in the upper table."),
@@ -241,40 +241,40 @@ ui <- fluidPage(
         tabPanel("Import Data",
                  br(),
                  h4("Import Data instructions:"),
-                 p("- Upload each separate tab/tsv file (maximum 6). Datasets following AIRR-C standards will be automatically converted for viewing in AIRRscape."),
+                 p("- Upload each separate tab/tsv file (maximum 6). AIRR-seq datasets following AIRR Community standards will be automatically converted for viewing in AIRRscape."),
                  p("- Enter the name of each dataset - these will be used to label each panel."),
                  p("- Click the combine button (Step 1 below) to make 2 copies of the combined datasets, one with separately labeled panels & one with all labels combined."), # , style = "text-indent: 1em;"
-                 p("- Click each download button to get the two files (Steps 2 & 3 below). Upload these two files in the main AIRRScape tab for viewing."),
+                 p("- Click each download button to get the two files (Steps 2 & 3 below). Upload these two files in the left sidebar for viewing."),
                  column(4,
                         br(),
                         fileInput(
                           inputId = "calfile1", 
-                          label = "Select AIRR-formatted tab/tsv dataset 1", 
+                          label = "Select AIRR-seq tab/tsv dataset 1", 
                           multiple = FALSE,
                           accept = c(".tsv",".tab")),
                         fileInput(
                           inputId = "calfile2", 
-                          label = "Select AIRR-formatted tab/tsv dataset 2", 
+                          label = "Select AIRR-seq tab/tsv dataset 2", 
                           multiple = FALSE,
                           accept = c(".tsv",".tab")),
                         fileInput(
                           inputId = "calfile3", 
-                          label = "Select AIRR-formatted tab/tsv dataset 3", 
+                          label = "Select AIRR-seq tab/tsv dataset 3", 
                           multiple = FALSE,
                           accept = c(".tsv",".tab")),
                         fileInput(
                           inputId = "calfile4", 
-                          label = "Select AIRR-formatted tab/tsv dataset 4", 
+                          label = "Select AIRR-seq tab/tsv dataset 4", 
                           multiple = FALSE,
                           accept = c(".tsv",".tab")),
                         fileInput(
                           inputId = "calfile5", 
-                          label = "Select AIRR-formatted tab/tsv dataset 5", 
+                          label = "Select AIRR-seq tab/tsv dataset 5", 
                           multiple = FALSE,
                           accept = c(".tsv",".tab")),
                         fileInput(
                           inputId = "calfile6", 
-                          label = "Select AIRR-formatted tab/tsv dataset 6", 
+                          label = "Select AIRR-seq tab/tsv dataset 6", 
                           multiple = FALSE,
                           accept = c(".tsv",".tab")),
                         br(),
@@ -306,7 +306,7 @@ ui <- fluidPage(
                  # uiOutput("hover_info", style = "pointer-events: none"),
                  DT::dataTableOutput("brush_info"),
                  DT::dataTableOutput("click_info"),
-                 actionButton("go", "Construct topology of selected CDR3 AA motifs"), 
+                 actionButton("go", "Construct CDR3 AA topology of selected sequences"), 
                  downloadButton("downloadfilter","Download all rows in the selected bin"),
                  downloadButton("downloadfilter2","Download only selected rows in the bin"),
                  downloadButton("downloadfilter3","Download distance matrix of all rows in the selected bin"),
@@ -645,7 +645,7 @@ server <- function(input, output, session) {
 ## original code for visualizing (but adding users datasets as last 2 dataset options)
   
   facetvar1 <- reactive({
-    switch(input$dataset, "SARS-CoV2 mAbs - heavy chains & light chains" = "cregion", "SARS-CoV2 mAbs - IgH by binding" = "binding", "SARS-CoV2 mAbs - IgH by neutralization" = "neutralization", "SARS-CoV2 mAbs vs. 4 COVID-19 patient bulk repertoires vs. Healthy control - IgH" = "id", "SARS-CoV2 mAbs vs. 4 COVID-19 patient bulk repertoires vs. Healthy control - IgH combined" = "cregion", "SARS-CoV2 mAbs vs. HIV mAbs - IgH" = "id", "SARS-CoV2 mAbs vs. HIV mAbs - IgH combined" = "cregion", "HIV mAbs vs. 3 HIV patient bulk repertoires - IgH" = "id", "HIV mAbs vs. 3 HIV patient bulk repertoires - IgH combined" = "cregion", "Dengue mAbs vs. 2 Dengue patient bulk repertoires - IgH" = "id", "Dengue mAbs vs. 2 Dengue patient bulk repertoires - IgH combined" = "cregion", "SARS-CoV2, HIV, & Dengue datasets - IgH combined" = "cregion","Custom datasets - IgH" = "id", "Custom datasets - IgH combined" = "cregion")
+    switch(input$dataset, "SARS-CoV2 mAbs - heavy chains & light chains" = "cregion", "SARS-CoV2 mAbs - IgH by binding" = "binding", "SARS-CoV2 mAbs - IgH by neutralization" = "neutralization", "SARS-CoV2 mAbs vs. COVID-19 patient bulk repertoires vs. Healthy control - IgH" = "id", "SARS-CoV2 mAbs vs. COVID-19 patient bulk repertoires vs. Healthy control - IgH combined" = "cregion", "SARS-CoV2 mAbs vs. HIV mAbs - IgH" = "id", "SARS-CoV2 mAbs vs. HIV mAbs - IgH combined" = "cregion", "HIV mAbs vs. HIV patient bulk repertoires - IgH" = "id", "HIV mAbs vs. HIV patient bulk repertoires - IgH combined" = "cregion", "Dengue mAbs vs. Dengue patient bulk repertoires - IgH" = "id", "Dengue mAbs vs. Dengue patient bulk repertoires - IgH combined" = "cregion", "SARS-CoV2, HIV, & Dengue datasets - IgH combined" = "cregion","Custom datasets - IgH" = "id", "Custom datasets - IgH combined" = "cregion")
   })
   ## to change x-axis columns vs. leaving fixed (for IgH only datasets) - note if you leave out default is fixed...
   facetvar2 <- reactive({
@@ -654,7 +654,7 @@ server <- function(input, output, session) {
   
   inputdataset <- reactive({
     ## using new names that reduce variables, round
-    switch(input$dataset, "SARS-CoV2 mAbs - heavy chains & light chains" = toshiny.cov2.abdab, "SARS-CoV2 mAbs - IgH by binding" = toshiny.cov2.abdab.h, "SARS-CoV2 mAbs - IgH by neutralization" = toshiny.cov2.abdab.h, "SARS-CoV2 mAbs vs. 4 COVID-19 patient bulk repertoires vs. Healthy control - IgH" = toshiny.cov2.all, "SARS-CoV2 mAbs vs. 4 COVID-19 patient bulk repertoires vs. Healthy control - IgH combined" = toshiny.cov2.allc, "SARS-CoV2 mAbs vs. HIV mAbs - IgH" = toshiny.cov2hiv, "SARS-CoV2 mAbs vs. HIV mAbs - IgH combined" = toshiny.cov2hivc, "HIV mAbs vs. 3 HIV patient bulk repertoires - IgH" = toshiny.hiv.all, "HIV mAbs vs. 3 HIV patient bulk repertoires - IgH combined" = toshiny.hiv.allc, "Dengue mAbs vs. 2 Dengue patient bulk repertoires - IgH" = toshiny.den.all, "Dengue mAbs vs. 2 Dengue patient bulk repertoires - IgH combined" = toshiny.den.allc, "SARS-CoV2, HIV, & Dengue datasets - IgH combined" = toshiny.cov2hivden.allc, "Custom datasets - IgH" = convert11(), "Custom datasets - IgH combined" = convert12())
+    switch(input$dataset, "SARS-CoV2 mAbs - heavy chains & light chains" = toshiny.cov2.abdab, "SARS-CoV2 mAbs - IgH by binding" = toshiny.cov2.abdab.h, "SARS-CoV2 mAbs - IgH by neutralization" = toshiny.cov2.abdab.h, "SARS-CoV2 mAbs vs. COVID-19 patient bulk repertoires vs. Healthy control - IgH" = toshiny.cov2.all, "SARS-CoV2 mAbs vs. COVID-19 patient bulk repertoires vs. Healthy control - IgH combined" = toshiny.cov2.allc, "SARS-CoV2 mAbs vs. HIV mAbs - IgH" = toshiny.cov2hiv, "SARS-CoV2 mAbs vs. HIV mAbs - IgH combined" = toshiny.cov2hivc, "HIV mAbs vs. HIV patient bulk repertoires - IgH" = toshiny.hiv.all, "HIV mAbs vs. HIV patient bulk repertoires - IgH combined" = toshiny.hiv.allc, "Dengue mAbs vs. Dengue patient bulk repertoires - IgH" = toshiny.den.all, "Dengue mAbs vs. Dengue patient bulk repertoires - IgH combined" = toshiny.den.allc, "SARS-CoV2, HIV, & Dengue datasets - IgH combined" = toshiny.cov2hivden.allc, "Custom datasets - IgH" = convert11(), "Custom datasets - IgH combined" = convert12())
   })
   ## extra filter for downloading
   filteredDS <- reactive({
