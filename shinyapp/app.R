@@ -207,32 +207,32 @@ ui <- fluidPage(
                     "SARS-CoV2, HIV, & Dengue datasets - IgH combined",
                     "Custom datasets - IgH",
                     "Custom datasets - IgH combined"), selectize = FALSE),
-      selectInput("plotcolors", "Color bins by:",
-                  c("Average SHM",
-                    "Maximum SHM",
-                    "Percentage of total antibody sequences"), selectize = FALSE), 
       fileInput(
         inputId = "yourfile1", 
-        label = "To view 'Custom datasets - IgH', upload your converted & combined tsv/tab files from the Import Data tab - first the 'separateids' file", 
+        label = "For viewing 'Custom datasets - IgH', use the Import Data tab and then upload the converted & combined tsv/tab files ('separatepanels')", 
         multiple = FALSE,
         accept = c(".tsv",".tab")),
       fileInput(
         inputId = "yourfile2", 
-        label = "To view 'Custom datasets - IgH combined', upload converted & combined tsv/tab files from the Import Data tab - then the 'fullycombined' file", 
+        label = "For viewing 'Custom datasets - IgH combined', use the Import Data tab and then upload the converted & combined tsv/tab files ('singleheatmap')", 
         multiple = FALSE,
         accept = c(".tsv",".tab")),
-      h5("Import Data tab:"),
+      selectInput("plotcolors", "Color bins by:",
+                  c("Average SHM",
+                    "Maximum SHM",
+                    "Percentage of total antibody sequences"), selectize = FALSE), 
+      h4("Import Data tab:"),
       p("Use only to convert and combine AIRR-C data for visualization in AIRRscape."),
-      h5("AIRRscape tab:"),
-      p("Plots appear here. Hover over a bin to view some basic stats."),
-      p("Click on a bin to display a list of its antibodies in the lower table. Alternatively, create a bounding box encompassing multiple bins to display these antibodies in the upper table."),
-      p("Select antibodies in the lower table, and then construct CDR3 AA topologies of selected antibodies. For further analysis, download a selection or entire set of antibodies in the chosen bin, or download the distance matrix of all antibodies in the table."),
-      p("In the topology drop-down menu, the first 2 options will construct a NJ or parsimony topology from the selected set of antibodies in the table. The final 4 options will find the nearest sequences (up to 500) of a single selected antibody, with four possible distance thresholds. Use the height & width sliders to change the window size of the topology."),
-      p("Finally make sure to check that all antibodies in the table have the same CDR3 length or the topology calculation will fail."),
-      h5("GitHub repo & Citation:"),
-      p("To run AIRRscape locally and for more detailed usage instructions, see the README on", a("GitHub", href="https://github.com/czbiohub/AIRRscape", target="_blank")),
-      p("The AIRRscape publication is available on bioRxiv", a("here", href="https://doi.org/10.1101/2022.03.24.485594", target="_blank")),
-      h6("Questions? Please email: eric.waltari at czbiohub.org."),
+      h4("AIRRscape tab:"),
+      p("- Plots appear here. Hover over a bin to view some basic stats."),
+      p("- Click on a bin to display a list of its antibodies in the lower table. Alternatively, create a bounding box encompassing multiple bins to display these antibodies in the upper table."),
+      p("- Select antibodies in the lower table, and then construct CDR3 AA topologies of selected antibodies. For further analysis, download a selection or entire set of antibodies in the chosen bin, or download the distance matrix of all antibodies in the table."),
+      p("- In the topology drop-down menu, the first 2 options will construct a NJ or parsimony topology from the selected set of antibodies in the table. The final 4 options will find the nearest sequences (up to 500) of a single selected antibody, with four possible distance thresholds. Use the height & width sliders to change the window size of the topology."),
+      p("- Finally make sure to check that all antibodies in the table have the same CDR3 length or the topology calculation will fail."),
+      h4("GitHub repo & citation:"),
+      p("To run AIRRscape locally and for more detailed usage instructions, see the ", a("README", href="https://github.com/czbiohub/AIRRscape", target="_blank"), " on GitHub."),
+      p("The AIRRscape ", a("publication", href="https://doi.org/10.1101/2022.03.24.485594", target="_blank"), " is available on bioRxiv."),
+      h6("Questions? Please email: eric.waltari at czbiohub.org"),
       width = 4
     ),
 
@@ -240,63 +240,64 @@ ui <- fluidPage(
       tabsetPanel(
         tabPanel("Import Data",
                  br(),
-                 p("First upload each of your separate datasets (maximum 6). As long as they are in AIRR format (tab or tsv), they will be automatically converted for viewing in AIRRscape."),
-                 p("Next input the name of each dataset - these names will be in each faceted dataset."),
-                 p("Then click the combine button to make 2 combined HC datasets (both with each dataset separately labelled & with all data combined).", style = "text-indent: 1em;"),
-                 p("Finally click the download button to get the two files. You can then upload these two files in the main AIRRScape tab for viewing.", style = "text-indent: 1em;"),
+                 h4("Import Data instructions:"),
+                 p("- Upload each separate tab/tsv file (maximum 6). Datasets following AIRR-C standards will be automatically converted for viewing in AIRRscape."),
+                 p("- Enter the name of each dataset - these will be used to label each panel."),
+                 p("- Click the combine button (Step 1 below) to make 2 copies of the combined datasets, one with separately labeled panels & one with all labels combined."), # , style = "text-indent: 1em;"
+                 p("- Click each download button to get the two files (Steps 2 & 3 below). Upload these two files in the main AIRRScape tab for viewing."),
                  column(4,
                         br(),
                         fileInput(
                           inputId = "calfile1", 
-                          label = "Select tsv or tab AIRR formatted dataset 1", 
+                          label = "Select AIRR-formatted tab/tsv dataset 1", 
                           multiple = FALSE,
                           accept = c(".tsv",".tab")),
                         fileInput(
                           inputId = "calfile2", 
-                          label = "Select tsv or tab AIRR formatted dataset 2", 
+                          label = "Select AIRR-formatted tab/tsv dataset 2", 
                           multiple = FALSE,
                           accept = c(".tsv",".tab")),
                         fileInput(
                           inputId = "calfile3", 
-                          label = "Select tsv or tab AIRR formatted dataset 3", 
+                          label = "Select AIRR-formatted tab/tsv dataset 3", 
                           multiple = FALSE,
                           accept = c(".tsv",".tab")),
                         fileInput(
                           inputId = "calfile4", 
-                          label = "Select tsv or tab AIRR formatted dataset 4", 
+                          label = "Select AIRR-formatted tab/tsv dataset 4", 
                           multiple = FALSE,
                           accept = c(".tsv",".tab")),
                         fileInput(
                           inputId = "calfile5", 
-                          label = "Select tsv or tab AIRR formatted dataset 5", 
+                          label = "Select AIRR-formatted tab/tsv dataset 5", 
                           multiple = FALSE,
                           accept = c(".tsv",".tab")),
                         fileInput(
                           inputId = "calfile6", 
-                          label = "Select tsv or tab AIRR formatted dataset 6", 
+                          label = "Select AIRR-formatted tab/tsv dataset 6", 
                           multiple = FALSE,
                           accept = c(".tsv",".tab")),
                         br(),
                         br(),
                         actionButton("go0", "Step 1: Click to combine!"),
                         br(),
-                        downloadButton("downloadfilter01","Step 2: Click to download combined datasets - with separate ids"),
-                        downloadButton("downloadfilter02","Step 3: Click to download combined datasets - fully combined")
+                        downloadButton("downloadfilter01","Step 2: Click to download combined datasets - separate heatmap panels"),
+                        downloadButton("downloadfilter02","Step 3: Click to download combined datasets - single heatmap")
                         ),
                  column(4,
                         br(),
-                        textInput("name1", "What's the title of dataset 1?"),
+                        textInput("name1", "Name of dataset 1:"),
                         br(),
-                        textInput("name2", "What's the title of dataset 2?"),
+                        textInput("name2", "Name of dataset 2:"),
                         br(),
-                        textInput("name3", "What's the title of dataset 3?"),
+                        textInput("name3", "Name of dataset 3:"),
                         br(),
                         br(),
-                        textInput("name4", "What's the title of dataset 4?"),
+                        textInput("name4", "Name of dataset 4:"),
                         br(),
-                        textInput("name5", "What's the title of dataset 5?"),
+                        textInput("name5", "Name of dataset 5:"),
                         br(),
-                        textInput("name6", "What's the title of dataset 6?")
+                        textInput("name6", "Name of dataset 6:")
                         )
                  ),
         tabPanel("AIRRscape",
@@ -551,7 +552,7 @@ server <- function(input, output, session) {
   ## this allows user to download all sequences in clicked bin (first filter) or only selected rows (second filter)
   output$downloadfilter01 <- downloadHandler(
     filename = function() {
-      paste('yourdata_filteredcombined_separateids', Sys.Date(), '.tsv', sep = '')
+      paste('yourdata_filteredcombined_separatepanels', Sys.Date(), '.tsv', sep = '')
     },
     content = function(file){
       write.table(toshiny.yourdataset.all.renamed(),file, sep = "\t", row.names = FALSE)
@@ -560,7 +561,7 @@ server <- function(input, output, session) {
   
   output$downloadfilter02 <- downloadHandler(
     filename = function() {
-      paste('yourdata_filteredcombined_fullycombined', Sys.Date(), '.tsv', sep = '')
+      paste('yourdata_filteredcombined_singleheatmap', Sys.Date(), '.tsv', sep = '')
     },
     content = function(file){
       write.table(toshiny.yourdataset.allc.renamed(),file, sep = "\t", row.names = FALSE)
