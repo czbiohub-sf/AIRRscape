@@ -230,8 +230,8 @@ ui <- fluidPage(
       p("- In the topology drop-down menu, the first 2 options will construct a NJ or parsimony topology from the selected set of antibodies in the table. The final 4 options will find the nearest sequences (up to 500) of a single selected antibody, with four possible distance thresholds. Use the height & width sliders to change the window size of the topology."),
       p("- Finally make sure to check that all antibodies in the table have the same CDR3 length or the topology calculation will fail."),
       h4("GitHub repo & citation:"),
-      p("To run AIRRscape locally and for more detailed usage instructions, see the ", a("README", href="https://github.com/czbiohub/AIRRscape", target="_blank"), " on GitHub."),
-      p("The AIRRscape ", a("publication", href="https://doi.org/10.1101/2022.03.24.485594", target="_blank"), " is available on bioRxiv."),
+      p("To run AIRRscape locally and for more detailed usage instructions, see the ", a("README", href="https://github.com/czbiohub/AIRRscape"), " on GitHub."), #, target="_blank"
+      p("The AIRRscape ", a("publication", href="https://doi.org/10.1101/2022.03.24.485594"), " is available on bioRxiv."), # , target="_blank"
       h6("Questions? Please email: eric.waltari at czbiohub.org"),
       width = 4
     ),
