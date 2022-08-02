@@ -17,7 +17,7 @@ Other attached packages:
 To run AIRRscape locally, clone the repo and open the ```app.R``` file in your RStudio, then click "Run App". As a Shiny app, it can run as a window of RStudio, or as a tab in a web browser (recommended).
 
 Basic instructions are shown on the left hand side of the window.
-When you start AIRRscape, you will first see the options for the _Import Data_ tab. If you click on the _AIRRscape_ tab you will see a set of heatmaps - to choose between datasets shown select the dataset from the options in the top selectable list on the left. Datasets of multiple repertoires can be visualized either as separate heatmap panels, or as a single combined heatmap (labeled 'combined').
+When you start AIRRscape, you will first see the options for the _Import Data_ tab. If you click on the _AIRRscape_ tab you will see a set of heatmaps - to choose between datasets shown select the dataset from the options in the top selectable list on the left. Datasets of multiple repertoires can be visualized either as separate heatmap panels (labeled '- IgH'), or as a single combined heatmap (labeled '- IgH combined').
 To view your own uploaded datasets (in AIRR-C format saved as .tsv or .tab files), first use the _Import Data_ tab to convert+combine and then download. You can view these after uploading by selecting "Custom datasets - IgH" or "Custom datasets - IgH combined"
 
 ### _Import Data_ tab
