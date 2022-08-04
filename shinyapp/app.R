@@ -1,9 +1,12 @@
+########### required packages ##########
 #install.packages("shiny")
 #install.packages("ggplot2")
+#install.packages("alakazam")
 #install.packages("tidyverse")
 #install.packages("DT")
 library(shiny)
 library(ggplot2)
+library(alakazam)
 library(tidyverse)
 library(DT)
 
@@ -17,54 +20,161 @@ library(phangorn)
 library(ape)
 library(shinyscreenshot)
 
-##########
+## options for allowing for large uploads of datasets, and hiding warnings during Shiny
+options(shiny.maxRequestSize=5000*1024^2, warn = -1)
 
-## datasets to load
-toshiny.cov2.abdab <- read.delim("toshiny_cov2_abdab.tab")
-toshiny.cov2.abdab.h <- read.delim("toshiny_cov2_abdab_h.tab")
+########### AIRRscape processing function ##########
+AIRRscapeprocess <- function(x, filter_columns = TRUE, filter_to_HC = TRUE, renumber_sequences = TRUE, filter_after_counting = TRUE) {
+  colname <- substitute(x)
+  ## this removes columns with all NAs
+  x <- x[!map_lgl(x, ~ all(is.na(.)))]
+  ## this calculates SHM but depending on whether v_identity is from 0 to 1 or 0 to 100
+  if (mean(x$v_identity) < 1) {
+    x$shm <- (100 - (x$v_identity * 100))
+  } else {
+    x$shm <- (100 - x$v_identity)
+  }
+  ## this makes new standard cdr3 column (sometimes already exists, but there should always be a junction_aa) by removing both ends of the junction_aa column
+  x$cdr3_aa_imgt <- x$junction_aa
+  str_sub(x$cdr3_aa_imgt, -1, -1) <- ""
+  str_sub(x$cdr3_aa_imgt, 1, 1) <- ""
+  ## this calculates the CDR3 length
+  x$cdr3length_imgt <- nchar(x$cdr3_aa_imgt)
+  ## removing non-productive, out of frame, stop codons, any X in CDR3 (was 'nnnn' in sequence)
+  x <- x %>% filter(productive != "FALSE") %>%
+    filter(vj_in_frame != "FALSE") %>%
+    filter(productive != "F") %>%
+    filter(vj_in_frame != "F")
+  x <- x[ grep("\\*", x$junction_aa, invert = TRUE) , ]
+  x <- x[ grep("\\X", x$junction_aa, invert = TRUE) , ]
+  ### removing all sequences with IMGT CDR3 less than 3
+  x <- x %>% filter(cdr3length_imgt > 2.8)  
+  ## next lines create V gene family, J gene columns
+  x$vgene <- getGene(x$v_call, first=TRUE, strip_d=TRUE)
+  x$vgf <- substring(x$vgene, 1,5)
+  x$jgene <- getGene(x$j_call, first=TRUE, strip_d=TRUE)
+  x$jgene <- substring(x$jgene, 1,5)
+  ## this creates new column vgf_jgene which is used in all shiny plots
+  x <- x %>% unite(vgf_jgene, vgf, jgene, sep = "_", remove = FALSE, na.rm = TRUE)
+  ## this removes any rows without CDR3, or with junctions that are not 3-mers
+  x <- x %>% filter(!is.na(cdr3length_imgt)) %>% 
+    filter(is.wholenumber(cdr3length_imgt))
+  # if there is a clone_id column this will make a count of reads_per_clone
+  if ("clone_id" %in% names(x)) {
+    x <- x %>% add_count(clone_id) %>%
+      rename(reads_per_clone = n)
+  }
+  ## if no cregion column, make one  !(x %in% y) - moving substitution from IG to Ig outside of the if to always have it...
+  if (!("cregion" %in% names(x))) {
+    x$cregion <- str_sub(x$v_call, end=3)
+    # x$cregion <- gsub('IG','Ig',x$cregion)
+  }
+  x$cregion <- gsub('IG','Ig',x$cregion)
+  ## adding conversion to standardize light chain naming if necessary...
+  x$cregion <- gsub("IgK","Kappa",x$cregion)
+  x$cregion <- gsub("IgL","Lambda",x$cregion)
+  ## making more important columns used in plotting, also a rounding step
+  x <- x %>%
+    add_count(vgf_jgene,cdr3length_imgt) %>% 
+    rename(ncount = n) %>% 
+    group_by(vgf_jgene,cdr3length_imgt) %>% 
+    mutate(shm_mean = mean(shm, na.rm = TRUE)) %>% 
+    # NOTE ADDIN MAX SHM AS WELL..
+    mutate(shm_max = max(shm, na.rm = TRUE)) %>% 
+    mutate(across(shm, round, 2)) %>% 
+    mutate(across(shm_max, round, 2)) %>% 
+    mutate(across(shm_mean, round, 2))
+  ## this will filter the dataset if filter_columns option is set to true - note the any_of which allows columns to be missing
+  vars2 <- c("sequence_id", "binding", "neutralization", "cregion", "cdr3_aa_imgt","vgene", "vgf_jgene", "vgf","jgene", "cdr3length_imgt", "shm", "shm_max", "shm_mean", "ncount", "reads_per_clone")
+  if (filter_columns) {
+    x <- x %>% select(any_of(vars2))
+  }
+  ## this will filter to heavy chains only...
+  if (filter_to_HC) {
+    x <- x %>% filter(cregion == "IgH" | cregion == "IgA" | cregion == "IgD" | cregion == "IgE" | cregion == "IgG" | cregion == "IgM")
+  }
+  ## this will remove all redundant sequences with same vgf/gene & cdr3 motif...note we count above so okay to collapse here!!
+  if (filter_after_counting) {
+    x <- x %>%
+      group_by(cdr3_aa_imgt,vgf_jgene) %>%
+      summarize_all(first) %>%
+      rename(ncountfull = ncount) %>% 
+      ungroup() %>%
+      add_count(vgf_jgene,cdr3length_imgt) %>% 
+      rename(ncount = n) %>%
+      relocate(ncount, .before = shm_mean)
+  }
+  ## this will make a new sequence_id column with new row names if renumber_sequences option is set to true MOVING LAST TO CHANGE X DEFINITION
+  if (renumber_sequences) {
+    ## NOTE THIS NOW WORKS, TRICK WAS TO ASSIGN COLNAME VERY EARLY ON BEFORE ANYTHING ELSE...
+    ## adding change from underscores to dashes...
+    x$dataset <- deparse(substitute(colname))
+    x$dataset <- gsub('"','',x$dataset)
+    x$dataset <- gsub("\\.","\\-",x$dataset)
+    x$dataset <- gsub("\\_","\\-",x$dataset)
+    x$obs <- 1:nrow(x) 
+    x <- x %>% unite(sequence_id, dataset, obs, sep = "_", remove = TRUE, na.rm = TRUE)
+    # x <- x %>% relocate(sequence_id, .before = cregion)  ## changed to default i.e. move to make first column
+    x <- x %>% relocate(sequence_id)
+    # x$sequence_id <- gsub("\\_","\\-",x$sequence_id) ## moved to always run
+  }
+  ## also adding as.character to the function - doesn't seem necessary here
+  # x$sequence_id <- as.character(x$sequence_id)
+  # x$cdr3_aa_imgt <- as.character(x$cdr3_aa_imgt)
+  ## need to always check and remove underscores from all names
+  x$sequence_id <- gsub("\\_","\\-",x$sequence_id)
+  return(x)
+}
 
-toshiny.cov2hiv <- read.delim("toshiny_cov2hiv.tab")
-toshiny.cov2hivc <- read.delim("toshiny_cov2hivc.tab")
+## 2 more functions
+Mode <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
 
-toshiny.cov2.all <- read.delim("toshiny_cov2_all.tab")
-toshiny.cov2.allc <- read.delim("toshiny_cov2_allc.tab")
+is.wholenumber <- function(x, tol = .Machine$double.eps^0.5) {
+  abs(x - round(x)) < tol
+}
 
-toshiny.hiv.all <- read.delim("toshiny_hiv_all.tab")
-toshiny.hiv.allc <- read.delim("toshiny_hiv_allc.tab")
+########### datasets to load ##########
+toshiny.cov2.abdab <- read_tsv("toshiny_cov2_abdab.tab")
+toshiny.cov2.abdab.h <- read_tsv("toshiny_cov2_abdab_h.tab")
 
-toshiny.den.all <- read.delim("toshiny_den_all.tab")
-toshiny.den.allc <- read.delim("toshiny_den_allc.tab")
+toshiny.cov2hiv <- read_tsv("toshiny_cov2hiv.tab")
+toshiny.cov2hivc <- read_tsv("toshiny_cov2hivc.tab")
 
-toshiny.cov2hivden.allc <- read.delim("toshiny_cov2hivden_allc.tab")
+toshiny.cov2.all <- read_tsv("toshiny_cov2_all.tab")
+toshiny.cov2.allc <- read_tsv("toshiny_cov2_allc.tab")
+
+toshiny.hiv.all <- read_tsv("toshiny_hiv_all.tab")
+toshiny.hiv.allc <- read_tsv("toshiny_hiv_allc.tab")
+
+toshiny.den.all <- read_tsv("toshiny_den_all.tab")
+toshiny.den.allc <- read_tsv("toshiny_den_allc.tab")
+
+toshiny.cov2hivden.allc <- read_tsv("toshiny_cov2hivden_allc.tab")
 
 ## then for each dataframe change sequence_id & cdr3_aa_imgt columns to character
-toshiny.cov2.abdab$sequence_id <- as.character(toshiny.cov2.abdab$sequence_id)
-toshiny.cov2.abdab$cdr3_aa_imgt <- as.character(toshiny.cov2.abdab$cdr3_aa_imgt)
-toshiny.cov2.abdab.h$sequence_id <- as.character(toshiny.cov2.abdab.h$sequence_id)
-toshiny.cov2.abdab.h$cdr3_aa_imgt <- as.character(toshiny.cov2.abdab.h$cdr3_aa_imgt)
+## if using read_tsv do not need, but also need to change to non-tibble df for treebuilding
+toshiny.cov2.abdab <- toshiny.cov2.abdab %>% as.data.frame()
+toshiny.cov2.abdab.h <- toshiny.cov2.abdab.h %>% as.data.frame()
 
-toshiny.cov2hiv$sequence_id <- as.character(toshiny.cov2hiv$sequence_id)
-toshiny.cov2hiv$cdr3_aa_imgt <- as.character(toshiny.cov2hiv$cdr3_aa_imgt)
-toshiny.cov2hivc$sequence_id <- as.character(toshiny.cov2hivc$sequence_id)
-toshiny.cov2hivc$cdr3_aa_imgt <- as.character(toshiny.cov2hivc$cdr3_aa_imgt)
+toshiny.cov2hiv <- toshiny.cov2hiv %>% as.data.frame()
+toshiny.cov2hivc <- toshiny.cov2hivc %>% as.data.frame()
 
-toshiny.cov2.all$sequence_id <- as.character(toshiny.cov2.all$sequence_id)
-toshiny.cov2.all$cdr3_aa_imgt <- as.character(toshiny.cov2.all$cdr3_aa_imgt)
-toshiny.cov2.allc$sequence_id <- as.character(toshiny.cov2.allc$sequence_id)
-toshiny.cov2.allc$cdr3_aa_imgt <- as.character(toshiny.cov2.allc$cdr3_aa_imgt)
+toshiny.cov2.all <- toshiny.cov2.all %>% as.data.frame()
+toshiny.cov2.allc <- toshiny.cov2.allc %>% as.data.frame()
 
-toshiny.hiv.all$sequence_id <- as.character(toshiny.hiv.all$sequence_id)
-toshiny.hiv.all$cdr3_aa_imgt <- as.character(toshiny.hiv.all$cdr3_aa_imgt)
-toshiny.hiv.allc$sequence_id <- as.character(toshiny.hiv.allc$sequence_id)
-toshiny.hiv.allc$cdr3_aa_imgt <- as.character(toshiny.hiv.allc$cdr3_aa_imgt)
+toshiny.hiv.all <- toshiny.hiv.all %>% as.data.frame()
+toshiny.hiv.allc <- toshiny.hiv.allc %>% as.data.frame()
 
-toshiny.den.all$sequence_id <- as.character(toshiny.den.all$sequence_id)
-toshiny.den.all$cdr3_aa_imgt <- as.character(toshiny.den.all$cdr3_aa_imgt)
-toshiny.den.allc$sequence_id <- as.character(toshiny.den.allc$sequence_id)
-toshiny.den.allc$cdr3_aa_imgt <- as.character(toshiny.den.allc$cdr3_aa_imgt)
+toshiny.den.all <- toshiny.den.all %>% as.data.frame()
+toshiny.den.allc <- toshiny.den.allc %>% as.data.frame()
 
-toshiny.cov2hivden.allc$sequence_id <- as.character(toshiny.cov2hivden.allc$sequence_id)
-toshiny.cov2hivden.allc$cdr3_aa_imgt <- as.character(toshiny.cov2hivden.allc$cdr3_aa_imgt)
+toshiny.cov2hivden.allc <- toshiny.cov2hivden.allc %>% as.data.frame()
+
+# toshiny.cov2hivden.allc$sequence_id <- as.character(toshiny.cov2hivden.allc$sequence_id)
+# toshiny.cov2hivden.allc$cdr3_aa_imgt <- as.character(toshiny.cov2hivden.allc$cdr3_aa_imgt)
 
 ## to re-order any rows for plotting re-run here
 toshiny.cov2.abdab.h$binding <- factor(toshiny.cov2.abdab.h$binding, levels = c("RBD", "non-RBD"))
@@ -72,137 +182,532 @@ toshiny.cov2.all$id <- factor(toshiny.cov2.all$id, levels = c("SARS-CoV2 mAbs", 
 toshiny.cov2hiv$id <- factor(toshiny.cov2hiv$id, levels = c("SARS-CoV2 mAbs", "HIV mAbs"))
 toshiny.den.all$id <- factor(toshiny.den.all$id, levels = c("Dengue plasmablasts", "Dengue patient d13 bulk repertoire", "Dengue Parameswaran 2013 patient bulk repertoires"))
 
+########### ui layout ##########
+## June 2022 - adding AIRRscapeInput functionality as a tabsetPanel - see https://shiny.rstudio.com/articles/layout-guide.html
+## think can keep the sidebarPanel as is - in new AIRRscapeInput tab all ui can be in the 'main panel' under the tabset
+## catch is can all outputs be in same server function - need to rename some at minimum...
 
 ui <- fluidPage(
-  
+  titlePanel("AIRRscape"),
   sidebarLayout(
-    
     sidebarPanel(
-      selectInput("dataset", "Dataset:",
+      img(src="AIRRscape_logo.png", height = 250, width = 250, align = "center"),
+      selectInput("dataset", "Datasets:",
                   c("SARS-CoV2 mAbs - heavy chains & light chains",
                     "SARS-CoV2 mAbs - IgH by binding",
                     "SARS-CoV2 mAbs - IgH by neutralization",
-                    "SARS-CoV2 mAbs vs. 4 COVID-19 patient bulk repertoires vs. Healthy control bulk repertoire - IgH",
-                    "SARS-CoV2 mAbs vs. 4 COVID-19 patient bulk repertoires vs. Healthy control bulk repertoire - IgH combined",
+                    "SARS-CoV2 mAbs vs. COVID-19 patient bulk repertoires vs. Healthy control - IgH",
+                    "SARS-CoV2 mAbs vs. COVID-19 patient bulk repertoires vs. Healthy control - IgH combined",
                     "SARS-CoV2 mAbs vs. HIV mAbs - IgH",
                     "SARS-CoV2 mAbs vs. HIV mAbs - IgH combined",
-                    "HIV mAbs vs. HIV patient MT1214 bulk repertoire vs. HIV patient NIH45 bulk repertoire vs. HIV Setliff 2018 patient bulk repertoires - IgH",
-                    "HIV mAbs vs. HIV patient MT1214 bulk repertoire vs. HIV patient NIH45 bulk repertoire vs. HIV Setliff 2018 patient bulk repertoires - IgH combined",
-                    "Dengue mAbs vs. Dengue patient d13 bulk repertoire vs. Dengue Parameswaran 2013 patient bulk repertoires - IgH",
-                    "Dengue mAbs vs. Dengue patient d13 bulk repertoire vs. Dengue Parameswaran 2013 patient bulk repertoires - IgH combined",
-                    "All datasets - IgH combined"), selectize = FALSE),
-      selectInput("plotcolors", "Plot Colors:",
+                    "HIV mAbs vs. HIV patient bulk repertoires - IgH",
+                    "HIV mAbs vs. HIV patient bulk repertoires - IgH combined",
+                    "Dengue mAbs vs. Dengue patient bulk repertoires - IgH",
+                    "Dengue mAbs vs. Dengue patient bulk repertoires - IgH combined",
+                    "SARS-CoV2, HIV, & Dengue datasets - IgH combined",
+                    "Custom datasets - IgH",
+                    "Custom datasets - IgH combined"), selectize = FALSE),
+      fileInput(
+        inputId = "yourfile1", 
+        label = "For viewing 'Custom datasets - IgH', use the Import Data tab and then upload the converted & combined tsv/tab files ('separatepanels')", 
+        multiple = FALSE,
+        accept = c(".tsv",".tab")),
+      fileInput(
+        inputId = "yourfile2", 
+        label = "For viewing 'Custom datasets - IgH combined', use the Import Data tab and then upload the converted & combined tsv/tab files ('singleheatmap')", 
+        multiple = FALSE,
+        accept = c(".tsv",".tab")),
+      selectInput("plotcolors", "Color bins by:",
                   c("Average SHM",
                     "Maximum SHM",
                     "Percentage of total antibody sequences"), selectize = FALSE), 
-      p("When plots appear, click on a bin to get a list of antibodies in the lower table. Hovering over a bin will show some basic stats."),
-      br(),
-      p("Alternately if you want to see more than a bin you can create a box and all antibodies within will appear in the top table."),
-      br(),
-      p("From the lower table you can download all or selected antibodies in the chosen bin, download the distance matrix of all antibodies, or create topologies of selected antibodies. The last topology options are to find the nearest sequences (up to 500) of a single selected antibody, with four possible distance thresholds. Note that you can change the window size of the topology using the slider."),
-      br(),
-      p("Finally make sure to check all antibodies in the table have the same CDR3 length or the topology calculation will fail."),
-      width = 2
-      
+      h4("Import Data tab:"),
+      p("Use only to convert and combine AIRR-seq data for visualization in AIRRscape."),
+      h4("AIRRscape tab:"),
+      p("- Plots appear here. Hover over a bin to view some basic stats."),
+      p("- Click on a bin to display a list of its antibodies in the lower table. Alternatively, create a bounding box encompassing multiple bins to display these antibodies in the upper table."),
+      p("- Select antibodies in the lower table, and then construct CDR3 AA topologies of selected antibodies. For further analysis, download a selection or entire set of antibodies in the chosen bin, or download the distance matrix of all antibodies in the table."),
+      p("- In the topology drop-down menu, the first 2 options will construct a NJ or parsimony topology from the selected set of antibodies in the table. The final 4 options will find the nearest sequences (up to 500) of a single selected antibody, with four possible distance thresholds. Use the height & width sliders to change the window size of the topology."),
+      p("- Finally make sure to check that all antibodies in the table have the same CDR3 length or the topology calculation will fail."),
+      h4("GitHub repo & citation:"),
+      p("To run AIRRscape locally and for more detailed usage instructions, see the ", a("README", href="https://github.com/czbiohub/AIRRscape", target="_blank"), " on GitHub."), #, target="_blank"
+      p("The AIRRscape ", a("publication", href="https://doi.org/10.1101/2022.03.24.485594", target="_blank"), " is available on bioRxiv."), # , target="_blank"
+      h6("Questions? Please email: eric.waltari at czbiohub.org"),
+      width = 4
     ),
 
     mainPanel(
-      plotOutput("ggplot1", width = "120%", height = "800px", hover = hoverOpts(id = "plot_hover", delay = 300, delayType = c("debounce", "throttle")), click = "plot_click", brush = "plot_brush"),
-      uiOutput("hover_info"),
-      # uiOutput("hover_info", style = "pointer-events: none"),
-      DT::dataTableOutput("brush_info"),
-      DT::dataTableOutput("click_info"),
-      actionButton("go", "Make topology of selected CDR3 AA motifs"), 
-      downloadButton("downloadfilter","Download all data in the clicked bin"),
-      downloadButton("downloadfilter2","Download only selected rows"),
-      downloadButton("downloadfilter3","Download distance matrix of all data in the clicked bin"),
-      selectInput("plottab", "Topology:",
-            c("NJ",
-              "Parsimony",
-              "up to 500 nearest sequences to a single selected mAb - Parsimony; 100% CDR3 identity (Briney 2019)",
-              "up to 500 nearest sequences to a single selected mAb - Parsimony; 80% CDR3 identity (Soto 2019)",
-              "up to 500 nearest sequences to a single selected mAb - Parsimony; 70% CDR3 identity (Setliff 2018)",
-              "up to 500 nearest sequences to a single selected mAb - Parsimony; 50% CDR3 identity"), selectize = FALSE),
-      div(style="display: inline-block; width: 300px;",
-          sliderInput("height", "Topology height", min = 200, max = 4200, value = 1000)),
-      div(style="display: inline-block; width: 300px;",
-          sliderInput("width", "Topology width", min = 1000, max = 3000, value = 1600)),
-      div(HTML("<br>")),br(),
-      plotOutput("phyloPlot", inline = TRUE),
-      ## new code ot take screenshots from https://deanattali.com/blog/shinyscreenshot-release/
-      actionButton("screensht", "Take a screenshot")
+      tabsetPanel(
+        tabPanel("Import Data",
+                 br(),
+                 h4("Import Data instructions:"),
+                 p("- Upload each separate tab/tsv file (maximum 6). AIRR-seq datasets following AIRR Community standards will be automatically converted for viewing in AIRRscape."),
+                 p("- Enter the name of each dataset - these will be used to label each panel."),
+                 p("- Click the combine button (Step 1 below) to make 2 copies of the combined datasets, one with separately labeled panels & one with all labels combined."), # , style = "text-indent: 1em;"
+                 p("- Click each download button to get the two files (Steps 2 & 3 below). Upload these two files in the left sidebar for viewing."),
+                 column(4,
+                        br(),
+                        fileInput(
+                          inputId = "calfile1", 
+                          label = "Select AIRR-seq tab/tsv dataset 1", 
+                          multiple = FALSE,
+                          accept = c(".tsv",".tab")),
+                        fileInput(
+                          inputId = "calfile2", 
+                          label = "Select AIRR-seq tab/tsv dataset 2", 
+                          multiple = FALSE,
+                          accept = c(".tsv",".tab")),
+                        fileInput(
+                          inputId = "calfile3", 
+                          label = "Select AIRR-seq tab/tsv dataset 3", 
+                          multiple = FALSE,
+                          accept = c(".tsv",".tab")),
+                        fileInput(
+                          inputId = "calfile4", 
+                          label = "Select AIRR-seq tab/tsv dataset 4", 
+                          multiple = FALSE,
+                          accept = c(".tsv",".tab")),
+                        fileInput(
+                          inputId = "calfile5", 
+                          label = "Select AIRR-seq tab/tsv dataset 5", 
+                          multiple = FALSE,
+                          accept = c(".tsv",".tab")),
+                        fileInput(
+                          inputId = "calfile6", 
+                          label = "Select AIRR-seq tab/tsv dataset 6", 
+                          multiple = FALSE,
+                          accept = c(".tsv",".tab")),
+                        br(),
+                        br(),
+                        actionButton("go0", "Step 1: Click to combine!"),
+                        br(),
+                        downloadButton("downloadfilter01","Step 2: Click to download combined datasets - separate heatmap panels"),
+                        downloadButton("downloadfilter02","Step 3: Click to download combined datasets - single heatmap")
+                        ),
+                 column(4,
+                        br(),
+                        textInput("name1", "Name of dataset 1:"),
+                        br(),
+                        textInput("name2", "Name of dataset 2:"),
+                        br(),
+                        textInput("name3", "Name of dataset 3:"),
+                        br(),
+                        br(),
+                        textInput("name4", "Name of dataset 4:"),
+                        br(),
+                        textInput("name5", "Name of dataset 5:"),
+                        br(),
+                        textInput("name6", "Name of dataset 6:")
+                        )
+                 ),
+        tabPanel("AIRRscape",
+                 plotOutput("ggplot1", width = "120%", height = "800px", hover = hoverOpts(id = "plot_hover", delay = 400, delayType = c("debounce", "throttle")), click = "plot_click", brush = "plot_brush"),
+                 uiOutput("hover_info"),
+                 # uiOutput("hover_info", style = "pointer-events: none"),
+                 DT::dataTableOutput("brush_info"),
+                 DT::dataTableOutput("click_info"),
+                 actionButton("go", "Construct CDR3 AA topology of selected sequences"), 
+                 downloadButton("downloadfilter","Download all rows in the selected bin"),
+                 downloadButton("downloadfilter2","Download only selected rows in the bin"),
+                 downloadButton("downloadfilter3","Download distance matrix of all rows in the selected bin"),
+                 selectInput("plottab", "Topology:",
+                             c("NJ",
+                               "Parsimony",
+                               "up to 500 nearest sequences to a single selected mAb - Parsimony; 100% CDR3 AA identity (Briney 2019)",
+                               "up to 500 nearest sequences to a single selected mAb - Parsimony; 80% CDR3 AA identity (Soto 2019)",
+                               "up to 500 nearest sequences to a single selected mAb - Parsimony; 70% CDR3 AA identity (Setliff 2018)",
+                               "up to 500 nearest sequences to a single selected mAb - Parsimony; 50% CDR3 AA identity"), selectize = FALSE),
+                 div(style="display: inline-block; width: 300px;",
+                     sliderInput("height", "Topology height", min = 200, max = 4200, value = 1000)),
+                 div(style="display: inline-block; width: 300px;",
+                     sliderInput("width2", "Topology width (wider -> narrower)", min = 1, max = 501, value = 101)),
+                 # div(style="display: inline-block; width: 300px;",
+                 #     sliderInput("width", "Topology width2", min = 100, max = 3000, value = 1600)),
+                 div(HTML("<br>")),br(),
+                 plotOutput("phyloPlot", inline = TRUE),
+                 actionButton("screensht", "Take a screenshot")
+        )
     )
   )
 )
-  
+)
 
+########### all the rest is server code ##########
 server <- function(input, output, session) {
   options(width = 180, DT.options = list(pageLength = 10)) # Increase text width for printing table ALSO ADDING DEFAULT NUMBER OF 10 ROWS IN DATATABLE
-    ## early in server now defining facets here - this is where all of the sidebar dataset options are tied to a dataset
-    facetvar1 <- reactive({
-      switch(input$dataset, "SARS-CoV2 mAbs - heavy chains & light chains" = "cregion", "SARS-CoV2 mAbs - IgH by binding" = "binding", "SARS-CoV2 mAbs - IgH by neutralization" = "neutralization", "SARS-CoV2 mAbs vs. 4 COVID-19 patient bulk repertoires vs. Healthy control bulk repertoire - IgH" = "id", "SARS-CoV2 mAbs vs. 4 COVID-19 patient bulk repertoires vs. Healthy control bulk repertoire - IgH combined" = "cregion", "SARS-CoV2 mAbs vs. HIV mAbs - IgH" = "id", "SARS-CoV2 mAbs vs. HIV mAbs - IgH combined" = "cregion", "HIV mAbs vs. HIV patient MT1214 bulk repertoire vs. HIV patient NIH45 bulk repertoire vs. HIV Setliff 2018 patient bulk repertoires - IgH" = "id", "HIV mAbs vs. HIV patient MT1214 bulk repertoire vs. HIV patient NIH45 bulk repertoire vs. HIV Setliff 2018 patient bulk repertoires - IgH combined" = "cregion", "Dengue mAbs vs. Dengue patient d13 bulk repertoire vs. Dengue Parameswaran 2013 patient bulk repertoires - IgH" = "id", "Dengue mAbs vs. Dengue patient d13 bulk repertoire vs. Dengue Parameswaran 2013 patient bulk repertoires - IgH combined" = "cregion", "All datasets - IgH combined" = "cregion")
-    })
-    ## to change x-axis columns vs. leaving fixed (for IgH only datasets) - note if you leave out default is fixed...
-    facetvar2 <- reactive({
-      switch(input$dataset, "SARS-CoV2 mAbs - heavy chains & light chains" = "free_x", "SARS-CoV2 mAbs - IgH by binding" = "fixed", "SARS-CoV2 mAbs - IgH by neutralization" = "fixed")
-    })
-    
-  inputdataset <- reactive({
-## using new names that reduce variables, round
-    switch(input$dataset, "SARS-CoV2 mAbs - heavy chains & light chains" = toshiny.cov2.abdab, "SARS-CoV2 mAbs - IgH by binding" = toshiny.cov2.abdab.h, "SARS-CoV2 mAbs - IgH by neutralization" = toshiny.cov2.abdab.h, "SARS-CoV2 mAbs vs. 4 COVID-19 patient bulk repertoires vs. Healthy control bulk repertoire - IgH" = toshiny.cov2.all, "SARS-CoV2 mAbs vs. 4 COVID-19 patient bulk repertoires vs. Healthy control bulk repertoire - IgH combined" = toshiny.cov2.allc, "SARS-CoV2 mAbs vs. HIV mAbs - IgH" = toshiny.cov2hiv, "SARS-CoV2 mAbs vs. HIV mAbs - IgH combined" = toshiny.cov2hivc, "HIV mAbs vs. HIV patient MT1214 bulk repertoire vs. HIV patient NIH45 bulk repertoire vs. HIV Setliff 2018 patient bulk repertoires - IgH" = toshiny.hiv.all, "HIV mAbs vs. HIV patient MT1214 bulk repertoire vs. HIV patient NIH45 bulk repertoire vs. HIV Setliff 2018 patient bulk repertoires - IgH combined" = toshiny.hiv.allc, "Dengue mAbs vs. Dengue patient d13 bulk repertoire vs. Dengue Parameswaran 2013 patient bulk repertoires - IgH" = toshiny.den.all, "Dengue mAbs vs. Dengue patient d13 bulk repertoire vs. Dengue Parameswaran 2013 patient bulk repertoires - IgH combined" = toshiny.den.allc, "All datasets - IgH combined" = toshiny.cov2hivden.allc)
-      })
-## extra filter for downloading
-    filteredDS <- reactive({
-    nearPoints(inputdataset(), input$plot_click, threshold = 5, maxpoints = 99999, addDist = FALSE)
+  ## early in server now defining facets here - this is where all of the sidebar dataset options are tied to a dataset
+  
+  ## ADDING AIRRscapeInput APP (SERVER PART) HERE...
+########################################### INPUT COMPONENT ################################################  
+########### importing/combining data code ##########
+  
+  ## need to add uploads1 <- NULL ???
+  ## this only works if you include the if isn't null argument...also another tricky part is below where you specify these if selected (the inputdataset <- reactive({ part...), you need to add parentheses, so uploads1() and uploads2() !!!
+  uploads1 <- reactive({
+    if (!is.null(input$calfile1)) {
+      upload1 <- read.delim(input$calfile1$datapath)
+      # upload1$sequence_id <- as.character(upload1$sequence_id)
+      # upload1$cdr3_aa_imgt <- as.character(upload1$cdr3_aa_imgt)
+      upload1
+    }
+  })
+  uploads2 <- reactive({
+    if (!is.null(input$calfile2)) {
+      upload2 <- read.delim(input$calfile2$datapath)
+      # upload2$sequence_id <- as.character(upload2$sequence_id)
+      # upload2$cdr3_aa_imgt <- as.character(upload2$cdr3_aa_imgt)
+      upload2
+    }
+  })
+  uploads3 <- reactive({
+    if (!is.null(input$calfile3)) {
+      upload3 <- read.delim(input$calfile3$datapath)
+      upload3
+    }
+  })
+  uploads4 <- reactive({
+    if (!is.null(input$calfile4)) {
+      upload4 <- read.delim(input$calfile4$datapath)
+      upload4
+    }
+  })
+  uploads5 <- reactive({
+    if (!is.null(input$calfile5)) {
+      upload5 <- read.delim(input$calfile5$datapath)
+      upload5
+    }
+  })
+  uploads6 <- reactive({
+    if (!is.null(input$calfile6)) {
+      upload6 <- read.delim(input$calfile6$datapath)
+      upload6
+    }
+  })
+  
+  ## JW idea: add an else if, running the convert function if needed...? but also need to combine datasets, not just convert...
+  convert1 <- NULL
+  convert2 <- NULL
+  convert3 <- NULL
+  convert4 <- NULL
+  convert5 <- NULL
+  convert6 <- NULL
+  convert1 <- reactive({
+    if (!is.null(uploads1())) {
+      uploaded_dataset1 <- uploads1()
+      if (is.null(uploaded_dataset1$vgf_jgene)) {
+        upload1afterconv <- AIRRscapeprocess(uploaded_dataset1)
+        # upload1afterconv$id <- gsub("uploaded-dataset1",paste0(input$name1),upload1afterconv$id)  ## if running AIRRscapeprocess, want to rename sequences
+      } else {
+        upload1afterconv <- uploaded_dataset1
+      }
+      upload1afterconv$sequence_id <- as.character(upload1afterconv$sequence_id)
+      upload1afterconv$cdr3_aa_imgt <- as.character(upload1afterconv$cdr3_aa_imgt)
+      upload1afterconv
+    }
+  })
+  convert2 <- reactive({
+    if (!is.null(uploads2())) {
+      uploaded_dataset2 <- uploads2()
+      if (is.null(uploaded_dataset2$vgf_jgene)) {
+        upload2afterconv <- AIRRscapeprocess(uploaded_dataset2)
+        # upload2afterconv$id <- gsub("uploaded-dataset2",paste0(input$name1),upload2afterconv$id)  ## if running AIRRscapeprocess, want to rename sequences
+      } else {
+        upload2afterconv <- uploaded_dataset2
+      }
+      upload2afterconv$sequence_id <- as.character(upload2afterconv$sequence_id)
+      upload2afterconv$cdr3_aa_imgt <- as.character(upload2afterconv$cdr3_aa_imgt)
+      upload2afterconv
+    }
+  })
+  
+  convert3 <- reactive({
+    if (!is.null(uploads3())) {
+      uploaded_dataset3 <- uploads3()
+      if (is.null(uploaded_dataset3$vgf_jgene)) {
+        upload3afterconv <- AIRRscapeprocess(uploaded_dataset3)
+        # upload3afterconv$id <- gsub("uploaded-dataset3",paste0(input$name1),upload3afterconv$id)  ## if running AIRRscapeprocess, want to rename sequences
+      } else {
+        upload3afterconv <- uploaded_dataset3
+      }
+      upload3afterconv$sequence_id <- as.character(upload3afterconv$sequence_id)
+      upload3afterconv$cdr3_aa_imgt <- as.character(upload3afterconv$cdr3_aa_imgt)
+      upload3afterconv
+    }
+  })
+  convert4 <- reactive({
+    if (!is.null(uploads4())) {
+      uploaded_dataset4 <- uploads4()
+      if (is.null(uploaded_dataset4$vgf_jgene)) {
+        upload4afterconv <- AIRRscapeprocess(uploaded_dataset4)
+        # upload4afterconv$id <- gsub("uploaded-dataset4",paste0(input$name1),upload4afterconv$id)  ## if running AIRRscapeprocess, want to rename sequences
+      } else {
+        upload4afterconv <- uploaded_dataset4
+      }
+      upload4afterconv$sequence_id <- as.character(upload4afterconv$sequence_id)
+      upload4afterconv$cdr3_aa_imgt <- as.character(upload4afterconv$cdr3_aa_imgt)
+      upload4afterconv
+    }
+  })
+  
+  convert5 <- reactive({
+    if (!is.null(uploads5())) {
+      uploaded_dataset5 <- uploads5()
+      if (is.null(uploaded_dataset5$vgf_jgene)) {
+        upload5afterconv <- AIRRscapeprocess(uploaded_dataset5)
+        # upload5afterconv$id <- gsub("uploaded-dataset5",paste0(input$name1),upload5afterconv$id)  ## if running AIRRscapeprocess, want to rename sequences
+      } else {
+        upload5afterconv <- uploaded_dataset5
+      }
+      upload5afterconv$sequence_id <- as.character(upload5afterconv$sequence_id)
+      upload5afterconv$cdr3_aa_imgt <- as.character(upload5afterconv$cdr3_aa_imgt)
+      upload5afterconv
+    }
+  })
+  convert6 <- reactive({
+    if (!is.null(uploads6())) {
+      uploaded_dataset6 <- uploads6()
+      if (is.null(uploaded_dataset6$vgf_jgene)) {
+        upload6afterconv <- AIRRscapeprocess(uploaded_dataset6)
+        # upload6afterconv$id <- gsub("uploaded-dataset6",paste0(input$name1),upload6afterconv$id)  ## if running AIRRscapeprocess, want to rename sequences
+      } else {
+        upload6afterconv <- uploaded_dataset6
+      }
+      upload6afterconv$sequence_id <- as.character(upload6afterconv$sequence_id)
+      upload6afterconv$cdr3_aa_imgt <- as.character(upload6afterconv$cdr3_aa_imgt)
+      upload6afterconv
+    }
   })
 
-## isolating the hover x & y for highlighting - note works but makes hover pop up window very momentary
-## tried to below within renderPlot, doesn't change (trying isolate - same issue, then observe & isolate - breaks)
-    highlightedpointsDSx <- reactive({
-      dat <- inputdataset()
-      highlightedpoint <- nearPoints(dat, input$plot_hover, threshold = 5, maxpoints = 1, addDist = FALSE)
-      highlightedpoint$gf_jgene
-    })
-    highlightedpointsDSy <- reactive({
-      dat <- inputdataset()
-      highlightedpoint <- nearPoints(dat, input$plot_hover, threshold = 5, maxpoints = 1, addDist = FALSE)
-      highlightedpoint$cdr3length_imgt
-    })
-
-### added code to allow for trees of subsetted data:
-    # Thanks to @yihui this is now possible using the DT package and input$tableId_rows_all 
-    # where tableID is the id assigned to your table. See the link for details. http://rstudio.github.io/DT/shiny.html
-    filteredDSpartial <- reactive({
-      ids <- input$click_info_rows_selected
-      filteredDS()[ids,]
-    })
-    filteredDSall <- reactive({
-      ids <- input$click_info_rows_all
-      filteredDS()[ids,]
-    })
-
-## then rename sequence_id
-    filteredDSpartial2 <- reactive({
-      partial2 <- filteredDSpartial() %>% select(sequence_id,cdr3_aa_imgt,gene,gf_jgene,cdr3length_imgt)
-      partial2$sequence_id <- paste(partial2$sequence_id,partial2$gene,partial2$cdr3_aa_imgt,sep="_")
-      partial2
-    })
+  # toshiny.yourdataset.all.renamed <- reactive({  - changing to eventReactive per example in chapter 3 mastering shiny
+  toshiny.yourdataset.all.renamed <- eventReactive(input$go0, {
     
-    filteredDSall2 <- reactive({
-      all2 <- filteredDSall() %>% select(sequence_id,cdr3_aa_imgt,gene,gf_jgene,cdr3length_imgt)
-      all2$sequence_id <- paste(all2$sequence_id,all2$gene,all2$cdr3_aa_imgt,sep="_")
-      all2
-    })
+    # dataset1 <- input$name1
+    # dataset2 <- input$name2
+    # dataset3 <- input$name3
+    # dataset4 <- input$name4
+    # dataset5 <- input$name5
+    # dataset6 <- input$name6
+    toshiny.yourdataset.all <- bind_rows(convert1(), convert2(), convert3(), convert4(), convert5(), convert6(), .id = "id")
+    ## removing numbers to better substitute any input  
+    toshiny.yourdataset.all$id <- gsub("1","1-numberone",toshiny.yourdataset.all$id)
+    toshiny.yourdataset.all$id <- gsub("2","2-numbertwo",toshiny.yourdataset.all$id)
+    toshiny.yourdataset.all$id <- gsub("3","3-numberthree",toshiny.yourdataset.all$id)
+    toshiny.yourdataset.all$id <- gsub("4","4-numberfour",toshiny.yourdataset.all$id)
+    toshiny.yourdataset.all$id <- gsub("5","5-numberfive",toshiny.yourdataset.all$id)
+    toshiny.yourdataset.all$id <- gsub("6","6-numbersix",toshiny.yourdataset.all$id)
+    ## now here add in user inputs...  
+    ## ordering doesn't seem to work - instead add numbers to id??
+    toshiny.yourdataset.all$id <- gsub("numberone",paste0(input$name1),toshiny.yourdataset.all$id)
+    toshiny.yourdataset.all$id <- gsub("numbertwo",paste0(input$name2),toshiny.yourdataset.all$id)
+    toshiny.yourdataset.all$id <- gsub("numberthree",paste0(input$name3),toshiny.yourdataset.all$id)
+    toshiny.yourdataset.all$id <- gsub("numberfour",paste0(input$name4),toshiny.yourdataset.all$id)
+    toshiny.yourdataset.all$id <- gsub("numberfive",paste0(input$name5),toshiny.yourdataset.all$id)
+    toshiny.yourdataset.all$id <- gsub("numbersix",paste0(input$name6),toshiny.yourdataset.all$id)
+    toshiny.yourdataset.all$sequence_id <- gsub("uploaded-dataset1",paste0(input$name1),toshiny.yourdataset.all$sequence_id) ## moving from above
+    toshiny.yourdataset.all$sequence_id <- gsub("uploaded-dataset2",paste0(input$name2),toshiny.yourdataset.all$sequence_id) ## moving from above
+    toshiny.yourdataset.all$sequence_id <- gsub("uploaded-dataset3",paste0(input$name3),toshiny.yourdataset.all$sequence_id) ## moving from above
+    toshiny.yourdataset.all$sequence_id <- gsub("uploaded-dataset4",paste0(input$name4),toshiny.yourdataset.all$sequence_id) ## moving from above
+    toshiny.yourdataset.all$sequence_id <- gsub("uploaded-dataset5",paste0(input$name5),toshiny.yourdataset.all$sequence_id) ## moving from above
+    toshiny.yourdataset.all$sequence_id <- gsub("uploaded-dataset6",paste0(input$name6),toshiny.yourdataset.all$sequence_id) ## moving from above
+    toshiny.yourdataset.all$sequence_id <- gsub("\\_","\\-",toshiny.yourdataset.all$sequence_id)
+    toshiny.yourdataset.all$sequence_id <- gsub(" ","-",toshiny.yourdataset.all$sequence_id)
+    toshiny.yourdataset.all$cregion <- gsub('IG','Ig',toshiny.yourdataset.all$cregion)
+    ## adding conversion to standardize light chain naming if necessary...
+    toshiny.yourdataset.all$cregion <- gsub("IgK","Kappa",toshiny.yourdataset.all$cregion)
+    toshiny.yourdataset.all$cregion <- gsub("IgL","Lambda",toshiny.yourdataset.all$cregion)
+    ## this will filter to heavy chains only...
+    toshiny.yourdataset.all <- toshiny.yourdataset.all %>% filter(cregion == "IgH" | cregion == "IgA" | cregion == "IgD" | cregion == "IgE" | cregion == "IgG" | cregion == "IgM")
+    ## add factor?? - note need to add the , exclude=NULL - need to set levels first levels = ordering
+    ## doesn't seem to work - instead and numbers to id?
+    # ordering <- unique(c(paste0(input$name1),paste0(input$name2),paste0(input$name3),paste0(input$name4),paste0(input$name5),paste0(input$name6)))
+    # toshiny.yourdataset.all$id <- factor(toshiny.yourdataset.all$id, levels = ordering)
+    toshiny.yourdataset.all
+    # first maybe don't need if usign eventReactive rather than just Reactive, on second thought yes do need
+  })
+  
+  
+  # toshiny.yourdataset.allc.renamed <- reactive({
+  toshiny.yourdataset.allc.renamed <- eventReactive(input$go0, {
+    toshiny.yourdataset.allc <- toshiny.yourdataset.all.renamed()
+    toshiny.yourdataset.allc$ncount <- NULL
+    toshiny.yourdataset.allc$shm_mean <- NULL
+    toshiny.yourdataset.allc$shm_max <- NULL
+    toshiny.yourdataset.allc$cregion0 <- toshiny.yourdataset.allc$cregion
+    toshiny.yourdataset.allc$cregion <- "IgH"
+    toshiny.yourdataset.allc <- toshiny.yourdataset.allc %>%
+      add_count(vgf_jgene,cdr3length_imgt) %>%
+      rename(ncount = n) %>%
+      group_by(vgf_jgene,cdr3length_imgt) %>%
+      mutate(shm_mean = mean(shm, na.rm = TRUE)) %>%
+      # ADD MAX SHM AS WELL..
+      mutate(shm_max = max(shm, na.rm = TRUE)) %>% 
+      mutate(shm_mean = na_if(shm_mean, "NaN")) %>% 
+      mutate(shm_max = na_if(shm_max, "-Inf")) %>% 
+      mutate(across(shm, round, 2)) %>% 
+      mutate(across(shm_max, round, 2)) %>% 
+      mutate(across(shm_mean, round, 2))
+    toshiny.yourdataset.allc
+  })
+  
+  ## this allows user to download all sequences in clicked bin (first filter) or only selected rows (second filter)
+  output$downloadfilter01 <- downloadHandler(
+    filename = function() {
+      paste('yourdata_filteredcombined_separatepanels', Sys.Date(), '.tsv', sep = '')
+    },
+    content = function(file){
+      write.table(toshiny.yourdataset.all.renamed(),file, sep = "\t", row.names = FALSE)
+    }
+  )
+  
+  output$downloadfilter02 <- downloadHandler(
+    filename = function() {
+      paste('yourdata_filteredcombined_singleheatmap', Sys.Date(), '.tsv', sep = '')
+    },
+    content = function(file){
+      write.table(toshiny.yourdataset.allc.renamed(),file, sep = "\t", row.names = FALSE)
+    }
+  )      
+  
+####################################### END INPUT COMPONENT ################################################  
+########### adding importing/combined datasets to AIRRscape ##########
+  
+## more recent addition - where converted/combined datasets are added to AIRRscape  
+## this only works if you include the if isn't null argument...also another tricky part is below where you specify these if selected (the inputdataset <- reactive({ part...), you need to add parentheses, so uploads11() and uploads12() !!!
+  uploads11 <- reactive({
+    if (!is.null(input$yourfile1)) {
+    # upload11 <- read_tsv(input$yourfile1$datapath) %>% as.data.frame()
+    upload11 <- read.delim(input$yourfile1$datapath)
+    # upload11$sequence_id <- as.character(upload11$sequence_id)
+    # upload11$cdr3_aa_imgt <- as.character(upload11$cdr3_aa_imgt)
+    upload11
+    }
+  })
 
-    filteredDSpartial2id <- reactive({
-      partial2id <- filteredDSpartial() %>% select(sequence_id,cdr3_aa_imgt,gene,gf_jgene,cdr3length_imgt)
-      partial2id$sequence_id <- paste(partial2id$sequence_id,partial2id$gene,partial2id$cdr3_aa_imgt,sep="_")
-      partial2id$sequence_id
+  uploads12 <- reactive({
+    if (!is.null(input$yourfile2)) {
+      # upload12 <- read_tsv(input$yourfile2$datapath) %>% as.data.frame()
+      upload12 <- read.delim(input$yourfile2$datapath)
+      # upload12$sequence_id <- as.character(upload12$sequence_id)
+      # upload12$cdr3_aa_imgt <- as.character(upload12$cdr3_aa_imgt)
+      upload12
+    }
+  })
+  
+## JW idea: add an else if, running the convert function if needed...? but also need to combine datasets, not just convert...
+  ## it turns out best to convert+combine in the first tab, then just input the combined datasest at this stage
+  ## if one tries to convert here, sometimes errors will arise...
+  convert11 <- NULL
+  convert12 <- NULL
+  convert11 <- reactive({
+    if (!is.null(uploads11())) {
+    uploaded_dataset1 <- uploads11()
+    if (is.null(uploaded_dataset1$vgf_jgene)) {
+      upload11afterconv <- AIRRscapeprocess(uploaded_dataset1)
+      } else {
+        upload11afterconv <- uploaded_dataset1
+        upload11afterconv$cregion <- gsub('IG','Ig',upload11afterconv$cregion)
+        ## adding conversion to standardize light chain naming if necessary...
+        upload11afterconv$cregion <- gsub("IgK","Kappa",upload11afterconv$cregion)
+        upload11afterconv$cregion <- gsub("IgL","Lambda",upload11afterconv$cregion)
+      }
+    if (!("id" %in% names(upload11afterconv))) {
+      upload11afterconv$id <- "Uploaded Dataset"
+      upload11afterconv <- upload11afterconv %>% relocate(id)
+    }
+    upload11afterconv$sequence_id <- as.character(upload11afterconv$sequence_id)
+    upload11afterconv$cdr3_aa_imgt <- as.character(upload11afterconv$cdr3_aa_imgt)
+    upload11afterconv
+    }
     })
+  convert12 <- reactive({
+    if (!is.null(uploads12())) {
+    uploaded_dataset2 <- uploads12()
+    if (is.null(uploaded_dataset2$vgf_jgene)) {
+      upload12afterconv <- AIRRscapeprocess(uploaded_dataset2)
+    } else {
+      upload12afterconv <- uploaded_dataset2
+      upload12afterconv$cregion <- gsub('IG','Ig',upload12afterconv$cregion)
+      ## adding conversion to standardize light chain naming if necessary...
+      upload12afterconv$cregion <- gsub("IgK","Kappa",upload12afterconv$cregion)
+      upload12afterconv$cregion <- gsub("IgL","Lambda",upload12afterconv$cregion)
+    }
+    if (!("id" %in% names(upload12afterconv))) {
+      upload12afterconv$id <- "Uploaded Dataset"
+      upload12afterconv <- upload12afterconv %>% relocate(id)
+    }
+    upload12afterconv$sequence_id <- as.character(upload12afterconv$sequence_id)
+    upload12afterconv$cdr3_aa_imgt <- as.character(upload12afterconv$cdr3_aa_imgt)
+    upload12afterconv
+    }
+  })
 
-### ADDING NEW VARIABLE SEPARATELY CALCULATING DISTANCE MATRIX AS BELOW BUT WITHIN TREE-PLOTTING STEP
-    ## THIS SHOULD SEPARATELY BE AVAILABLE FOR DOWNLOADING...
-    matrixDSall2 <- reactive({
+########### original AIRRscape visualization code ##########
+## original code for visualizing (but adding users datasets as last 2 dataset options)
+  
+  facetvar1 <- reactive({
+    switch(input$dataset, "SARS-CoV2 mAbs - heavy chains & light chains" = "cregion", "SARS-CoV2 mAbs - IgH by binding" = "binding", "SARS-CoV2 mAbs - IgH by neutralization" = "neutralization", "SARS-CoV2 mAbs vs. COVID-19 patient bulk repertoires vs. Healthy control - IgH" = "id", "SARS-CoV2 mAbs vs. COVID-19 patient bulk repertoires vs. Healthy control - IgH combined" = "cregion", "SARS-CoV2 mAbs vs. HIV mAbs - IgH" = "id", "SARS-CoV2 mAbs vs. HIV mAbs - IgH combined" = "cregion", "HIV mAbs vs. HIV patient bulk repertoires - IgH" = "id", "HIV mAbs vs. HIV patient bulk repertoires - IgH combined" = "cregion", "Dengue mAbs vs. Dengue patient bulk repertoires - IgH" = "id", "Dengue mAbs vs. Dengue patient bulk repertoires - IgH combined" = "cregion", "SARS-CoV2, HIV, & Dengue datasets - IgH combined" = "cregion","Custom datasets - IgH" = "id", "Custom datasets - IgH combined" = "cregion")
+  })
+  ## to change x-axis columns vs. leaving fixed (for IgH only datasets) - note if you leave out default is fixed...
+  facetvar2 <- reactive({
+    switch(input$dataset, "SARS-CoV2 mAbs - heavy chains & light chains" = "free_x", "SARS-CoV2 mAbs - IgH by binding" = "fixed", "SARS-CoV2 mAbs - IgH by neutralization" = "fixed")
+  })
+  
+  inputdataset <- reactive({
+    ## using new names that reduce variables, round
+    switch(input$dataset, "SARS-CoV2 mAbs - heavy chains & light chains" = toshiny.cov2.abdab, "SARS-CoV2 mAbs - IgH by binding" = toshiny.cov2.abdab.h, "SARS-CoV2 mAbs - IgH by neutralization" = toshiny.cov2.abdab.h, "SARS-CoV2 mAbs vs. COVID-19 patient bulk repertoires vs. Healthy control - IgH" = toshiny.cov2.all, "SARS-CoV2 mAbs vs. COVID-19 patient bulk repertoires vs. Healthy control - IgH combined" = toshiny.cov2.allc, "SARS-CoV2 mAbs vs. HIV mAbs - IgH" = toshiny.cov2hiv, "SARS-CoV2 mAbs vs. HIV mAbs - IgH combined" = toshiny.cov2hivc, "HIV mAbs vs. HIV patient bulk repertoires - IgH" = toshiny.hiv.all, "HIV mAbs vs. HIV patient bulk repertoires - IgH combined" = toshiny.hiv.allc, "Dengue mAbs vs. Dengue patient bulk repertoires - IgH" = toshiny.den.all, "Dengue mAbs vs. Dengue patient bulk repertoires - IgH combined" = toshiny.den.allc, "SARS-CoV2, HIV, & Dengue datasets - IgH combined" = toshiny.cov2hivden.allc, "Custom datasets - IgH" = convert11(), "Custom datasets - IgH combined" = convert12())
+  })
+  ## extra filter for downloading
+  filteredDS <- reactive({
+    nearPoints(inputdataset(), input$plot_click, threshold = 5, maxpoints = 99999, addDist = FALSE)
+  })
+  
+  ## isolating the hover x & y for highlighting - note works but makes hover pop up window very momentary
+  ## tried to below within renderPlot, doesn't change (trying isolate - same issue, then observe & isolate - breaks)
+  highlightedpointsDSx <- reactive({
+    dat <- inputdataset()
+    highlightedpoint <- nearPoints(dat, input$plot_hover, threshold = 5, maxpoints = 1, addDist = FALSE)
+    highlightedpoint$vgf_jgene
+  })
+  highlightedpointsDSy <- reactive({
+    dat <- inputdataset()
+    highlightedpoint <- nearPoints(dat, input$plot_hover, threshold = 5, maxpoints = 1, addDist = FALSE)
+    highlightedpoint$cdr3length_imgt
+  })
+  
+  ### added code to allow for trees of subsetted data:
+  # Thanks to @yihui this is now possible using the DT package and input$tableId_rows_all 
+  # where tableID is the id assigned to your table. See the link for details. http://rstudio.github.io/DT/shiny.html
+  filteredDSpartial <- reactive({
+    ids <- input$click_info_rows_selected
+    filteredDS()[ids,]
+  })
+  filteredDSall <- reactive({
+    ids <- input$click_info_rows_all
+    filteredDS()[ids,]
+  })
+  
+  ## then rename sequence_id
+  filteredDSpartial2 <- reactive({
+    partial2 <- filteredDSpartial() %>% select(sequence_id,cdr3_aa_imgt,vgene,vgf_jgene,cdr3length_imgt)
+    partial2$sequence_id <- paste(partial2$sequence_id,partial2$vgene,partial2$cdr3_aa_imgt,sep="_")
+    partial2
+  })
+  
+  filteredDSall2 <- reactive({
+    all2 <- filteredDSall() %>% select(sequence_id,cdr3_aa_imgt,vgene,vgf_jgene,cdr3length_imgt)
+    all2$sequence_id <- paste(all2$sequence_id,all2$vgene,all2$cdr3_aa_imgt,sep="_")
+    all2
+  })
+  
+  filteredDSpartial2id <- reactive({
+    partial2id <- filteredDSpartial() %>% select(sequence_id,cdr3_aa_imgt,vgene,vgf_jgene,cdr3length_imgt)
+    partial2id$sequence_id <- paste(partial2id$sequence_id,partial2id$vgene,partial2id$cdr3_aa_imgt,sep="_")
+    partial2id$sequence_id
+  })
+  
+  ### ADDING NEW VARIABLE SEPARATELY CALCULATING DISTANCE MATRIX AS BELOW BUT WITHIN TREE-PLOTTING STEP
+  ## THIS SHOULD SEPARATELY BE AVAILABLE FOR DOWNLOADING...
+  matrixDSall2 <- reactive({
     filteredDataall <- filteredDSall2()
     filteredDataall.y <- t(sapply(strsplit(filteredDataall[,2],""), tolower))
     rownames(filteredDataall.y) <- filteredDataall[,1]
@@ -211,11 +716,13 @@ server <- function(input, output, session) {
     dmalldf = dist.hamming(seqsall, ratio = TRUE)
     dm.matrixall <- as.matrix(dmalldf) %>% as.data.frame()
     dm.matrixall
-    })        
-
-### Hover output: popup window
+  })        
+  
+  ### Hover output: popup window
   output$hover_info <- renderUI({
     hover <- input$plot_hover
+    ## below line also added per https://github.com/rstudio/shiny/issues/2286
+    if(is.null(hover)) return(NULL)
     dat <- inputdataset()
     ## first line for picking among different graphs- NOTE CHANGE TO 'DAT'
     point <- nearPoints(dat, input$plot_hover, threshold = 5, maxpoints = 1, addDist = TRUE)
@@ -223,32 +730,33 @@ server <- function(input, output, session) {
     
     # tags$style( '#ggplot1 { cursor: pointer; }')
     ## new bit added to change cursor when hovering: (doesn't seem change the cursor though)
-       # if (nrow(point) == 0){
-       #   css_string <- '
-       #   #hover_info {
-       #   cursor: default !important; }'
-       # } else {
-       #   css_string <- '
-       #   #hover_info {
-       #   cursor: crosshair !important; }'
-       # }
-       # tags$style(HTML(css_string))
+    # if (nrow(point) == 0){
+    #   css_string <- '
+    #   #hover_info {
+    #   cursor: default !important; }'
+    # } else {
+    #   css_string <- '
+    #   #hover_info {
+    #   cursor: crosshair !important; }'
+    # }
+    # tags$style(HTML(css_string))
     
     # # calculate point position INSIDE the image as percent of total dimensions
     # # from left (horizontal) and from top (vertical)
-       ## simplifiying this per https://gitlab.com/-/snippets/16220
+    ## simplifiying this per https://gitlab.com/-/snippets/16220
     left_px <- hover$coords_css$x
     top_px <- hover$coords_css$y
     
     # create style property for tooltip
     # background color is set so tooltip is a bit transparent
     # z-index is set so we are sure are tooltip will be on top
-    style <- paste0("position:absolute; z-index:100; background-color: rgba(245, 245, 245, 0.85); ",
+    ## adding pointer-events per https://github.com/rstudio/shiny/issues/2286
+    style <- paste0("position:absolute; z-index:100; pointer-events:none; background-color: rgba(245, 245, 245, 0.85); ",
                     "left:", left_px, "px; top:", top_px + 20, "px;")
     # actual tooltip created as wellPanel - TO ACTUALLY GET COUNTS NEED TO GET FROM STAT_BIN ANALYSIS...
     wellPanel(
       style = style,
-      p(HTML(paste0("<b> V-gene & J-gene: </b>", point$gf_jgene, "<br/>",
+      p(HTML(paste0("<b> V-gene & J-gene: </b>", point$vgf_jgene, "<br/>",
                     "<b> CDR3 Length (aa): </b>", point$cdr3length_imgt, "<br/>",
                     "<b> Mean Somatic Hypermutation (%): </b>", point$shm_mean, "<br/>",
                     "<b> Max Somatic Hypermutation (%): </b>", point$shm_max, "<br/>",
@@ -256,254 +764,267 @@ server <- function(input, output, session) {
     )
   })
   
-### the heatmap (now the only plot)
-    output$ggplot1 <- renderPlot({
-      ## first line for picking among different graphs
-      facet_formula <- as.formula(paste("~", facetvar1()))
-      dat <- inputdataset()
-#    note at end of the 3 plot commands below has a final geom_point plotting step to add a green square under the hover, currently it disappears after a moment - tried adding an isolate command, didn't solve
-      data2 <- if (input$plotcolors == "Average SHM") {
-        toplot <- ggplot(dat, aes(gf_jgene,cdr3length_imgt)) + geom_tile(aes(fill = shm_mean)) + scale_y_continuous(limits = c(3, 42)) + theme_bw(base_size = 16) + ylab("CDR3 Length (aa)") + xlab("V-gene & J-gene") + facet_wrap(facet_formula, ncol = 1, scales = facetvar2()) + scale_fill_viridis_c(name = "Mean \nSHM (%)", option = "C") + theme(axis.text.x = element_text(angle=45, hjust=1, size=8)) + ggtitle("Bins of V+J gene families vs. CDR3 length, with Mean Somatic Hypermutation as fill color") + theme(plot.title = element_text(size = 20, face = "bold")) #+ geom_point(data=subset(dat, gf_jgene ==  highlightedpointsDSx() & cdr3length_imgt == highlightedpointsDSy()), color = "green", shape = "square", size = 4)
-      } else if (input$plotcolors == "Maximum SHM") {
-        toplot <- ggplot(dat, aes(gf_jgene,cdr3length_imgt)) + geom_tile(aes(fill = shm_max)) + scale_y_continuous(limits = c(3, 42)) + theme_bw(base_size = 16) + ylab("CDR3 Length (aa)") + xlab("V-gene & J-gene") + facet_wrap(facet_formula, ncol = 1, scales = facetvar2()) + scale_fill_viridis_c(name = "Max \nSHM (%)", option = "C") + theme(axis.text.x = element_text(angle=45, hjust=1, size=8)) + ggtitle("Bins of V+J gene families vs. CDR3 length, with Maximum Somatic Hypermutation as fill color") + theme(plot.title = element_text(size = 20, face = "bold")) #+ geom_point(data=subset(dat, gf_jgene ==  highlightedpointsDSx() & cdr3length_imgt == highlightedpointsDSy()), color = "green", shape = "square", size = 4)
-      } else {
-        toplot <- ggplot(dat, aes(gf_jgene,cdr3length_imgt)) + geom_bin2d(bins = 40, aes(fill= (..count..)*100/tapply(..count..,..PANEL..,sum)[..PANEL..])) + scale_y_continuous(limits = c(3, 42)) + theme_bw(base_size = 16) + ylab("CDR3 Length (aa)") + xlab("V-gene & J-gene") + facet_wrap(facet_formula, ncol = 1, scales = facetvar2()) + scale_fill_viridis_c(name = "% of \nReads  ", option = "C") + theme(axis.text.x = element_text(angle=45, hjust=1, size=8)) + ggtitle("Bins of V+J gene families vs. CDR3 length, with Percentage of total antibody sequences as fill color") + theme(plot.title = element_text(size = 20, face = "bold")) #+ geom_point(data=subset(dat, gf_jgene ==  highlightedpointsDSx() & cdr3length_imgt == highlightedpointsDSy()), color = "green", shape = "square", size = 4)
-      }     
-      toplot
-    }, width = 1200, height = "auto")
+  ### the heatmap (now the only plot)
+  output$ggplot1 <- renderPlot({
+    ## first line for picking among different graphs
+    facet_formula <- as.formula(paste("~", facetvar1()))
+    dat <- inputdataset()
+    #    note at end of the 3 plot commands below has a final geom_point plotting step to add a green square under the hover, currently it disappears after a moment - tried adding an isolate command, didn't solve
+    data2 <- if (input$plotcolors == "Average SHM") {
+      toplot <- ggplot(dat, aes(vgf_jgene,cdr3length_imgt)) + geom_tile(aes(fill = shm_mean)) + scale_y_continuous(limits = c(3, 42)) + theme_bw(base_size = 16) + ylab("CDR3 Length (aa)") + xlab("V-gene & J-gene") + facet_wrap(facet_formula, ncol = 1, scales = facetvar2()) + scale_fill_viridis_c(name = "Mean \nSHM (%)", option = "C") + theme(axis.text.x = element_text(angle=45, hjust=1, size=8)) + ggtitle("Bins of V+J gene families vs. CDR3 length, with Mean Somatic Hypermutation as fill color") + theme(plot.title = element_text(size = 20, face = "bold")) #+ geom_point(data=subset(dat, vgf_jgene ==  highlightedpointsDSx() & cdr3length_imgt == highlightedpointsDSy()), color = "green", shape = "square", size = 4)
+    } else if (input$plotcolors == "Maximum SHM") {
+      toplot <- ggplot(dat, aes(vgf_jgene,cdr3length_imgt)) + geom_tile(aes(fill = shm_max)) + scale_y_continuous(limits = c(3, 42)) + theme_bw(base_size = 16) + ylab("CDR3 Length (aa)") + xlab("V-gene & J-gene") + facet_wrap(facet_formula, ncol = 1, scales = facetvar2()) + scale_fill_viridis_c(name = "Max \nSHM (%)", option = "C") + theme(axis.text.x = element_text(angle=45, hjust=1, size=8)) + ggtitle("Bins of V+J gene families vs. CDR3 length, with Maximum Somatic Hypermutation as fill color") + theme(plot.title = element_text(size = 20, face = "bold")) #+ geom_point(data=subset(dat, vgf_jgene ==  highlightedpointsDSx() & cdr3length_imgt == highlightedpointsDSy()), color = "green", shape = "square", size = 4)
+    } else {
+      toplot <- ggplot(dat, aes(vgf_jgene,cdr3length_imgt)) + geom_bin2d(bins = 40, aes(fill= (..count..)*100/tapply(..count..,..PANEL..,sum)[..PANEL..])) + scale_y_continuous(limits = c(3, 42)) + theme_bw(base_size = 16) + ylab("CDR3 Length (aa)") + xlab("V-gene & J-gene") + facet_wrap(facet_formula, ncol = 1, scales = facetvar2()) + scale_fill_viridis_c(name = "% of \nReads  ", option = "C") + theme(axis.text.x = element_text(angle=45, hjust=1, size=8)) + ggtitle("Bins of V+J gene families vs. CDR3 length, with Percentage of total antibody sequences as fill color") + theme(plot.title = element_text(size = 20, face = "bold")) #+ geom_point(data=subset(dat, vgf_jgene ==  highlightedpointsDSx() & cdr3length_imgt == highlightedpointsDSy()), color = "green", shape = "square", size = 4)
+    }     
+    toplot
+  }, width = 1200, height = "auto")
+  
+  
+  ### datatable under plot 
+  ## adding changing row font color via https://stackoverflow.com/questions/56568144/r-dt-override-default-selection-color
+  # xxxx$cellcolor <- grepl('SARS-CoV2-mAb|HIV-IEDBmAb', xxxx$sequence_id)
+  # %>%
+  #   formatStyle("sequence_id", valueColumns = "cellcolor", color = styleEqual(TRUE, "blue"))
+  
+  output$click_info <- DT::renderDataTable({
+    dat <- inputdataset()
+    old <- options(width = 1600); on.exit(options(old))
+    dat$cellcolor <- grepl('SARS-CoV2-mAb|HIV-IEDBmAb', dat$sequence_id)
+    thetable <- nearPoints(dat, input$plot_click, threshold = 5, maxpoints = 99999,
+                           addDist = FALSE)
+    datatable(thetable, options = list(search = list(regex = TRUE))) %>%
+      formatStyle("shm", valueColumns = "cellcolor", color = styleEqual(TRUE, "blue"))
+  }, width = 1600)
+  
+  ## adding a datatable with all of the points when double-clicking plot_brush brush_info
+  output$brush_info <- DT::renderDataTable({
+    dat0 <- inputdataset()
+    old <- options(width = 1600); on.exit(options(old))
+    dat0$cellcolor <- grepl('SARS-CoV2-mAb|HIV-IEDBmAb', dat0$sequence_id)
+    thetable0 <- brushedPoints(dat0, input$plot_brush, allRows = FALSE)
+    datatable(thetable0, options = list(search = list(regex = TRUE))) %>%
+      formatStyle("shm", valueColumns = "cellcolor", color = styleEqual(TRUE, "blue"))
+  }, width = 1600)
+  
+  
+  ## this allows user to download all sequences in clicked bin (first filter) or only selected rows (second filter)
+  output$downloadfilter <- downloadHandler(
+    filename = function() {
+      paste('Filtered data-', Sys.Date(), '.csv', sep = '')
+    },
+    content = function(file){
+      write.csv(filteredDS()[input[["click_info_rows_all"]], ],file, row.names = FALSE)
+    }
+  )
+  
+  output$downloadfilter2 <- downloadHandler(
+    filename = function() {
+      paste('Filtered data-', Sys.Date(), '.csv', sep = '')
+    },
+    content = function(file){
+      write.csv(filteredDS()[input[["click_info_rows_selected"]], ],file, row.names = FALSE)
+    }
+  )      
+  
+  ### adding third download button for matrix of distances...
+  output$downloadfilter3 <- downloadHandler(
+    filename = function() {
+      paste('Distance matrix-', Sys.Date(), '.csv', sep = '')
+    },
+    content = function(file){
+      write.csv(matrixDSall2(),file, row.names = FALSE)
+    }
+  )          
 
-
-### datatable under plot 
-      output$click_info <- DT::renderDataTable({
-             dat <- inputdataset()
-             old <- options(width = 1600); on.exit(options(old))
-        nearPoints(dat, input$plot_click, threshold = 5, maxpoints = 99999,
-                   addDist = FALSE)
-      }, width = 1600)
-      
-## adding a datatable with all of the points when double-clicking plot_brush brush_info
-      output$brush_info <- DT::renderDataTable({
-        dat0 <- inputdataset()
-        old <- options(width = 1600); on.exit(options(old))
-        brushedPoints(dat0, input$plot_brush, allRows = FALSE)
-      }, width = 1600)
-      
-      
-## this allows user to download all sequences in clicked bin (first filter) or only selected rows (second filter)
-      output$downloadfilter <- downloadHandler(
-        filename = function() {
-          paste('Filtered data-', Sys.Date(), '.csv', sep = '')
-        },
-        content = function(file){
-          write.csv(filteredDS()[input[["click_info_rows_all"]], ],file, row.names = FALSE)
-        }
-      )
-      
-      output$downloadfilter2 <- downloadHandler(
-        filename = function() {
-          paste('Filtered data-', Sys.Date(), '.csv', sep = '')
-        },
-        content = function(file){
-          write.csv(filteredDS()[input[["click_info_rows_selected"]], ],file, row.names = FALSE)
-        }
-      )      
-
-### adding third download button for matrix of distances...
-      output$downloadfilter3 <- downloadHandler(
-        filename = function() {
-          paste('Distance matrix-', Sys.Date(), '.csv', sep = '')
-        },
-        content = function(file){
-          write.csv(matrixDSall2(),file, row.names = FALSE)
-        }
-      )          
-
+########### original AIRRscape visualization code -  CDR3 motif toplogy plots ##########
 ## alternate phylogenies of CDR3 motifs of selected sequences from datatable
-      v <- reactiveValues(doPlot = FALSE)
+  v <- reactiveValues(doPlot = FALSE)
+  
+  observeEvent(input$go, {
+    v$doPlot <- input$go
+  })
+  
+  observeEvent(input$plottab, {
+    v$doPlot <- FALSE
+  })  
+  
+  output$phyloPlot <- renderPlot(
+    width = 1200,
+    # width = function() input$width, ## can comment this width parameter out, only use width2
+    height = function() input$height, {
+      par(family = "mono", mar=c(0.3, 0, 0.3, 0) + 2.2)
+      if (v$doPlot == FALSE) return()
       
-      observeEvent(input$go, {
-        v$doPlot <- input$go
+      
+      isolate({
+        data <- if (input$plottab == "NJ") {
+          filteredData <- isolate({filteredDSpartial2()})
+          filteredData.y <- t(sapply(strsplit(filteredData[,2],""), tolower))
+          rownames(filteredData.y) <- filteredData[,1]
+          as.AAbin(filteredData.y)
+          seqs = as.phyDat(filteredData.y, type = "AA")
+          dm = dist.ml(seqs, model="WAG")
+          tree = midpoint(NJ(dm))
+          tree$edge.length[tree$edge.length<0] <- 0
+          tree$edge.length <- tree$edge.length * 0.15
+        } else if (input$plottab == "Parsimony") {
+          filteredData <- isolate({filteredDSpartial2()})
+          filteredData.y <- t(sapply(strsplit(filteredData[,2],""), tolower))
+          rownames(filteredData.y) <- filteredData[,1]
+          as.AAbin(filteredData.y)
+          seqs = as.phyDat(filteredData.y, type = "AA")
+          dm = dist.ml(seqs, model="WAG")
+          tree1 = NJ(dm)
+          tree1$edge.length[tree1$edge.length<0] <- 0
+          tree <- pratchet(seqs, start = tree1, maxit=500,
+                           minit=10, k=10, trace=0)
+          tree <- acctran(tree1, seqs) # added
+        } else if (input$plottab == "up to 500 nearest sequences to a single selected mAb - Parsimony; 100% CDR3 AA identity (Briney 2019)") {
+          filteredDataall <- isolate({filteredDSall2()})
+          filteredDataall.y <- t(sapply(strsplit(filteredDataall[,2],""), tolower))
+          rownames(filteredDataall.y) <- filteredDataall[,1]
+          as.AAbin(filteredDataall.y)
+          seqsall = as.phyDat(filteredDataall.y, type = "AA")
+          dmall = dist.ml(seqsall, model="WAG")
+          ## now sort this matrix by single selected sequence (just the sequence_id, so it is filteredDSpartial2id from above)
+          filteredData1ID <- isolate({filteredDSpartial2id()})
+          dmall.matrix <- as.matrix(dmall) %>% as.data.frame() %>% arrange(across(all_of(filteredData1ID)))   ## was arrange_at(1) but this is superceded by arrange(across(1))
+          dmall.matrix <- rownames_to_column(dmall.matrix, var = "sequence_id")
+          ### for distance thresholding
+          dmall.matrix <- dmall.matrix %>% select(sequence_id, all_of(filteredData1ID))
+          colnames(dmall.matrix)[2] <- "DIST"
+          dmall.matrix <- dmall.matrix %>% filter(DIST < 0.02) # now this will change in each else if
+          #### end distance thresholding
+          dmall.matrix <- dmall.matrix %>% select(sequence_id)
+          dm.matrix <- dmall.matrix %>% separate(sequence_id, into = c("SEQ", "vgene", "cdr3_aa_imgt"), sep = "_", remove = FALSE, convert = TRUE, extra = "merge", fill = "left") %>%
+            select(sequence_id, cdr3_aa_imgt) %>% slice_head(n = 500) ## okay if this is more than what is in the set!
+          ## now with new subset make new matrix & tree
+          filteredData.y <- t(sapply(strsplit(dm.matrix[,2],""), tolower))
+          rownames(filteredData.y) <- dm.matrix[,1]
+          as.AAbin(filteredData.y)
+          seqs = as.phyDat(filteredData.y, type = "AA")
+          dm = dist.ml(seqs, model="WAG")
+          tree1 = NJ(dm)
+          tree1$edge.length[tree1$edge.length<0] <- 0
+          tree <- pratchet(seqs, start = tree1, maxit=500,
+                           minit=10, k=10, trace=0)
+          tree <- acctran(tree1, seqs) # added
+          filteredData <- isolate({filteredDSpartial2()})  ### added because not in this option but now need for changing title below
+        } else if (input$plottab == "up to 500 nearest sequences to a single selected mAb - Parsimony; 80% CDR3 AA identity (Soto 2019)") {
+          filteredDataall <- isolate({filteredDSall2()})
+          filteredDataall.y <- t(sapply(strsplit(filteredDataall[,2],""), tolower))
+          rownames(filteredDataall.y) <- filteredDataall[,1]
+          as.AAbin(filteredDataall.y)
+          seqsall = as.phyDat(filteredDataall.y, type = "AA")
+          dmall = dist.ml(seqsall, model="WAG")
+          ## now sort this matrix by single selected sequence (just the sequence_id, so it is filteredDSpartial2id from above)
+          filteredData1ID <- isolate({filteredDSpartial2id()})
+          dmall.matrix <- as.matrix(dmall) %>% as.data.frame() %>% arrange(across(all_of(filteredData1ID)))
+          dmall.matrix <- rownames_to_column(dmall.matrix, var = "sequence_id")
+          ### for distance thresholding
+          dmall.matrix <- dmall.matrix %>% select(sequence_id, all_of(filteredData1ID))
+          colnames(dmall.matrix)[2] <- "DIST"
+          dmall.matrix <- dmall.matrix %>% filter(DIST < 0.301) ## now this will change in each else if
+          #### end distance thresholding
+          dmall.matrix <- dmall.matrix %>% select(sequence_id)
+          dm.matrix <- dmall.matrix %>% separate(sequence_id, into = c("SEQ", "vgene", "cdr3_aa_imgt"), sep = "_", remove = FALSE, convert = TRUE, extra = "merge", fill = "left") %>%
+            select(sequence_id, cdr3_aa_imgt) %>% slice_head(n = 500) ## okay if this is more than what is in the set!
+          ## now with new subset make new matrix & tree
+          filteredData.y <- t(sapply(strsplit(dm.matrix[,2],""), tolower))
+          rownames(filteredData.y) <- dm.matrix[,1]
+          as.AAbin(filteredData.y)
+          seqs = as.phyDat(filteredData.y, type = "AA")
+          dm = dist.ml(seqs, model="WAG")
+          tree1 = NJ(dm)
+          tree1$edge.length[tree1$edge.length<0] <- 0
+          tree <- pratchet(seqs, start = tree1, maxit=500,
+                           minit=10, k=10, trace=0)
+          tree <- acctran(tree1, seqs) # added
+          filteredData <- isolate({filteredDSpartial2()})  ### added because not in this option but now need for changing title below
+        } else if (input$plottab == "up to 500 nearest sequences to a single selected mAb - Parsimony; 70% CDR3 AA identity (Setliff 2018)") {
+          filteredDataall <- isolate({filteredDSall2()})
+          filteredDataall.y <- t(sapply(strsplit(filteredDataall[,2],""), tolower))
+          rownames(filteredDataall.y) <- filteredDataall[,1]
+          as.AAbin(filteredDataall.y)
+          seqsall = as.phyDat(filteredDataall.y, type = "AA")
+          dmall = dist.ml(seqsall, model="WAG")
+          ## now sort this matrix by single selected sequence (just the sequence_id, so it is filteredDSpartial2id from above)
+          filteredData1ID <- isolate({filteredDSpartial2id()})
+          dmall.matrix <- as.matrix(dmall) %>% as.data.frame() %>% arrange(across(all_of(filteredData1ID)))
+          dmall.matrix <- rownames_to_column(dmall.matrix, var = "sequence_id")
+          ### for distance thresholding
+          dmall.matrix <- dmall.matrix %>% select(sequence_id, all_of(filteredData1ID))  ## getting this error message Use `all_of(filteredData1ID)` instead of `filteredData1ID` to silence this message.
+          colnames(dmall.matrix)[2] <- "DIST"
+          dmall.matrix <- dmall.matrix %>% filter(DIST < 0.451) ## now this will change in each else if
+          #### end distance thresholding
+          dmall.matrix <- dmall.matrix %>% select(sequence_id)
+          dm.matrix <- dmall.matrix %>% separate(sequence_id, into = c("SEQ", "vgene", "cdr3_aa_imgt"), sep = "_", remove = FALSE, convert = TRUE, extra = "merge", fill = "left") %>%
+            select(sequence_id, cdr3_aa_imgt) %>% slice_head(n = 500) ## okay if this is more than what is in the set!
+          ## now with new subset make new matrix & tree
+          filteredData.y <- t(sapply(strsplit(dm.matrix[,2],""), tolower))
+          rownames(filteredData.y) <- dm.matrix[,1]
+          as.AAbin(filteredData.y)
+          seqs = as.phyDat(filteredData.y, type = "AA")
+          dm = dist.ml(seqs, model="WAG")
+          tree1 = NJ(dm)
+          tree1$edge.length[tree1$edge.length<0] <- 0
+          tree <- pratchet(seqs, start = tree1, maxit=500,
+                           minit=10, k=10, trace=0)
+          tree <- acctran(tree1, seqs) # added
+          filteredData <- isolate({filteredDSpartial2()})  ### added because not in this option but now need for changing title below
+        } else {
+          filteredDataall <- isolate({filteredDSall2()})
+          filteredDataall.y <- t(sapply(strsplit(filteredDataall[,2],""), tolower))
+          rownames(filteredDataall.y) <- filteredDataall[,1]
+          as.AAbin(filteredDataall.y)
+          seqsall = as.phyDat(filteredDataall.y, type = "AA")
+          dmall = dist.ml(seqsall, model="WAG")
+          ## now sort this matrix by single selected sequence (just the sequence_id, so it is filteredDSpartial2id from above)
+          filteredData1ID <- isolate({filteredDSpartial2id()})
+          dmall.matrix <- as.matrix(dmall) %>% as.data.frame() %>% arrange(across(all_of(filteredData1ID)))
+          dmall.matrix <- rownames_to_column(dmall.matrix, var = "sequence_id")
+          ### for distance thresholding
+          dmall.matrix <- dmall.matrix %>% select(sequence_id, all_of(filteredData1ID))
+          colnames(dmall.matrix)[2] <- "DIST"
+          dmall.matrix <- dmall.matrix %>% filter(DIST < 0.751)  ## now this will change in each else if
+          #### end distance thresholding
+          dmall.matrix <- dmall.matrix %>% select(sequence_id)
+          dm.matrix <- dmall.matrix %>% separate(sequence_id, into = c("SEQ", "vgene", "cdr3_aa_imgt"), sep = "_", remove = FALSE, convert = TRUE, extra = "merge", fill = "left") %>%
+            select(sequence_id, cdr3_aa_imgt) %>% slice_head(n = 500) ## okay if this is more than what is in the set!
+          ## now with new subset make new matrix & tree
+          filteredData.y <- t(sapply(strsplit(dm.matrix[,2],""), tolower))
+          rownames(filteredData.y) <- dm.matrix[,1]
+          as.AAbin(filteredData.y)
+          seqs = as.phyDat(filteredData.y, type = "AA")
+          dm = dist.ml(seqs, model="WAG")
+          tree1 = NJ(dm)
+          tree1$edge.length[tree1$edge.length<0] <- 0
+          tree <- pratchet(seqs, start = tree1, maxit=500,
+                           minit=10, k=10, trace=0)
+          tree <- acctran(tree1, seqs) # added, adds edge lengths
+          filteredData <- isolate({filteredDSpartial2()})  ### added because not in this option but now need for changing title below
+        }
+        ### this changes the colors based on source - note these are unique to the datasets...
+        tipcolors <- def(tree$tip.label, "hc" = "gray20", "nielsen" = "coral", "galson" = "indianred", "binder" = "orange", "kc" = "sienna", "mt1214" = "limegreen", "nih45" = "seagreen", "bulk-cap" = "darkgreen", "d13" = "blue", "Parameswaran" = "goldenrod", "SARS-CoV2-mAb" = "orchid", "plasmablasts" = "orchid", "denmab" = "orchid", "HIV-IEDBmAb" = "orchid", "HIV-CATNAPmAb" = "orchid", "HIV-Yacoob-mAb" = "orchid",default = "black", regexp = TRUE)
+        ### below changing to midpoint of tree
+        plot(midpoint(tree), lab4ut="axial",
+             edge.width=2, label.offset = 0, cex = 1.2, align.tip.label = TRUE, adj = 1, no.margin = FALSE, font = 4, tip.color = tipcolors, x.lim = (input$width2)/4)  ## x.lim breaks parsimony and some NJ
+        add.scale.bar(cex = 1.2, font = 4, lwd = 2)  ## was x = 1, y = -0.1, not sure if this will always work or be meaningful  , x.lim = 15 can also try x.lim = 50 - seems to work only with nearest 50/500 not with NJ or parsimony
+        gjcdr3.title <- filteredData
+        gjcdr3.title$cdr3length_imgt <- as.numeric(gjcdr3.title$cdr3length_imgt)
+        gjcdr3.title$G_J_CDR3 <- paste("Topology of selected CDR3 motifs:", gjcdr3.title$vgf_jgene, gjcdr3.title$cdr3length_imgt, "aa", sep=" ")
+        gjcdr3.title <- gjcdr3.title %>%
+          select(G_J_CDR3)
+        gjcdr3.titleID <- gjcdr3.title$G_J_CDR3[1]
+        title(gjcdr3.titleID, family = "sans")
       })
-      
-      observeEvent(input$plottab, {
-        v$doPlot <- FALSE
-      })  
-      
-      output$phyloPlot <- renderPlot(
-        height = function() input$height,
-        width = function() input$width, {
-        par(family = "mono", mar=c(0.3, 0, 0.3, 0) + 2.2)
-        if (v$doPlot == FALSE) return()
-        
-        
-        isolate({
-          data <- if (input$plottab == "NJ") {
-            filteredData <- isolate({filteredDSpartial2()})
-            filteredData.y <- t(sapply(strsplit(filteredData[,2],""), tolower))
-            rownames(filteredData.y) <- filteredData[,1]
-            as.AAbin(filteredData.y)
-            seqs = as.phyDat(filteredData.y, type = "AA")
-            dm = dist.ml(seqs, model="WAG")
-            tree = midpoint(NJ(dm))
-            tree$edge.length[tree$edge.length<0] <- 0
-            tree$edge.length <- tree$edge.length * 0.15
-          } else if (input$plottab == "Parsimony") {
-            filteredData <- isolate({filteredDSpartial2()})
-            filteredData.y <- t(sapply(strsplit(filteredData[,2],""), tolower))
-            rownames(filteredData.y) <- filteredData[,1]
-            as.AAbin(filteredData.y)
-            seqs = as.phyDat(filteredData.y, type = "AA")
-            dm = dist.ml(seqs, model="WAG")
-            tree1 = NJ(dm)
-            tree1$edge.length[tree1$edge.length<0] <- 0
-            tree <- pratchet(seqs, start = tree1, maxit=500,
-                             minit=10, k=10, trace=0)
-            tree <- acctran(tree1, seqs) # added
-          } else if (input$plottab == "up to 500 nearest sequences to a single selected mAb - Parsimony; 100% CDR3 identity (Briney 2019)") {
-            filteredDataall <- isolate({filteredDSall2()})
-            filteredDataall.y <- t(sapply(strsplit(filteredDataall[,2],""), tolower))
-            rownames(filteredDataall.y) <- filteredDataall[,1]
-            as.AAbin(filteredDataall.y)
-            seqsall = as.phyDat(filteredDataall.y, type = "AA")
-            dmall = dist.ml(seqsall, model="WAG")
-            ## now sort this matrix by single selected sequence (just the sequence_id, so it is filteredDSpartial2id from above)
-            filteredData1ID <- isolate({filteredDSpartial2id()})
-            dmall.matrix <- as.matrix(dmall) %>% as.data.frame() %>% arrange(across(all_of(filteredData1ID)))   ## was arrange_at(1) but this is superceded by arrange(across(1))
-            dmall.matrix <- rownames_to_column(dmall.matrix, var = "sequence_id")
-            ### for distance thresholding
-            dmall.matrix <- dmall.matrix %>% select(sequence_id, all_of(filteredData1ID))
-            colnames(dmall.matrix)[2] <- "DIST"
-            dmall.matrix <- dmall.matrix %>% filter(DIST < 0.02) # now this will change in each else if
-            #### end distance thresholding
-            dmall.matrix <- dmall.matrix %>% select(sequence_id)
-            dm.matrix <- dmall.matrix %>% separate(sequence_id, into = c("SEQ", "gene", "cdr3_aa_imgt"), sep = "_", remove = FALSE, convert = TRUE, extra = "merge", fill = "left") %>%
-              select(sequence_id, cdr3_aa_imgt) %>% slice_head(n = 500) ## okay if this is more than what is in the set!
-            ## now with new subset make new matrix & tree
-            filteredData.y <- t(sapply(strsplit(dm.matrix[,2],""), tolower))
-            rownames(filteredData.y) <- dm.matrix[,1]
-            as.AAbin(filteredData.y)
-            seqs = as.phyDat(filteredData.y, type = "AA")
-            dm = dist.ml(seqs, model="WAG")
-            tree1 = NJ(dm)
-            tree1$edge.length[tree1$edge.length<0] <- 0
-            tree <- pratchet(seqs, start = tree1, maxit=500,
-                             minit=10, k=10, trace=0)
-            tree <- acctran(tree1, seqs) # added
-            filteredData <- isolate({filteredDSpartial2()})  ### added because not in this option but now need for changing title below
-          } else if (input$plottab == "up to 500 nearest sequences to a single selected mAb - Parsimony; 80% CDR3 identity (Soto 2019)") {
-            filteredDataall <- isolate({filteredDSall2()})
-            filteredDataall.y <- t(sapply(strsplit(filteredDataall[,2],""), tolower))
-            rownames(filteredDataall.y) <- filteredDataall[,1]
-            as.AAbin(filteredDataall.y)
-            seqsall = as.phyDat(filteredDataall.y, type = "AA")
-            dmall = dist.ml(seqsall, model="WAG")
-            ## now sort this matrix by single selected sequence (just the sequence_id, so it is filteredDSpartial2id from above)
-            filteredData1ID <- isolate({filteredDSpartial2id()})
-            dmall.matrix <- as.matrix(dmall) %>% as.data.frame() %>% arrange(across(all_of(filteredData1ID)))
-            dmall.matrix <- rownames_to_column(dmall.matrix, var = "sequence_id")
-            ### for distance thresholding
-            dmall.matrix <- dmall.matrix %>% select(sequence_id, all_of(filteredData1ID))
-            colnames(dmall.matrix)[2] <- "DIST"
-            dmall.matrix <- dmall.matrix %>% filter(DIST < 0.301) ## now this will change in each else if
-            #### end distance thresholding
-            dmall.matrix <- dmall.matrix %>% select(sequence_id)
-            dm.matrix <- dmall.matrix %>% separate(sequence_id, into = c("SEQ", "gene", "cdr3_aa_imgt"), sep = "_", remove = FALSE, convert = TRUE, extra = "merge", fill = "left") %>%
-              select(sequence_id, cdr3_aa_imgt) %>% slice_head(n = 500) ## okay if this is more than what is in the set!
-            ## now with new subset make new matrix & tree
-            filteredData.y <- t(sapply(strsplit(dm.matrix[,2],""), tolower))
-            rownames(filteredData.y) <- dm.matrix[,1]
-            as.AAbin(filteredData.y)
-            seqs = as.phyDat(filteredData.y, type = "AA")
-            dm = dist.ml(seqs, model="WAG")
-            tree1 = NJ(dm)
-            tree1$edge.length[tree1$edge.length<0] <- 0
-            tree <- pratchet(seqs, start = tree1, maxit=500,
-                             minit=10, k=10, trace=0)
-            tree <- acctran(tree1, seqs) # added
-            filteredData <- isolate({filteredDSpartial2()})  ### added because not in this option but now need for changing title below
-          } else if (input$plottab == "up to 500 nearest sequences to a single selected mAb - Parsimony; 70% CDR3 identity (Setliff 2018)") {
-            filteredDataall <- isolate({filteredDSall2()})
-            filteredDataall.y <- t(sapply(strsplit(filteredDataall[,2],""), tolower))
-            rownames(filteredDataall.y) <- filteredDataall[,1]
-            as.AAbin(filteredDataall.y)
-            seqsall = as.phyDat(filteredDataall.y, type = "AA")
-            dmall = dist.ml(seqsall, model="WAG")
-            ## now sort this matrix by single selected sequence (just the sequence_id, so it is filteredDSpartial2id from above)
-            filteredData1ID <- isolate({filteredDSpartial2id()})
-            dmall.matrix <- as.matrix(dmall) %>% as.data.frame() %>% arrange(across(all_of(filteredData1ID)))
-            dmall.matrix <- rownames_to_column(dmall.matrix, var = "sequence_id")
-            ### for distance thresholding
-            dmall.matrix <- dmall.matrix %>% select(sequence_id, all_of(filteredData1ID))  ## getting this error message Use `all_of(filteredData1ID)` instead of `filteredData1ID` to silence this message.
-            colnames(dmall.matrix)[2] <- "DIST"
-            dmall.matrix <- dmall.matrix %>% filter(DIST < 0.451) ## now this will change in each else if
-            #### end distance thresholding
-            dmall.matrix <- dmall.matrix %>% select(sequence_id)
-            dm.matrix <- dmall.matrix %>% separate(sequence_id, into = c("SEQ", "gene", "cdr3_aa_imgt"), sep = "_", remove = FALSE, convert = TRUE, extra = "merge", fill = "left") %>%
-              select(sequence_id, cdr3_aa_imgt) %>% slice_head(n = 500) ## okay if this is more than what is in the set!
-            ## now with new subset make new matrix & tree
-            filteredData.y <- t(sapply(strsplit(dm.matrix[,2],""), tolower))
-            rownames(filteredData.y) <- dm.matrix[,1]
-            as.AAbin(filteredData.y)
-            seqs = as.phyDat(filteredData.y, type = "AA")
-            dm = dist.ml(seqs, model="WAG")
-            tree1 = NJ(dm)
-            tree1$edge.length[tree1$edge.length<0] <- 0
-            tree <- pratchet(seqs, start = tree1, maxit=500,
-                             minit=10, k=10, trace=0)
-            tree <- acctran(tree1, seqs) # added
-            filteredData <- isolate({filteredDSpartial2()})  ### added because not in this option but now need for changing title below
-          } else {
-            filteredDataall <- isolate({filteredDSall2()})
-            filteredDataall.y <- t(sapply(strsplit(filteredDataall[,2],""), tolower))
-            rownames(filteredDataall.y) <- filteredDataall[,1]
-            as.AAbin(filteredDataall.y)
-            seqsall = as.phyDat(filteredDataall.y, type = "AA")
-            dmall = dist.ml(seqsall, model="WAG")
-            ## now sort this matrix by single selected sequence (just the sequence_id, so it is filteredDSpartial2id from above)
-            filteredData1ID <- isolate({filteredDSpartial2id()})
-            dmall.matrix <- as.matrix(dmall) %>% as.data.frame() %>% arrange(across(all_of(filteredData1ID)))
-            dmall.matrix <- rownames_to_column(dmall.matrix, var = "sequence_id")
-            ### for distance thresholding
-             dmall.matrix <- dmall.matrix %>% select(sequence_id, all_of(filteredData1ID))
-            colnames(dmall.matrix)[2] <- "DIST"
-            dmall.matrix <- dmall.matrix %>% filter(DIST < 0.751)  ## now this will change in each else if
-            #### end distance thresholding
-            dmall.matrix <- dmall.matrix %>% select(sequence_id)
-            dm.matrix <- dmall.matrix %>% separate(sequence_id, into = c("SEQ", "gene", "cdr3_aa_imgt"), sep = "_", remove = FALSE, convert = TRUE, extra = "merge", fill = "left") %>%
-              select(sequence_id, cdr3_aa_imgt) %>% slice_head(n = 500) ## okay if this is more than what is in the set!
-            ## now with new subset make new matrix & tree
-            filteredData.y <- t(sapply(strsplit(dm.matrix[,2],""), tolower))
-            rownames(filteredData.y) <- dm.matrix[,1]
-            as.AAbin(filteredData.y)
-            seqs = as.phyDat(filteredData.y, type = "AA")
-            dm = dist.ml(seqs, model="WAG")
-            tree1 = NJ(dm)
-            tree1$edge.length[tree1$edge.length<0] <- 0
-            tree <- pratchet(seqs, start = tree1, maxit=500,
-                             minit=10, k=10, trace=0)
-            tree <- acctran(tree1, seqs) # added, adds edge lengths
-            filteredData <- isolate({filteredDSpartial2()})  ### added because not in this option but now need for changing title below
-          }
-          ### this changes the colors based on source - note these are unique to the datasets...
-          tipcolors <- def(tree$tip.label, "hc" = "gray20", "nielsen" = "coral", "galson" = "indianred", "binder" = "orange", "kc" = "sienna", "mt1214" = "limegreen", "nih45" = "seagreen", "bulk-cap" = "darkgreen", "d13" = "blue", "Parameswaran" = "goldenrod", "SARS-CoV2-mAb" = "orchid", "plasmablasts" = "orchid", "denmab" = "orchid", "HIV-IEDBmAb" = "orchid", "HIV-CATNAPmAb" = "orchid", "HIV-Yacoob-mAb" = "orchid",default = "black", regexp = TRUE)
-          ### below changing to midpoint of tree
-          plot(midpoint(tree), lab4ut="axial",
-               edge.width=2, label.offset = 0, cex = 1.2, align.tip.label = TRUE, adj = 1, no.margin = FALSE, font = 4, tip.color = tipcolors)  ## x.lim breaks parsimony and some NJ
-          add.scale.bar(cex = 1.2, font = 4, lwd = 2)  ## was x = 1, y = -0.1, not sure if this will always work or be meaningful  , x.lim = 15 can also try x.lim = 50 - seems to work only with nearest 50/500 not with NJ or parsimony
-          gjcdr3.title <- filteredData
-          gjcdr3.title$cdr3length_imgt <- as.numeric(gjcdr3.title$cdr3length_imgt)
-          gjcdr3.title$G_J_CDR3 <- paste("Topology of selected CDR3 motifs:", gjcdr3.title$gf_jgene, gjcdr3.title$cdr3length_imgt, "aa", sep=" ")
-          gjcdr3.title <- gjcdr3.title %>%
-            select(G_J_CDR3)
-          gjcdr3.titleID <- gjcdr3.title$G_J_CDR3[1]
-          title(gjcdr3.titleID, family = "sans")
-        })
-      })
-      
-      observeEvent(input$screensht, {
-        screenshot()
-      })  
-      
+    })
+  
+  observeEvent(input$screensht, {
+    screenshot(filename = "AIRRscape_screenshot", scale = 3)
+  })  
+  
 }
-
+onStop(function() { print("bye")})
 shinyApp(ui = ui, server = server)

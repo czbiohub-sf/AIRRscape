@@ -1,4 +1,4 @@
-sequence_id	cregion	cdr3_aa_imgt	gene	gf_jgene	gf	jgene	cdr3length_imgt	shm	reads_per_clone	ncount	shm_mean	shm_max
+sequence_id	cregion	cdr3_aa_imgt	vgene	vgf_jgene	vgf	jgene	cdr3length_imgt	shm	reads_per_clone	ncount	shm_mean	shm_max
 HIV-IEDBmAb-1281	IgH	TRDRSRVRYFDRESGWFDP	IGHV1-69	IGHV1_IGHJ5	IGHV1	IGHJ5	19	10.42	NA	2	10.97	11.53
 HIV-IEDBmAb-2424	IgH	ARENADYGSDYYFGMDV	IGHV3-66	IGHV3_IGHJ6	IGHV3	IGHJ6	17	13.33	NA	1	13.33	13.33
 HIV-IEDBmAb-1006-15D	IgH	ARLHYSDRSGSYFNDVFHM	IGHV5-51	IGHV5_IGHJ6	IGHV5	IGHJ6	19	8.33	NA	1	8.33	8.33

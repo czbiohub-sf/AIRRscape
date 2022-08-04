@@ -1,4 +1,4 @@
-sequence_id	cdr3_aa_imgt	gf_jgene	cregion	gene	gf	jgene	cdr3length_imgt	shm	shm_max	ncount	shm_mean	ncountfull
+sequence_id	cdr3_aa_imgt	vgf_jgene	cregion	vgene	vgf	jgene	cdr3length_imgt	shm	shm_max	ncount	shm_mean	ncountfull
 hiv-bulk-mt1214-1	AAAAGVLMVYATLGL	IGHV1_IGHJ4	IgM	IGHV1-24	IGHV1	IGHJ4	15	0.68	32.93	472	11.15	1710
 hiv-bulk-mt1214-2	AAAALTGDY	IGHV3_IGHJ4	IgM	IGHV3-9	IGHV3	IGHJ4	9	0	23.18	303	6.81	1030
 hiv-bulk-mt1214-3	AAAALYDTWSAFDI	IGHV1_IGHJ3	IgM	IGHV1-58	IGHV1	IGHJ3	14	0	23.71	154	7.54	391

@@ -1,4 +1,4 @@
-sequence_id	cdr3_aa_imgt	gf_jgene	cregion	gene	gf	jgene	cdr3length_imgt	shm	shm_max	ncount	shm_mean	ncountfull
+sequence_id	cdr3_aa_imgt	vgf_jgene	cregion	vgene	vgf	jgene	cdr3length_imgt	shm	shm_max	ncount	shm_mean	ncountfull
 cov2-bulk-nielsen-p7450-1	AAAAGFGESPLNY	IGHV1_IGHJ4	IgH	IGHV1-58	IGHV1	IGHJ4	13	0	14.44	176	2.69	4066
 cov2-bulk-nielsen-p7450-2	AAAEVNCSGGSCYSHWFDP	IGHV1_IGHJ5	IgH	IGHV1-58	IGHV1	IGHJ5	19	1.05	13.09	52	1.14	832
 cov2-bulk-nielsen-p7450-3	AAAEVNCSGGSCYSHWFDP	IGHV3_IGHJ5	IgH	IGHV3-21	IGHV3	IGHJ5	19	0	13.9	39	5.08	573

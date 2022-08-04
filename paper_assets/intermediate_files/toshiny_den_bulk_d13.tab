@@ -1,4 +1,4 @@
-sequence_id	cdr3_aa_imgt	gf_jgene	cregion	gene	gf	jgene	cdr3length_imgt	shm	shm_max	ncount	shm_mean	ncountfull	reads_per_clone
+sequence_id	cdr3_aa_imgt	vgf_jgene	cregion	vgene	vgf	jgene	cdr3length_imgt	shm	shm_max	ncount	shm_mean	ncountfull	reads_per_clone
 den-bulk-d13enrich-1	AAAEWEGYFDD	IGHV1_IGHJ4	IgA	IGHV1-46	IGHV1	IGHJ4	11	20.9	20.9	66	1.47	101	1
 den-bulk-d13enrich-2	AAAGIAAAGSRPHDAFDI	IGHV1_IGHJ3	IgM	IGHV1-58	IGHV1	IGHJ3	18	0	8.06	39	0.78	63	2
 den-bulk-d13enrich-3	AAAKFGGTPPYYYYYYMDV	IGHV4_IGHJ6	IgM	IGHV4-30-4	IGHV4	IGHJ6	19	0	11.91	83	0.61	129	1
