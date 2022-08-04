@@ -1,4 +1,4 @@
-# AIRRscape: an interactive tool for exploring B-cell receptor repertoires and antibody responses  
+![](airrscape_logo_and_name.png)
 ![](fig2b_forcomms.png)
 
 ## Dependencies & R Session Info
@@ -47,7 +47,7 @@ Note that after exploring one table for some time, it is possible to unwittingly
 Other warnings may occur if there are only 1 or 2 closely related CDR3 motifs: ```Warning: Error in [[: subscript out of bounds``` & ```Warning: Error in nj: cannot build an NJ tree with less than 3 observations```. Finally, if the user has selected antibodies from the table made via a bounding box rather than via clicking on a bin, the topology functions will not work and instead show an error: ```Error: argument is of length zero```. Note that when using the web portal, specific errors may not be shown, instead a generic error: ```Error: an error has occurred. Check your logs or contact the app author for clarification```.
 
 ## Citation
-To cite AIRRscape in publications, use:
+If you use AIRRscape, please cite our publication:
 
 **AIRRscape: an interactive tool for exploring B-cell receptor repertoires and antibody responses**
 
