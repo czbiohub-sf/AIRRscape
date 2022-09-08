@@ -10,7 +10,7 @@ Other attached packages:
 	_shinyscreenshot_0.2.0, phangorn_2.8.1, ape_5.6-2, seqinr_4.2-16, DT_0.23, forcats_0.5.1, stringr_1.4.0, dplyr_1.0.9, purrr_0.3.4, readr_2.1.2, tidyr_1.2.0, tibble_3.1.7, tidyverse_1.3.1, alakazam_1.2.0, ggplot2_3.3.6, shiny_1.7.1_
 
 ## Running AIRRscape
-**Launch AIRRscape at https://airrscape.czbiohub.org.** Basic instructions are shown in the left sidebar.
+**Launch AIRRscape at https://airrscape.czbiohub.org.** Basic instructions are shown in the left sidebar. When first launching, AIRRscape may take 10-20 seconds to load.
 
 To run AIRRscape locally, clone this repo, open the ```app.R``` file in RStudio, and then click "Run App". AIRRscape can run in a window of RStudio or as a tab in a web browser (recommended).
 
