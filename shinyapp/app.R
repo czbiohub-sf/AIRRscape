@@ -85,7 +85,7 @@ AIRRscapeprocess <- function(x, filter_columns = TRUE, filter_to_HC = TRUE, renu
     mutate(across(shm_max, round, 2)) %>% 
     mutate(across(shm_mean, round, 2))
   ## this will filter the dataset if filter_columns option is set to true - note the any_of which allows columns to be missing
-  vars2 <- c("sequence_id", "binding", "neutralization", "cregion", "cdr3_aa_imgt","vgene", "vgf_jgene", "vgf","jgene", "cdr3length_imgt", "shm", "shm_max", "shm_mean", "ncount", "reads_per_clone")
+  vars2 <- c("sequence_id", "binding", "neutralization", "cregion", "cdr3_aa_imgt","vgene", "vgf_jgene", "vgf","jgene", "cdr3length_imgt", "consensus_count", "duplicate_count", "clone_id", "shm", "shm_max", "shm_mean", "ncount", "reads_per_clone")
   if (filter_columns) {
     x <- x %>% select(any_of(vars2))
   }
@@ -230,8 +230,10 @@ ui <- fluidPage(
       p("- In the topology drop-down menu, the first 2 options will construct a NJ or parsimony topology from the selected set of antibodies in the table. The final 4 options will find the nearest sequences (up to 500) of a single selected antibody, with four possible distance thresholds. Use the height & width sliders to change the window size of the topology."),
       p("- Finally make sure to check that all antibodies in the table have the same CDR3 length or the topology calculation will fail."),
       h4("GitHub repo & citation:"),
-      p("To run AIRRscape locally and for more detailed usage instructions, see the ", a("README", href="https://github.com/czbiohub/AIRRscape", target="_blank"), " on GitHub."), #, target="_blank"
-      p("The AIRRscape ", a("publication", href="https://doi.org/10.1371/journal.pcbi.1010052", target="_blank"), " is available at PLOS Computational Biology."), # , target="_blank"
+      tags$div("To run AIRRscape locally and for more detailed usage instructions, see the ", tags$a(href="https://github.com/czbiohub/AIRRscape", "README", target="_blank"), " on GitHub."),
+      # p("To run AIRRscape locally and for more detailed usage instructions, see the ", a("README", href="https://github.com/czbiohub/AIRRscape", target="_blank"), " on GitHub."), #, target="_blank"
+      # p("The AIRRscape ", a("publication", href="https://doi.org/10.1371/journal.pcbi.1010052", target="_blank"), " is available at PLOS Computational Biology."), # , target="_blank"
+      tags$div("The AIRRscape ", tags$a(href="https://doi.org/10.1371/journal.pcbi.1010052", "publication", target="_blank"), " is available at PLOS Computational Biology."),
       h6("Questions? Please email: eric.waltari at czbiohub.org"),
       width = 4
     ),

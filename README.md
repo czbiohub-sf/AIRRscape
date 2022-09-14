@@ -18,7 +18,10 @@ Upon starting AIRRscape, the main panel shows basic instructions and options of 
 To view custom datasets (.tab or .tsv files in AIRR-C format), first use the _Import Data_ tab to upload datasets, convert+combine them, and then download the processed files. Next, upload these files and select "Custom datasets - IgH" or "Custom datasets - IgH combined" from the dropdown menu.
 
 ### _Import Data_ tab
-To import datasets, first upload each dataset separately (maximum 6). As long as they follow AIRR-C standards (.tab or .tsv), they will be automatically converted for viewing in AIRRscape. Metadata is not required; simply enter the name of each dataset, which will be used as labels in each faceted dataset. Then, click the combine button to begin processing the datasets. Note the processing occurs in the background, so next just click the two download buttons separately to get the processed files - depending on dataset size, it might take 10-20 seconds before the download begins. Upload these two files in the main _AIRRscape_ tab for viewing.
+To import datasets, first upload each dataset separately (maximum 6). As long as they follow AIRR-C standards (.tab or .tsv) and include some key columns, they will be automatically converted for viewing in AIRRscape. Metadata is not required; simply enter the name of each dataset, which will be used as labels in each faceted dataset. Then, click the combine button to begin processing the datasets. Note the processing occurs in the background, so next just click the two download buttons separately to get the processed files - depending on dataset size, it might take 10-20 seconds before the download begins. Upload these two files in the main _AIRRscape_ tab for viewing.
+
+Required dataset columns:
+ _v_call, j_call, v_identity, junction_aa_
 
 ### _AIRRscape_ tab
 The heatmaps split antibody repertoires into bins based on their germline V-gene family + J-gene assignments (x-axis) and their CDR3 lengths (y-axis). Select the fill color for the bins using the second dropdown menu in the sidebar: color by 1) average somatic hypermutation (SHM), 2) maximum SHM, or 3) percent of total (i.e. what percent of antibodies in that panel are found in that bin).
