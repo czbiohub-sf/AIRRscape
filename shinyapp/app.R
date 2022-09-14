@@ -231,7 +231,7 @@ ui <- fluidPage(
       p("- Finally make sure to check that all antibodies in the table have the same CDR3 length or the topology calculation will fail."),
       h4("GitHub repo & citation:"),
       p("To run AIRRscape locally and for more detailed usage instructions, see the ", a("README", href="https://github.com/czbiohub/AIRRscape", target="_blank"), " on GitHub."), #, target="_blank"
-      p("The AIRRscape ", a("publication", href="https://doi.org/10.1101/2022.03.24.485594", target="_blank"), " is available on bioRxiv."), # , target="_blank"
+      p("The AIRRscape ", a("publication", href="https://doi.org/10.1371/journal.pcbi.1010052", target="_blank"), " is available at PLOS Computational Biology."), # , target="_blank"
       h6("Questions? Please email: eric.waltari at czbiohub.org"),
       width = 4
     ),
@@ -244,7 +244,8 @@ ui <- fluidPage(
                  p("- Upload each separate tab/tsv file (maximum 6). AIRR-seq datasets following AIRR Community standards will be automatically converted for viewing in AIRRscape."),
                  p("- Enter the name of each dataset - these will be used to label each panel."),
                  p("- Click the combine button (Step 1 below) to make 2 copies of the combined datasets, one with separately labeled panels & one with all labels combined."), # , style = "text-indent: 1em;"
-                 p("- Click each download button to get the two files (Steps 2 & 3 below). Upload these two files in the left sidebar for viewing."),
+                 p("- Note the Step 1 processing occurs in the background, so next just click each download button to get the two files (Steps 2 & 3 below)."),
+                 p("- Upload these two files in the left sidebar for viewing in the AIRRscape tab."),
                  column(4,
                         br(),
                         fileInput(
