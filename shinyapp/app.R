@@ -346,9 +346,12 @@ server <- function(input, output, session) {
   
   ## need to add uploads1 <- NULL ???
   ## this only works if you include the if isn't null argument...also another tricky part is below where you specify these if selected (the inputdataset <- reactive({ part...), you need to add parentheses, so uploads1() and uploads2() !!!
+  ### to speed things up, moving from read.delim to read_tsv - but note this imports as tibble, not dataframe (https://www.rstudio.com/blog/tibble-1-0-0/)
+  # A handful of functions are don’t work with tibbles because they expect df[, 1] to return a vector, not a data frame. If you encounter one of these functions, use as.data.frame() to turn a tibble back to a data frame:
   uploads1 <- reactive({
     if (!is.null(input$calfile1)) {
-      upload1 <- read.delim(input$calfile1$datapath)
+      # upload1 <- read.delim(input$calfile1$datapath)
+      upload1 <- read_tsv(input$calfile1$datapath, lazy = FALSE) %>% as.data.frame()
       # upload1$sequence_id <- as.character(upload1$sequence_id)
       # upload1$cdr3_aa_imgt <- as.character(upload1$cdr3_aa_imgt)
       upload1
@@ -356,7 +359,8 @@ server <- function(input, output, session) {
   })
   uploads2 <- reactive({
     if (!is.null(input$calfile2)) {
-      upload2 <- read.delim(input$calfile2$datapath)
+      # upload2 <- read.delim(input$calfile2$datapath)
+      upload2 <- read_tsv(input$calfile2$datapath, lazy = FALSE) %>% as.data.frame()
       # upload2$sequence_id <- as.character(upload2$sequence_id)
       # upload2$cdr3_aa_imgt <- as.character(upload2$cdr3_aa_imgt)
       upload2
@@ -364,25 +368,37 @@ server <- function(input, output, session) {
   })
   uploads3 <- reactive({
     if (!is.null(input$calfile3)) {
-      upload3 <- read.delim(input$calfile3$datapath)
+      # upload3 <- read.delim(input$calfile3$datapath)
+      upload3 <- read_tsv(input$calfile3$datapath, lazy = FALSE) %>% as.data.frame()
+      # upload3$sequence_id <- as.character(upload3$sequence_id)
+      # upload3$cdr3_aa_imgt <- as.character(upload3$cdr3_aa_imgt)
       upload3
     }
   })
   uploads4 <- reactive({
     if (!is.null(input$calfile4)) {
-      upload4 <- read.delim(input$calfile4$datapath)
+      # upload4 <- read.delim(input$calfile4$datapath)
+      upload4 <- read_tsv(input$calfile4$datapath, lazy = FALSE) %>% as.data.frame()
+      # upload4$sequence_id <- as.character(upload4$sequence_id)
+      # upload4$cdr3_aa_imgt <- as.character(upload4$cdr3_aa_imgt)
       upload4
     }
   })
   uploads5 <- reactive({
     if (!is.null(input$calfile5)) {
-      upload5 <- read.delim(input$calfile5$datapath)
+      # upload5 <- read.delim(input$calfile5$datapath)
+      upload5 <- read_tsv(input$calfile5$datapath, lazy = FALSE) %>% as.data.frame()
+      # upload5$sequence_id <- as.character(upload5$sequence_id)
+      # upload5$cdr3_aa_imgt <- as.character(upload5$cdr3_aa_imgt)
       upload5
     }
   })
   uploads6 <- reactive({
     if (!is.null(input$calfile6)) {
-      upload6 <- read.delim(input$calfile6$datapath)
+      # upload6 <- read.delim(input$calfile6$datapath)
+      upload6 <- read_tsv(input$calfile6$datapath, lazy = FALSE) %>% as.data.frame()
+      # upload6$sequence_id <- as.character(upload6$sequence_id)
+      # upload6$cdr3_aa_imgt <- as.character(upload6$cdr3_aa_imgt)
       upload6
     }
   })
@@ -525,7 +541,7 @@ server <- function(input, output, session) {
     # ordering <- unique(c(paste0(input$name1),paste0(input$name2),paste0(input$name3),paste0(input$name4),paste0(input$name5),paste0(input$name6)))
     # toshiny.yourdataset.all$id <- factor(toshiny.yourdataset.all$id, levels = ordering)
     toshiny.yourdataset.all
-    # first maybe don't need if usign eventReactive rather than just Reactive, on second thought yes do need
+    # first maybe don't need if using eventReactive rather than just Reactive, on second thought yes do need
   })
   
   
@@ -558,7 +574,8 @@ server <- function(input, output, session) {
       paste('yourdata_filteredcombined_separatepanels', Sys.Date(), '.tsv', sep = '')
     },
     content = function(file){
-      write.table(toshiny.yourdataset.all.renamed(),file, sep = "\t", row.names = FALSE)
+      # write.table(toshiny.yourdataset.all.renamed(),file, sep = "\t", row.names = FALSE)
+      write_tsv(toshiny.yourdataset.all.renamed(),file)
     }
   )
   
@@ -567,7 +584,8 @@ server <- function(input, output, session) {
       paste('yourdata_filteredcombined_singleheatmap', Sys.Date(), '.tsv', sep = '')
     },
     content = function(file){
-      write.table(toshiny.yourdataset.allc.renamed(),file, sep = "\t", row.names = FALSE)
+      # write.table(toshiny.yourdataset.allc.renamed(),file, sep = "\t", row.names = FALSE)
+      write_tsv(toshiny.yourdataset.allc.renamed(),file)
     }
   )      
   
@@ -576,22 +594,24 @@ server <- function(input, output, session) {
   
 ## more recent addition - where converted/combined datasets are added to AIRRscape  
 ## this only works if you include the if isn't null argument...also another tricky part is below where you specify these if selected (the inputdataset <- reactive({ part...), you need to add parentheses, so uploads11() and uploads12() !!!
+  ### to speed things up, moving from read.delim to read_tsv - but note this imports as tibble, not dataframe (https://www.rstudio.com/blog/tibble-1-0-0/)
+  # A handful of functions are don’t work with tibbles because they expect df[, 1] to return a vector, not a data frame. If you encounter one of these functions, use as.data.frame() to turn a tibble back to a data frame:
   uploads11 <- reactive({
     if (!is.null(input$yourfile1)) {
-    # upload11 <- read_tsv(input$yourfile1$datapath) %>% as.data.frame()
-    upload11 <- read.delim(input$yourfile1$datapath)
-    # upload11$sequence_id <- as.character(upload11$sequence_id)
-    # upload11$cdr3_aa_imgt <- as.character(upload11$cdr3_aa_imgt)
+    upload11 <- read_tsv(input$yourfile1$datapath) %>% as.data.frame()
+    # upload11 <- read.delim(input$yourfile1$datapath)
+    upload11$sequence_id <- as.character(upload11$sequence_id)
+    upload11$cdr3_aa_imgt <- as.character(upload11$cdr3_aa_imgt)
     upload11
     }
   })
 
   uploads12 <- reactive({
     if (!is.null(input$yourfile2)) {
-      # upload12 <- read_tsv(input$yourfile2$datapath) %>% as.data.frame()
-      upload12 <- read.delim(input$yourfile2$datapath)
-      # upload12$sequence_id <- as.character(upload12$sequence_id)
-      # upload12$cdr3_aa_imgt <- as.character(upload12$cdr3_aa_imgt)
+      upload12 <- read_tsv(input$yourfile2$datapath) %>% as.data.frame()
+      # upload12 <- read.delim(input$yourfile2$datapath)
+      upload12$sequence_id <- as.character(upload12$sequence_id)
+      upload12$cdr3_aa_imgt <- as.character(upload12$cdr3_aa_imgt)
       upload12
     }
   })
@@ -817,7 +837,8 @@ server <- function(input, output, session) {
       paste('Filtered data-', Sys.Date(), '.csv', sep = '')
     },
     content = function(file){
-      write.csv(filteredDS()[input[["click_info_rows_all"]], ],file, row.names = FALSE)
+      # write.csv(filteredDS()[input[["click_info_rows_all"]], ],file, row.names = FALSE)
+      write_csv(filteredDS()[input[["click_info_rows_all"]], ],file)
     }
   )
   
@@ -826,7 +847,8 @@ server <- function(input, output, session) {
       paste('Filtered data-', Sys.Date(), '.csv', sep = '')
     },
     content = function(file){
-      write.csv(filteredDS()[input[["click_info_rows_selected"]], ],file, row.names = FALSE)
+      # write.csv(filteredDS()[input[["click_info_rows_selected"]], ],file, row.names = FALSE)
+      write_csv(filteredDS()[input[["click_info_rows_selected"]], ],file)
     }
   )      
   
@@ -836,7 +858,8 @@ server <- function(input, output, session) {
       paste('Distance matrix-', Sys.Date(), '.csv', sep = '')
     },
     content = function(file){
-      write.csv(matrixDSall2(),file, row.names = FALSE)
+      # write.csv(matrixDSall2(),file, row.names = FALSE)
+      write_csv(matrixDSall2(),file)
     }
   )          
 
