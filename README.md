@@ -1,4 +1,4 @@
-![](airrscape_logo_and_name.png)
+![](airrscape_logo_and_name2.png)
 ![](fig2b_forcomms.png)
 
 ## Dependencies & R Session Info
@@ -34,7 +34,7 @@ To process (convert & combine) datasets, first upload each dataset separately (m
 Required dataset columns:
  _v_call, j_call, v_identity, junction_aa_
 
- ![](AIRRscape_importing_customdatasets_95sec)
+ ![](AIRRscape_importing_customdatasets_95sec.gif)
 
 ## Datasets and code for manuscript
 This repository is split into sections. The 'shinyapp' folder contains the AIRRscape app and loaded datasets. The 'paper_assets' folder contains partially processed datasets used in the AIRRscape publication and R scripts used for their processing. The ```airrscape_preprocessing.R``` script contains code used to combine datasets from repositories in AIRR-C format (datasets here include all columns). The ```airrscape_processing.R``` script contains code used to convert & combine partially processed datasets into the files directly used in AIRRscape. This script also includes a custom function ```AIRRscapeprocess``` that trims datasets and creates AIRRscape-specific columns for any AIRR-C formatted repertoire dataset. Note that the  _Import Data_ tab includes this function to convert user-uploaded datasets.
