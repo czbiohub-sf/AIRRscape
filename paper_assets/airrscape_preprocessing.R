@@ -882,6 +882,37 @@ toshiny.hiv.mabs.yacoob <- AIRRscapeprocess(hiv.mabs.yacoob, renumber_sequences 
 
 ## this file is available in the /paper_assets/intermediate_files folder
 # toshiny.hiv.mabs.all <- read_tsv("paper_assets/intermediate_files/toshiny_hiv_mabs_all.tab")
+## to add newer byvgene stats...
+toshiny.hiv.mabs.all$ncount <- NULL
+toshiny.hiv.mabs.all$shm_mean <- NULL
+toshiny.hiv.mabs.all$shm_max <- NULL
+toshiny.hiv.mabs.all <- toshiny.hiv.mabs.all %>%
+  add_count(vgf_jgene,cdr3length_imgt) %>% 
+  rename(ncount = n) %>% 
+  ungroup() %>% 
+  add_count(vgene,cdr3length_imgt) %>% 
+  rename(ncount_vgene = n) %>% 
+  ungroup() %>% 
+  group_by(vgene,cdr3length_imgt) %>% 
+  mutate(shm_byvgene_mean = mean(shm, na.rm = TRUE)) %>% 
+  # NOTE ADDING MAX & MEAN SHM BY V-GENE
+  mutate(shm_byvgene_max = max(shm, na.rm = TRUE)) %>%
+  ungroup() %>%
+  group_by(vgf_jgene,cdr3length_imgt) %>%
+  mutate(shm_mean = mean(shm, na.rm = TRUE)) %>%
+  # NOTE ADDIN MAX SHM AS WELL..
+  mutate(shm_max = max(shm, na.rm = TRUE)) %>%
+  mutate(shm_mean = na_if(shm_mean, "NaN")) %>%
+  mutate(shm_max = na_if(shm_max, "-Inf")) %>%
+  mutate(across(shm, round, 2)) %>%
+  mutate(across(shm_max, round, 2)) %>%
+  mutate(across(shm_mean, round, 2)) %>%
+  mutate(shm_byvgene_mean = na_if(shm_byvgene_mean, "NaN")) %>%
+  mutate(shm_byvgene_max = na_if(shm_byvgene_max, "-Inf")) %>%
+  mutate(across(shm_byvgene_max, round, 2)) %>%
+  mutate(across(shm_byvgene_mean, round, 2))
+
+#write.table(toshiny.hiv.mabs.all, "toshiny_hiv_mabs_all.tab", sep = "\t", row.names = FALSE, quote = FALSE)
 
 ##############################################################################################################################
 ##############################################################################################################################
@@ -1052,18 +1083,32 @@ toshiny.cov2.abdab.fullv <- toshiny.cov2.abdab.fullv %>% relocate(binding, .afte
 toshiny.cov2.abdab.fullv <- toshiny.cov2.abdab.fullv %>% relocate(vgf_jgene, .after = gene)
 
 ## now add count, shm_mean, shm_max after all sequences are combined
+## adding byvgene stats...
 toshiny.cov2.abdab <- toshiny.cov2.abdab.fullv %>%
-   add_count(vgf_jgene,cdr3length_imgt) %>%
-   rename(ncount = n) %>%
-   group_by(vgf_jgene,cdr3length_imgt) %>%
-   mutate(shm_mean = mean(shm, na.rm = TRUE)) %>%
-   # ADD MAX SHM AS WELL..
-   mutate(shm_max = max(shm, na.rm = TRUE)) %>% 
-   mutate(shm_mean = na_if(shm_mean, "NaN")) %>% 
-   mutate(shm_max = na_if(shm_max, "-Inf")) %>% 
-   mutate(across(shm, round, 2)) %>% 
-   mutate(across(shm_max, round, 2)) %>% 
-   mutate(across(shm_mean, round, 2))
+  add_count(vgf_jgene,cdr3length_imgt) %>% 
+  rename(ncount = n) %>% 
+  ungroup() %>% 
+  add_count(vgene,cdr3length_imgt) %>% 
+  rename(ncount_vgene = n) %>% 
+  ungroup() %>% 
+  group_by(vgene,cdr3length_imgt) %>% 
+  mutate(shm_byvgene_mean = mean(shm, na.rm = TRUE)) %>% 
+  # NOTE ADDING MAX & MEAN SHM BY V-GENE
+  mutate(shm_byvgene_max = max(shm, na.rm = TRUE)) %>% 
+  ungroup() %>% 
+  group_by(vgf_jgene,cdr3length_imgt) %>% 
+  mutate(shm_mean = mean(shm, na.rm = TRUE)) %>% 
+  # NOTE ADDIN MAX SHM AS WELL..
+  mutate(shm_max = max(shm, na.rm = TRUE)) %>% 
+  mutate(shm_mean = na_if(shm_mean, "NaN")) %>% 
+  mutate(shm_max = na_if(shm_max, "-Inf")) %>% 
+  mutate(across(shm, round, 2)) %>% 
+  mutate(across(shm_max, round, 2)) %>% 
+  mutate(across(shm_mean, round, 2)) %>% 
+  mutate(shm_byvgene_mean = na_if(shm_byvgene_mean, "NaN")) %>% 
+  mutate(shm_byvgene_max = na_if(shm_byvgene_max, "-Inf")) %>% 
+  mutate(across(shm_byvgene_max, round, 2)) %>% 
+  mutate(across(shm_byvgene_mean, round, 2))
 
 toshiny.cov2.abdab$fullv <- NULL
 
@@ -1072,23 +1117,136 @@ toshiny.cov2.abdab$fullv <- NULL
 
 ## these files are already available in the /paper_assets/intermediate_files or /shinyapp folder
 # cov2.abdab.withfullv <- read_tsv("paper_assets/intermediate_files/cov2_abdab_withfullv.tab")
-# tonshiny.cov2.abdab.fullv <- read_tsv("paper_assets/intermediate_files/toshiny_cov2_abdab_fullv.tab")
+# toshiny.cov2.abdab.fullv <- read_tsv("paper_assets/intermediate_files/toshiny_cov2_abdab_fullv.tab")
 # toshiny.cov2.abdab <- read_tsv("shinyapp/toshiny_cov2_abdab.tab")
+
+## to add newer byvgene stats...
+toshiny.cov2.abdab.fullv$ncount <- NULL
+toshiny.cov2.abdab.fullv$shm_mean <- NULL
+toshiny.cov2.abdab.fullv$shm_max <- NULL
+toshiny.cov2.abdab.fullv <- toshiny.cov2.abdab.fullv %>%
+  add_count(vgf_jgene,cdr3length_imgt) %>% 
+  rename(ncount = n) %>% 
+  ungroup() %>% 
+  add_count(vgene,cdr3length_imgt) %>% 
+  rename(ncount_vgene = n) %>% 
+  ungroup() %>% 
+  group_by(vgene,cdr3length_imgt) %>% 
+  mutate(shm_byvgene_mean = mean(shm, na.rm = TRUE)) %>% 
+  # NOTE ADDING MAX & MEAN SHM BY V-GENE
+  mutate(shm_byvgene_max = max(shm, na.rm = TRUE)) %>%
+  ungroup() %>%
+  group_by(vgf_jgene,cdr3length_imgt) %>%
+  mutate(shm_mean = mean(shm, na.rm = TRUE)) %>%
+  # NOTE ADDIN MAX SHM AS WELL..
+  mutate(shm_max = max(shm, na.rm = TRUE)) %>%
+  mutate(shm_mean = na_if(shm_mean, "NaN")) %>%
+  mutate(shm_max = na_if(shm_max, "-Inf")) %>%
+  mutate(across(shm, round, 2)) %>%
+  mutate(across(shm_max, round, 2)) %>%
+  mutate(across(shm_mean, round, 2)) %>%
+  mutate(shm_byvgene_mean = na_if(shm_byvgene_mean, "NaN")) %>%
+  mutate(shm_byvgene_max = na_if(shm_byvgene_max, "-Inf")) %>%
+  mutate(across(shm_byvgene_max, round, 2)) %>%
+  mutate(across(shm_byvgene_mean, round, 2))
 
 ##############################################################################################################################
 ## shinyprocess function updated to AIRRscapeprocess
 ##############################################################################################################################
 
+## two functions from https://stackoverflow.com/questions/2643939/remove-columns-from-dataframe-where-all-values-are-na
+not_all_na <- function(x) any(!is.na(x))
+# not_any_na <- function(x) all(!is.na(x))
+
+##### ADDING TCR CAPABILITY...note there are <20 TRBV genes, so need to change code a bit...
+## note required columns...and cannot have any missing!!  v_call, j_call, v_identity, junction_aa - but note TR dataset will have NAs for v_identity
 AIRRscapeprocess <- function(x, filter_columns = TRUE, filter_to_HC = TRUE, renumber_sequences = TRUE, filter_after_counting = TRUE) {
   colname <- substitute(x)
-  ## this removes columns with all NAs
-  x <- x[!map_lgl(x, ~ all(is.na(.)))]
+  ## drop_na from v_call, j_call, v_identity, junction_aa
+  x <- x %>% drop_na(v_call) %>% drop_na(j_call) %>% drop_na(junction_aa)
   ## this calculates SHM but depending on whether v_identity is from 0 to 1 or 0 to 100
-  if (mean(x$v_identity) < 1) {
-    x$shm <- (100 - (x$v_identity * 100))
+  ## be careful with including if v_identity, if already processed will not have this!! - think we never invoke unless it is a unprocessed file BUT CHECK...
+  ## idea - instead of if bcr_repertoire have if v_identity isn't blank...  allmisscols <- sapply(dt, function(x) all(is.na(x) | x == '' ))
+  ## improvement on IG vs. TR.... if (substring(x$v_call[1],1,2) == "IG") { ... but would then need else if == "TR"...
+  if (!is.na(mean(x$v_identity))) {
+    x <- x %>% drop_na(v_identity)
+    if (mean(x$v_identity) < 1) {
+      x$shm <- (100 - (x$v_identity * 100))
+    } else {
+      x$shm <- (100 - x$v_identity)
+    }
+    x <- x %>% filter(vj_in_frame != "FALSE") %>%
+      filter(vj_in_frame != "F")
+    ## was splitting by '\', but we want to keep these
+    # vgene0.pieces <- strsplit(x$v_call,"[*]")
+    # x$vgene0 <- sapply(vgene0.pieces, "[", 1)
+    # vgene.pieces1 <- strsplit(x$vgene0,"[/]")
+    # x$vgene1 <- sapply(vgene.pieces1, "[", 1)
+    # vgene.pieces <- strsplit(x$vgene1,",")
+    # x$vgene <- sapply(vgene.pieces, "[", 1)
+    vgene0.pieces <- strsplit(x$v_call,"[*]")
+    x$vgene0 <- sapply(vgene0.pieces, "[", 1)
+    vgene.pieces <- strsplit(x$vgene0,",")
+    x$vgene <- sapply(vgene.pieces, "[", 1)
+    ## vgene family is vgf, need to also delimit by * or / not just -
+    vgf.pieces0 <- strsplit(x$vgene,"-")
+    x$vgf0 <- sapply(vgf.pieces0, "[", 1)
+    vgf.pieces1 <- strsplit(x$vgf0,"[*]")
+    x$vgf1 <- sapply(vgf.pieces1, "[", 1)
+    vgf.pieces2 <- strsplit(x$vgf1,"S")
+    x$vgf2 <- sapply(vgf.pieces2, "[", 1)
+    vgf.pieces <- strsplit(x$vgf2,"[/]")
+    x$vgf <- sapply(vgf.pieces, "[", 1)
+    ## reverting to original code for jgene...
+    # jgene.pieces <- strsplit(x$j_call,"-")
+    # x$jgene <- sapply(jgene.pieces, "[", 1)
+    # next try
+    # x$vgene <- getGene(x$v_call, first=TRUE, strip_d=TRUE)
+    # x$vgf <- getFamily(x$v_call, first=TRUE, strip_d=TRUE)
+    # x$jgene <- getGene(x$j_call, first=TRUE, strip_d=TRUE)
+    # first try
+    # x$vgf <- substring(x$vgene, 1,5)
+    # x$vgene <- getGene(x$v_call, first=TRUE, strip_d=TRUE)
+    # x$vgf <- substring(x$vgene, 1,5)
+    x$jgene <- getGene(x$j_call, first=TRUE, strip_d=TRUE)
+    x$jgene <- substring(x$jgene, 1,5)
   } else {
-    x$shm <- (100 - x$v_identity)
+    x$shm <- 0
+    ## was splitting by '\', but we want to keep these
+    # vgene0.pieces <- strsplit(x$v_call,"[*]")
+    # x$vgene0 <- sapply(vgene0.pieces, "[", 1)
+    # vgene.pieces <- strsplit(x$vgene0,"[/]")
+    # x$vgene <- sapply(vgene.pieces, "[", 1)
+    vgene.pieces <- strsplit(x$v_call,"[*]")
+    x$vgene <- sapply(vgene.pieces, "[", 1)
+    ## vgene family is vgf, need to also delimit by * or / not just -
+    vgf.pieces0 <- strsplit(x$vgene,"-")
+    x$vgf0 <- sapply(vgf.pieces0, "[", 1)
+    vgf.pieces1 <- strsplit(x$vgf0,"[*]")
+    x$vgf1 <- sapply(vgf.pieces1, "[", 1)
+    vgf.pieces <- strsplit(x$vgf1,"[/]")
+    x$vgf <- sapply(vgf.pieces, "[", 1)
+    ## reverting to original code for jgene...FOR TCR INSTEAD NEED TO REMOVE BY * AND -
+    # x$jgene <- getGene(x$j_call, first=TRUE, strip_d=TRUE)
+    # x$jgene <- substring(x$jgene, 1,5)
+    jgene.pieces0 <- strsplit(x$j_call,"-")
+    x$jgene0 <- sapply(jgene.pieces0, "[", 1)
+    jgene.pieces <- strsplit(x$jgene0,"[*]")
+    x$jgene <- sapply(jgene.pieces, "[", 1)
+    ## next try
+    # x$vgene <- getGene(x$v_call, first=TRUE, strip_d=TRUE)
+    # x$vgf <- getFamily(x$v_call, first=TRUE, strip_d=TRUE)
+    # x$jgene <- getGene(x$j_call, first=TRUE, strip_d=TRUE)
+    ## first try
+    # x$vgf <- substring(x$vgene, 1,5)
+    # x$vgene <- x$v_gene
+    # x$vgf <- x$v_subgroup
+    # x$jgene <- x$j_subgroup
   }
+  ## this removes columns with all NAs - moving to near bottom - tried moving up but instead back to near bottom and adding statements like this if needed: if (!is.na(mean(x$v_identity))) { 
+  ## trying here again...latest - using new code
+  x <- x %>% select(where(not_all_na))
+  # x <- x[!map_lgl(x, ~ all(is.na(.)))]
   ## this makes new standard cdr3 column (sometimes already exists, but there should always be a junction_aa) by removing both ends of the junction_aa column
   x$cdr3_aa_imgt <- x$junction_aa
   str_sub(x$cdr3_aa_imgt, -1, -1) <- ""
@@ -1097,22 +1255,23 @@ AIRRscapeprocess <- function(x, filter_columns = TRUE, filter_to_HC = TRUE, renu
   x$cdr3length_imgt <- nchar(x$cdr3_aa_imgt)
   ## removing non-productive, out of frame, stop codons, any X in CDR3 (was 'nnnn' in sequence)
   x <- x %>% filter(productive != "FALSE") %>%
-    filter(vj_in_frame != "FALSE") %>%
-    filter(productive != "F") %>%
-    filter(vj_in_frame != "F")
+    filter(productive != "F")
   x <- x[ grep("\\*", x$junction_aa, invert = TRUE) , ]
   x <- x[ grep("\\X", x$junction_aa, invert = TRUE) , ]
   ### removing all sequences with IMGT CDR3 less than 3
-  x <- x %>% filter(cdr3length_imgt > 2.8)  
-  ## next lines create V gene family, J gene columns
-  x$vgene <- getGene(x$v_call, first=TRUE, strip_d=TRUE)
-  x$vgf <- substring(x$vgene, 1,5)
-  x$jgene <- getGene(x$j_call, first=TRUE, strip_d=TRUE)
-  x$jgene <- substring(x$jgene, 1,5)
+  x <- x %>% filter(cdr3length_imgt > 2.8)
+  ## next lines create V gene family, J gene columns - making more universal and compatible with TCRs...see above
+  # x$vgene <- unlist(strsplit(x$v_call, "[*]"))
+  # x$vgf <- unlist(strsplit(x$v_call, "-"))
+  # x$jgene <- unlist(strsplit(x$j_call, "-"))
+  # x$vgene <- getGene(x$v_call, first=TRUE, strip_d=TRUE)
+  # x$vgf <- substring(x$vgene, 1,5)
+  # x$jgene <- getGene(x$j_call, first=TRUE, strip_d=TRUE)
+  # x$jgene <- substring(x$jgene, 1,5)
   ## this creates new column vgf_jgene which is used in all shiny plots
   x <- x %>% unite(vgf_jgene, vgf, jgene, sep = "_", remove = FALSE, na.rm = TRUE)
   ## this removes any rows without CDR3, or with junctions that are not 3-mers
-  x <- x %>% filter(!is.na(cdr3length_imgt)) %>% 
+  x <- x %>% filter(!is.na(cdr3length_imgt)) %>%
     filter(is.wholenumber(cdr3length_imgt))
   # if there is a clone_id column this will make a count of reads_per_clone
   if ("clone_id" %in% names(x)) {
@@ -1120,44 +1279,106 @@ AIRRscapeprocess <- function(x, filter_columns = TRUE, filter_to_HC = TRUE, renu
       rename(reads_per_clone = n)
   }
   ## if no cregion column, make one  !(x %in% y) - moving substitution from IG to Ig outside of the if to always have it...
+  ## adding first check to grab from c_call if it exists,   if (!is.na(mean(x$v_identity))) {  - better??  if(str == "HELLO" | str == "hello"){
+  ## latest: first if no cregion, or if cregion is mostly NAs - removing second part...if (!("cregion" %in% names(x)) | (is.na(Mode(x$cregion)))) {
   if (!("cregion" %in% names(x))) {
-    x$cregion <- str_sub(x$v_call, end=3)
-    # x$cregion <- gsub('IG','Ig',x$cregion)
+    ## then use c_call if it exists & is not mostly NAs - if not, then just take first 3 characters of v_call
+    ## if any NAs, need to replace!! (do last)
+    if (("c_call" %in% names(x))) {
+      x$cregion <- x$c_call
+      # x$cregion <- x$c_call %>% replace_na(Mode(x$c_call))
+      x$cregion <- gsub('IGH','IG',x$cregion)
+      x$cregion <- gsub('TRAC','TRA',x$cregion)
+      x$cregion <- gsub('TRBC','TRB',x$cregion)
+      x$cregion <- gsub('TRDC','TRD',x$cregion)
+      x$cregion <- gsub('TRGC','TRG',x$cregion)
+      x$cregion <- gsub('IGMC','IGM',x$cregion)
+      x$cregion <- gsub('IGDC','IGD',x$cregion)
+      x$cregion <- gsub('IGGC','IGG',x$cregion)
+      x$cregion <- gsub('IGAC','IGA',x$cregion)
+      x$cregion <- gsub('IGKC','IGK',x$cregion)
+      x$cregion <- gsub('IGLC','IGL',x$cregion)
+      ## need to add a replace_na - instead using new function above
+      # x$cregion <- x$cregion %>% replace_na(str_sub(x$v_call, end=3))
+      # x$cregion <- gsub('IG','Ig',x$cregion)  ...substring(x$vgf[1],1,2) == "TR"
+    } else {
+      x$cregion <- str_sub(x$v_call, end=3)
+    }
   }
+  ## for new coalesce calculation below, make sure there is a locus field
+  if (!("locus" %in% names(x))) {
+    x$locus <- str_sub(x$v_call, end=3)
+  }
+  ## one option for replacing NAs - try coalesce per https://stackoverflow.com/questions/34071875/replace-a-value-na-with-the-value-from-another-column-in-r
+  # dfABy %>% mutate(A = coalesce(A,B)) this is replacing all NAs in cregion with the value from locus
+  x <- x %>% mutate(cregion = coalesce(cregion,locus))
+  ## then changing names slightly next
   x$cregion <- gsub('IG','Ig',x$cregion)
   ## adding conversion to standardize light chain naming if necessary...
   x$cregion <- gsub("IgK","Kappa",x$cregion)
   x$cregion <- gsub("IgL","Lambda",x$cregion)
-  ## making more important columns used in plotting, also a rounding step
+  ## another option for replacing NAs but loses TRA vs TRB etc.
+  # if (substring(x$vgf[1],1,2) == "TR") {
+  #   x$cregion <- x$cregion %>% replace_na("TR")
+  # } else {
+  #   x$cregion <- x$cregion %>% replace_na("IgH")
+  # }
+  ## after these defining steps of cregion, now replace any NAs after!
+  ## making more important columns used in plotting, also a rounding step - later adding ncount_vgene as well
   x <- x %>%
-    add_count(vgf_jgene,cdr3length_imgt) %>% 
-    rename(ncount = n) %>% 
-    group_by(vgf_jgene,cdr3length_imgt) %>% 
-    mutate(shm_mean = mean(shm, na.rm = TRUE)) %>% 
+    add_count(vgf_jgene,cdr3length_imgt) %>%
+    rename(ncount = n) %>%
+    ungroup() %>%
+    add_count(vgene,cdr3length_imgt) %>%
+    rename(ncount_vgene = n) %>%
+    ungroup() %>%
+    group_by(vgene,cdr3length_imgt) %>%
+    mutate(shm_byvgene_mean = mean(shm, na.rm = TRUE)) %>%
+    # NOTE ADDING MAX & MEAN SHM BY V-GENE
+    mutate(shm_byvgene_max = max(shm, na.rm = TRUE)) %>%
+    ungroup() %>%
+    group_by(vgf_jgene,cdr3length_imgt) %>%
+    mutate(shm_mean = mean(shm, na.rm = TRUE)) %>%
     # NOTE ADDIN MAX SHM AS WELL..
-    mutate(shm_max = max(shm, na.rm = TRUE)) %>% 
-    mutate(across(shm, round, 2)) %>% 
-    mutate(across(shm_max, round, 2)) %>% 
-    mutate(across(shm_mean, round, 2))
-  ## this will filter the dataset if filter_columns option is set to true - note the any_of which allows columns to be missing
-  vars2 <- c("sequence_id", "binding", "neutralization", "cregion", "cdr3_aa_imgt","vgene", "vgf_jgene", "vgf","jgene", "cdr3length_imgt", "shm", "shm_max", "shm_mean", "ncount", "reads_per_clone")
+    mutate(shm_max = max(shm, na.rm = TRUE)) %>%
+    mutate(shm_mean = na_if(shm_mean, "NaN")) %>%
+    mutate(shm_max = na_if(shm_max, "-Inf")) %>%
+    mutate(across(shm, round, 2)) %>%
+    mutate(across(shm_max, round, 2)) %>%
+    mutate(across(shm_mean, round, 2)) %>%
+    mutate(shm_byvgene_mean = na_if(shm_byvgene_mean, "NaN")) %>%
+    mutate(shm_byvgene_max = na_if(shm_byvgene_max, "-Inf")) %>%
+    mutate(across(shm_byvgene_max, round, 2)) %>%
+    mutate(across(shm_byvgene_mean, round, 2))
+  ## this removes columns with all NAs - moving to near bottom - tried moving up but instead back to near bottom and adding statements like this if needed: if (!is.na(mean(x$v_identity))) { 
+  ## trying further up again...
+  # x <- x[!map_lgl(x, ~ all(is.na(.)))]
+  ## this will filter the dataset if filter_columns option is set to true - note the any_of which allows columns to be missing - later adding various 10x column outputs
+  # vars2 <- c("sequence_id", "binding", "neutralization", "cregion", "cdr3_aa_imgt","vgene", "vgf_jgene", "vgf","jgene", "cdr3length_imgt", "shm", "shm_max", "shm_mean", "ncount", "reads_per_clone")
+  vars2 <- c("sequence_id", "nCount_RNA", "nFeature_RNA", "sample", "animal", "timepoint", "corrected_timepoint", "new_id", "binding", "neutralization", "cregion", "cdr3_aa_imgt","vgene", "vgf_jgene", "vgf","jgene", "cdr3length_imgt", "umi_count", "consensus_count", "duplicate_count", "clone_id", "shm", "shm_mean", "shm_max", "shm_byvgene_mean", "shm_byvgene_max", "ncount", "ncount_vgene", "reads_per_clone")
   if (filter_columns) {
     x <- x %>% select(any_of(vars2))
   }
-  ## this will filter to heavy chains only...
+  ## this will filter to heavy chains only......ADDING TRA & TRB
   if (filter_to_HC) {
-    x <- x %>% filter(cregion == "IgH" | cregion == "IgA" | cregion == "IgD" | cregion == "IgE" | cregion == "IgG" | cregion == "IgM")
+    # x <- x %>% filter(cregion == "IgH" | cregion == "IgA" | cregion == "IgD" | cregion == "IgE" | cregion == "IgG" | cregion == "IgM")
+    # x <- x %>% filter(cregion == "IgH" | cregion == "IgA" | cregion == "IgD" | cregion == "IgE" | cregion == "IgG" | cregion == "IgM" | cregion == "IgA1" | cregion == "IgA2" | cregion == "IgG1" | cregion == "IgG2" | cregion == "IgG3" | cregion == "IgG4" | cregion == "IgG2A" | cregion == "IgG2B" | cregion == "IgG2C" | cregion == "TRA" | cregion == "TRB")
+    # filter(expr, cell_type %in% c("bj fibroblast", "hesc")) - changing to simpler negation......SHIFTING BACK IN CASE THIS IS CAUSING SHINY SERVER CODE TO FAIL...
+    ## instead of exact matches to kappa or lambda, use grepl...https://stackoverflow.com/questions/22850026/filter-rows-which-contain-a-certain-string
+    # x <- x %>% filter(!cregion %in% c("Kappa", "Lambda"))
+    x <- x %>% dplyr::filter(!grepl('Kappa|Lambda', cregion))
+    # x <- x %>% filter(cregion == "IgH" | cregion == "IgA" | cregion == "IgD" | cregion == "IgE" | cregion == "IgG" | cregion == "IgM" | cregion == "IgA1" | cregion == "IgA2" | cregion == "IgG1" | cregion == "IgG2" | cregion == "IgG3" | cregion == "IgG4" | cregion == "IgG2A" | cregion == "IgG2B" | cregion == "IgG2C" | cregion == "TRA" | cregion == "TRB")
   }
   ## this will remove all redundant sequences with same vgf/gene & cdr3 motif...note we count above so okay to collapse here!!
   if (filter_after_counting) {
     x <- x %>%
       group_by(cdr3_aa_imgt,vgf_jgene) %>%
       summarize_all(first) %>%
-      rename(ncountfull = ncount) %>% 
+      rename(ncountfull = ncount) %>%
       ungroup() %>%
-      add_count(vgf_jgene,cdr3length_imgt) %>% 
+      add_count(vgf_jgene,cdr3length_imgt) %>%
       rename(ncount = n) %>%
-      relocate(ncount, .before = shm_mean)
+      relocate(ncount, .before = shm)
   }
   ## this will make a new sequence_id column with new row names if renumber_sequences option is set to true MOVING LAST TO CHANGE X DEFINITION
   if (renumber_sequences) {
@@ -1167,7 +1388,7 @@ AIRRscapeprocess <- function(x, filter_columns = TRUE, filter_to_HC = TRUE, renu
     x$dataset <- gsub('"','',x$dataset)
     x$dataset <- gsub("\\.","\\-",x$dataset)
     x$dataset <- gsub("\\_","\\-",x$dataset)
-    x$obs <- 1:nrow(x) 
+    x$obs <- 1:nrow(x)
     x <- x %>% unite(sequence_id, dataset, obs, sep = "_", remove = TRUE, na.rm = TRUE)
     # x <- x %>% relocate(sequence_id, .before = cregion)  ## changed to default i.e. move to make first column
     x <- x %>% relocate(sequence_id)
@@ -1180,6 +1401,7 @@ AIRRscapeprocess <- function(x, filter_columns = TRUE, filter_to_HC = TRUE, renu
   x$sequence_id <- gsub("\\_","\\-",x$sequence_id)
   return(x)
 }
+
 
 ##############################################################################################################################
 ##############################################################################################################################

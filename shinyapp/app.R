@@ -10,30 +10,131 @@ library(alakazam)
 library(tidyverse)
 library(DT)
 
-## for plotting
+## more
 #install.packages("seqinr")
 #install.packages("phangorn")
 #install.packages("ape")
 #install.packages("shinyscreenshot")
+#install.packages("shinycssloaders")
+#install.packages("bslib")
 library(seqinr)
 library(phangorn)
 library(ape)
 library(shinyscreenshot)
+library(shinycssloaders)
+library(bslib)
 
-## options for allowing for large uploads of datasets, and hiding warnings during Shiny
-options(shiny.maxRequestSize=5000*1024^2, warn = -1)
+## options for allowing for large uploads of datasets (5000MB), and hiding warnings during Shiny
+## update, showing warnings & turning on shiny.error: this can be a function which is called when an error occurs. For example, options(shiny.error=recover) will result a the debugger prompt when an error occurs.
+options(shiny.maxRequestSize=5000*1024^2, warn = -1, shiny.sanitize.errors = FALSE)
+# options(shiny.maxRequestSize=5000*1024^2, warn = 0, shiny.error=recover)
+
+## moving Mode function first, then changing the if is.na from mean to Mode...
+## 2 more functions
+Mode <- function(x) {
+  ux <- unique(x)
+  ux[which.max(tabulate(match(x, ux)))]
+}
+
+is.wholenumber <- function(x, tol = .Machine$double.eps^0.5) {
+  abs(x - round(x)) < tol
+}
+
+## two functions from https://stackoverflow.com/questions/2643939/remove-columns-from-dataframe-where-all-values-are-na
+not_all_na <- function(x) any(!is.na(x))
+# not_any_na <- function(x) all(!is.na(x))
 
 ########### AIRRscape processing function ##########
+#######################################################
+##### ADDING TCR CAPABILITY...note there are <20 TRBV genes, so need to change code a bit...
+## note required columns...and cannot have any missing!!  v_call, j_call, v_identity, junction_aa - but note TR dataset will have NAs for v_identity
 AIRRscapeprocess <- function(x, filter_columns = TRUE, filter_to_HC = TRUE, renumber_sequences = TRUE, filter_after_counting = TRUE) {
   colname <- substitute(x)
-  ## this removes columns with all NAs
-  x <- x[!map_lgl(x, ~ all(is.na(.)))]
+  ## drop_na from v_call, j_call, v_identity, junction_aa
+  x <- x %>% drop_na(v_call) %>% drop_na(j_call) %>% drop_na(junction_aa)
   ## this calculates SHM but depending on whether v_identity is from 0 to 1 or 0 to 100
-  if (mean(x$v_identity) < 1) {
-    x$shm <- (100 - (x$v_identity * 100))
+  ## be careful with including if v_identity, if already processed will not have this!! - think we never invoke unless it is a unprocessed file BUT CHECK...
+  ## idea - instead of if bcr_repertoire have if v_identity isn't blank...  allmisscols <- sapply(dt, function(x) all(is.na(x) | x == '' ))
+  ## improvement on IG vs. TR.... if (substring(x$v_call[1],1,2) == "IG") { ... but would then need else if == "TR"...
+  if (!is.na(mean(x$v_identity))) {
+    x <- x %>% drop_na(v_identity)
+    if (mean(x$v_identity) < 1) {
+      x$shm <- (100 - (x$v_identity * 100))
+    } else {
+      x$shm <- (100 - x$v_identity)
+    }
+    x <- x %>% filter(vj_in_frame != "FALSE") %>%
+      filter(vj_in_frame != "F")
+    ## was splitting by '\', but we want to keep these
+    # vgene0.pieces <- strsplit(x$v_call,"[*]")
+    # x$vgene0 <- sapply(vgene0.pieces, "[", 1)
+    # vgene.pieces1 <- strsplit(x$vgene0,"[/]")
+    # x$vgene1 <- sapply(vgene.pieces1, "[", 1)
+    # vgene.pieces <- strsplit(x$vgene1,",")
+    # x$vgene <- sapply(vgene.pieces, "[", 1)
+    vgene0.pieces <- strsplit(x$v_call,"[*]")
+    x$vgene0 <- sapply(vgene0.pieces, "[", 1)
+    vgene.pieces <- strsplit(x$vgene0,",")
+    x$vgene <- sapply(vgene.pieces, "[", 1)
+    ## vgene family is vgf, need to also delimit by * or / not just -
+    vgf.pieces0 <- strsplit(x$vgene,"-")
+    x$vgf0 <- sapply(vgf.pieces0, "[", 1)
+    vgf.pieces1 <- strsplit(x$vgf0,"[*]")
+    x$vgf1 <- sapply(vgf.pieces1, "[", 1)
+    vgf.pieces2 <- strsplit(x$vgf1,"S")
+    x$vgf2 <- sapply(vgf.pieces2, "[", 1)
+    vgf.pieces <- strsplit(x$vgf2,"[/]")
+    x$vgf <- sapply(vgf.pieces, "[", 1)
+    ## reverting to original code for jgene...
+    # jgene.pieces <- strsplit(x$j_call,"-")
+    # x$jgene <- sapply(jgene.pieces, "[", 1)
+    # next try
+    # x$vgene <- getGene(x$v_call, first=TRUE, strip_d=TRUE)
+    # x$vgf <- getFamily(x$v_call, first=TRUE, strip_d=TRUE)
+    # x$jgene <- getGene(x$j_call, first=TRUE, strip_d=TRUE)
+    # first try
+    # x$vgf <- substring(x$vgene, 1,5)
+    # x$vgene <- getGene(x$v_call, first=TRUE, strip_d=TRUE)
+    # x$vgf <- substring(x$vgene, 1,5)
+    x$jgene <- getGene(x$j_call, first=TRUE, strip_d=TRUE)
+    x$jgene <- substring(x$jgene, 1,5)
   } else {
-    x$shm <- (100 - x$v_identity)
+    x$shm <- 0
+    ## was splitting by '\', but we want to keep these
+    # vgene0.pieces <- strsplit(x$v_call,"[*]")
+    # x$vgene0 <- sapply(vgene0.pieces, "[", 1)
+    # vgene.pieces <- strsplit(x$vgene0,"[/]")
+    # x$vgene <- sapply(vgene.pieces, "[", 1)
+    vgene.pieces <- strsplit(x$v_call,"[*]")
+    x$vgene <- sapply(vgene.pieces, "[", 1)
+    ## vgene family is vgf, need to also delimit by * or / not just -
+    vgf.pieces0 <- strsplit(x$vgene,"-")
+    x$vgf0 <- sapply(vgf.pieces0, "[", 1)
+    vgf.pieces1 <- strsplit(x$vgf0,"[*]")
+    x$vgf1 <- sapply(vgf.pieces1, "[", 1)
+    vgf.pieces <- strsplit(x$vgf1,"[/]")
+    x$vgf <- sapply(vgf.pieces, "[", 1)
+    ## reverting to original code for jgene...FOR TCR INSTEAD NEED TO REMOVE BY * AND -
+    # x$jgene <- getGene(x$j_call, first=TRUE, strip_d=TRUE)
+    # x$jgene <- substring(x$jgene, 1,5)
+    jgene.pieces0 <- strsplit(x$j_call,"-")
+    x$jgene0 <- sapply(jgene.pieces0, "[", 1)
+    jgene.pieces <- strsplit(x$jgene0,"[*]")
+    x$jgene <- sapply(jgene.pieces, "[", 1)
+    ## next try
+    # x$vgene <- getGene(x$v_call, first=TRUE, strip_d=TRUE)
+    # x$vgf <- getFamily(x$v_call, first=TRUE, strip_d=TRUE)
+    # x$jgene <- getGene(x$j_call, first=TRUE, strip_d=TRUE)
+    ## first try
+    # x$vgf <- substring(x$vgene, 1,5)
+    # x$vgene <- x$v_gene
+    # x$vgf <- x$v_subgroup
+    # x$jgene <- x$j_subgroup
   }
+  ## this removes columns with all NAs - moving to near bottom - tried moving up but instead back to near bottom and adding statements like this if needed: if (!is.na(mean(x$v_identity))) { 
+  ## trying here again...latest - using new code
+  x <- x %>% select(where(not_all_na))
+  # x <- x[!map_lgl(x, ~ all(is.na(.)))]
   ## this makes new standard cdr3 column (sometimes already exists, but there should always be a junction_aa) by removing both ends of the junction_aa column
   x$cdr3_aa_imgt <- x$junction_aa
   str_sub(x$cdr3_aa_imgt, -1, -1) <- ""
@@ -42,22 +143,23 @@ AIRRscapeprocess <- function(x, filter_columns = TRUE, filter_to_HC = TRUE, renu
   x$cdr3length_imgt <- nchar(x$cdr3_aa_imgt)
   ## removing non-productive, out of frame, stop codons, any X in CDR3 (was 'nnnn' in sequence)
   x <- x %>% filter(productive != "FALSE") %>%
-    filter(vj_in_frame != "FALSE") %>%
-    filter(productive != "F") %>%
-    filter(vj_in_frame != "F")
+    filter(productive != "F")
   x <- x[ grep("\\*", x$junction_aa, invert = TRUE) , ]
   x <- x[ grep("\\X", x$junction_aa, invert = TRUE) , ]
   ### removing all sequences with IMGT CDR3 less than 3
-  x <- x %>% filter(cdr3length_imgt > 2.8)  
-  ## next lines create V gene family, J gene columns
-  x$vgene <- getGene(x$v_call, first=TRUE, strip_d=TRUE)
-  x$vgf <- substring(x$vgene, 1,5)
-  x$jgene <- getGene(x$j_call, first=TRUE, strip_d=TRUE)
-  x$jgene <- substring(x$jgene, 1,5)
+  x <- x %>% filter(cdr3length_imgt > 2.8)
+  ## next lines create V gene family, J gene columns - making more universal and compatible with TCRs...see above
+  # x$vgene <- unlist(strsplit(x$v_call, "[*]"))
+  # x$vgf <- unlist(strsplit(x$v_call, "-"))
+  # x$jgene <- unlist(strsplit(x$j_call, "-"))
+  # x$vgene <- getGene(x$v_call, first=TRUE, strip_d=TRUE)
+  # x$vgf <- substring(x$vgene, 1,5)
+  # x$jgene <- getGene(x$j_call, first=TRUE, strip_d=TRUE)
+  # x$jgene <- substring(x$jgene, 1,5)
   ## this creates new column vgf_jgene which is used in all shiny plots
   x <- x %>% unite(vgf_jgene, vgf, jgene, sep = "_", remove = FALSE, na.rm = TRUE)
   ## this removes any rows without CDR3, or with junctions that are not 3-mers
-  x <- x %>% filter(!is.na(cdr3length_imgt)) %>% 
+  x <- x %>% filter(!is.na(cdr3length_imgt)) %>%
     filter(is.wholenumber(cdr3length_imgt))
   # if there is a clone_id column this will make a count of reads_per_clone
   if ("clone_id" %in% names(x)) {
@@ -65,44 +167,106 @@ AIRRscapeprocess <- function(x, filter_columns = TRUE, filter_to_HC = TRUE, renu
       rename(reads_per_clone = n)
   }
   ## if no cregion column, make one  !(x %in% y) - moving substitution from IG to Ig outside of the if to always have it...
+  ## adding first check to grab from c_call if it exists,   if (!is.na(mean(x$v_identity))) {  - better??  if(str == "HELLO" | str == "hello"){
+  ## latest: first if no cregion, or if cregion is mostly NAs - removing second part...if (!("cregion" %in% names(x)) | (is.na(Mode(x$cregion)))) {
   if (!("cregion" %in% names(x))) {
-    x$cregion <- str_sub(x$v_call, end=3)
-    # x$cregion <- gsub('IG','Ig',x$cregion)
+    ## then use c_call if it exists & is not mostly NAs - if not, then just take first 3 characters of v_call
+    ## if any NAs, need to replace!! (do last)
+    if (("c_call" %in% names(x))) {
+      x$cregion <- x$c_call
+      # x$cregion <- x$c_call %>% replace_na(Mode(x$c_call))
+      x$cregion <- gsub('IGH','IG',x$cregion)
+      x$cregion <- gsub('TRAC','TRA',x$cregion)
+      x$cregion <- gsub('TRBC','TRB',x$cregion)
+      x$cregion <- gsub('TRDC','TRD',x$cregion)
+      x$cregion <- gsub('TRGC','TRG',x$cregion)
+      x$cregion <- gsub('IGMC','IGM',x$cregion)
+      x$cregion <- gsub('IGDC','IGD',x$cregion)
+      x$cregion <- gsub('IGGC','IGG',x$cregion)
+      x$cregion <- gsub('IGAC','IGA',x$cregion)
+      x$cregion <- gsub('IGKC','IGK',x$cregion)
+      x$cregion <- gsub('IGLC','IGL',x$cregion)
+      ## need to add a replace_na - instead using new function above
+      # x$cregion <- x$cregion %>% replace_na(str_sub(x$v_call, end=3))
+      # x$cregion <- gsub('IG','Ig',x$cregion)  ...substring(x$vgf[1],1,2) == "TR"
+    } else {
+      x$cregion <- str_sub(x$v_call, end=3)
+    }
   }
+  ## for new coalesce calculation below, make sure there is a locus field
+  if (!("locus" %in% names(x))) {
+    x$locus <- str_sub(x$v_call, end=3)
+  }
+  ## one option for replacing NAs - try coalesce per https://stackoverflow.com/questions/34071875/replace-a-value-na-with-the-value-from-another-column-in-r
+  # dfABy %>% mutate(A = coalesce(A,B)) this is replacing all NAs in cregion with the value from locus
+  x <- x %>% mutate(cregion = coalesce(cregion,locus))
+  ## then changing names slightly next
   x$cregion <- gsub('IG','Ig',x$cregion)
   ## adding conversion to standardize light chain naming if necessary...
   x$cregion <- gsub("IgK","Kappa",x$cregion)
   x$cregion <- gsub("IgL","Lambda",x$cregion)
-  ## making more important columns used in plotting, also a rounding step
+  ## another option for replacing NAs but loses TRA vs TRB etc.
+  # if (substring(x$vgf[1],1,2) == "TR") {
+  #   x$cregion <- x$cregion %>% replace_na("TR")
+  # } else {
+  #   x$cregion <- x$cregion %>% replace_na("IgH")
+  # }
+  ## after these defining steps of cregion, now replace any NAs after!
+  ## making more important columns used in plotting, also a rounding step - later adding ncount_vgene as well
   x <- x %>%
-    add_count(vgf_jgene,cdr3length_imgt) %>% 
-    rename(ncount = n) %>% 
-    group_by(vgf_jgene,cdr3length_imgt) %>% 
-    mutate(shm_mean = mean(shm, na.rm = TRUE)) %>% 
+    add_count(vgf_jgene,cdr3length_imgt) %>%
+    rename(ncount = n) %>%
+    ungroup() %>%
+    add_count(vgene,cdr3length_imgt) %>%
+    rename(ncount_vgene = n) %>%
+    ungroup() %>%
+    group_by(vgene,cdr3length_imgt) %>%
+    mutate(shm_byvgene_mean = mean(shm, na.rm = TRUE)) %>%
+    # NOTE ADDING MAX & MEAN SHM BY V-GENE
+    mutate(shm_byvgene_max = max(shm, na.rm = TRUE)) %>%
+    ungroup() %>%
+    group_by(vgf_jgene,cdr3length_imgt) %>%
+    mutate(shm_mean = mean(shm, na.rm = TRUE)) %>%
     # NOTE ADDIN MAX SHM AS WELL..
-    mutate(shm_max = max(shm, na.rm = TRUE)) %>% 
-    mutate(across(shm, round, 2)) %>% 
-    mutate(across(shm_max, round, 2)) %>% 
-    mutate(across(shm_mean, round, 2))
-  ## this will filter the dataset if filter_columns option is set to true - note the any_of which allows columns to be missing
-  vars2 <- c("sequence_id", "binding", "neutralization", "cregion", "cdr3_aa_imgt","vgene", "vgf_jgene", "vgf","jgene", "cdr3length_imgt", "consensus_count", "duplicate_count", "clone_id", "shm", "shm_max", "shm_mean", "ncount", "reads_per_clone")
+    mutate(shm_max = max(shm, na.rm = TRUE)) %>%
+    mutate(shm_mean = na_if(shm_mean, "NaN")) %>%
+    mutate(shm_max = na_if(shm_max, "-Inf")) %>%
+    mutate(across(shm, round, 2)) %>%
+    mutate(across(shm_max, round, 2)) %>%
+    mutate(across(shm_mean, round, 2)) %>%
+    mutate(shm_byvgene_mean = na_if(shm_byvgene_mean, "NaN")) %>%
+    mutate(shm_byvgene_max = na_if(shm_byvgene_max, "-Inf")) %>%
+    mutate(across(shm_byvgene_max, round, 2)) %>%
+    mutate(across(shm_byvgene_mean, round, 2))
+  ## this removes columns with all NAs - moving to near bottom - tried moving up but instead back to near bottom and adding statements like this if needed: if (!is.na(mean(x$v_identity))) { 
+  ## trying further up again...
+  # x <- x[!map_lgl(x, ~ all(is.na(.)))]
+  ## this will filter the dataset if filter_columns option is set to true - note the any_of which allows columns to be missing - later adding various 10x column outputs
+  # vars2 <- c("sequence_id", "binding", "neutralization", "cregion", "cdr3_aa_imgt","vgene", "vgf_jgene", "vgf","jgene", "cdr3length_imgt", "shm", "shm_max", "shm_mean", "ncount", "reads_per_clone")
+  vars2 <- c("sequence_id", "nCount_RNA", "nFeature_RNA", "sample", "animal", "timepoint", "corrected_timepoint", "new_id", "binding", "neutralization", "cregion", "cdr3_aa_imgt","vgene", "vgf_jgene", "vgf","jgene", "cdr3length_imgt", "umi_count", "consensus_count", "duplicate_count", "clone_id", "shm", "shm_mean", "shm_max", "shm_byvgene_mean", "shm_byvgene_max", "ncount", "ncount_vgene", "reads_per_clone")
   if (filter_columns) {
     x <- x %>% select(any_of(vars2))
   }
-  ## this will filter to heavy chains only...
+  ## this will filter to heavy chains only......ADDING TRA & TRB
   if (filter_to_HC) {
-    x <- x %>% filter(cregion == "IgH" | cregion == "IgA" | cregion == "IgD" | cregion == "IgE" | cregion == "IgG" | cregion == "IgM")
+    # x <- x %>% filter(cregion == "IgH" | cregion == "IgA" | cregion == "IgD" | cregion == "IgE" | cregion == "IgG" | cregion == "IgM")
+    # x <- x %>% filter(cregion == "IgH" | cregion == "IgA" | cregion == "IgD" | cregion == "IgE" | cregion == "IgG" | cregion == "IgM" | cregion == "IgA1" | cregion == "IgA2" | cregion == "IgG1" | cregion == "IgG2" | cregion == "IgG3" | cregion == "IgG4" | cregion == "IgG2A" | cregion == "IgG2B" | cregion == "IgG2C" | cregion == "TRA" | cregion == "TRB")
+    # filter(expr, cell_type %in% c("bj fibroblast", "hesc")) - changing to simpler negation......SHIFTING BACK IN CASE THIS IS CAUSING SHINY SERVER CODE TO FAIL...
+    ## instead of exact matches to kappa or lambda, use grepl...https://stackoverflow.com/questions/22850026/filter-rows-which-contain-a-certain-string
+    # x <- x %>% filter(!cregion %in% c("Kappa", "Lambda"))
+    x <- x %>% dplyr::filter(!grepl('Kappa|Lambda', cregion))
+    # x <- x %>% filter(cregion == "IgH" | cregion == "IgA" | cregion == "IgD" | cregion == "IgE" | cregion == "IgG" | cregion == "IgM" | cregion == "IgA1" | cregion == "IgA2" | cregion == "IgG1" | cregion == "IgG2" | cregion == "IgG3" | cregion == "IgG4" | cregion == "IgG2A" | cregion == "IgG2B" | cregion == "IgG2C" | cregion == "TRA" | cregion == "TRB")
   }
   ## this will remove all redundant sequences with same vgf/gene & cdr3 motif...note we count above so okay to collapse here!!
   if (filter_after_counting) {
     x <- x %>%
       group_by(cdr3_aa_imgt,vgf_jgene) %>%
       summarize_all(first) %>%
-      rename(ncountfull = ncount) %>% 
+      rename(ncountfull = ncount) %>%
       ungroup() %>%
-      add_count(vgf_jgene,cdr3length_imgt) %>% 
+      add_count(vgf_jgene,cdr3length_imgt) %>%
       rename(ncount = n) %>%
-      relocate(ncount, .before = shm_mean)
+      relocate(ncount, .before = shm)
   }
   ## this will make a new sequence_id column with new row names if renumber_sequences option is set to true MOVING LAST TO CHANGE X DEFINITION
   if (renumber_sequences) {
@@ -112,7 +276,7 @@ AIRRscapeprocess <- function(x, filter_columns = TRUE, filter_to_HC = TRUE, renu
     x$dataset <- gsub('"','',x$dataset)
     x$dataset <- gsub("\\.","\\-",x$dataset)
     x$dataset <- gsub("\\_","\\-",x$dataset)
-    x$obs <- 1:nrow(x) 
+    x$obs <- 1:nrow(x)
     x <- x %>% unite(sequence_id, dataset, obs, sep = "_", remove = TRUE, na.rm = TRUE)
     # x <- x %>% relocate(sequence_id, .before = cregion)  ## changed to default i.e. move to make first column
     x <- x %>% relocate(sequence_id)
@@ -124,16 +288,6 @@ AIRRscapeprocess <- function(x, filter_columns = TRUE, filter_to_HC = TRUE, renu
   ## need to always check and remove underscores from all names
   x$sequence_id <- gsub("\\_","\\-",x$sequence_id)
   return(x)
-}
-
-## 2 more functions
-Mode <- function(x) {
-  ux <- unique(x)
-  ux[which.max(tabulate(match(x, ux)))]
-}
-
-is.wholenumber <- function(x, tol = .Machine$double.eps^0.5) {
-  abs(x - round(x)) < tol
 }
 
 ########### datasets to load ##########
@@ -186,13 +340,69 @@ toshiny.den.all$id <- factor(toshiny.den.all$id, levels = c("Dengue plasmablasts
 ## June 2022 - adding AIRRscapeInput functionality as a tabsetPanel - see https://shiny.rstudio.com/articles/layout-guide.html
 ## think can keep the sidebarPanel as is - in new AIRRscapeInput tab all ui can be in the 'main panel' under the tabset
 ## catch is can all outputs be in same server function - need to rename some at minimum...
-
+## theme: The name of a bootswatch theme (see bootswatch_themes() for possible values). When provided to bs_theme_update(), any previous Bootswatch theme is first removed before the new one is applied (use bootswatch = "default" to effectively remove the Bootswatch theme).
 ui <- fluidPage(
+  ## works in RStudio but results in odd behavior with pop-up windows on Shiny server!
+  ## note 2 color scheme: blue-gray is #F0FBFE, dark dark gray is #394C53
+  ## for headers, instead of Butler: Bodoni is a similar font.
+  ## also: The more versatile Barlow at Google Fonts is closest Google Font to DIN, and perhaps the all-around best free alternative
+  ## font_google("Crimson Pro", wght = "200..900", local = FALSE)
+  ## recent color changes don't seem to be showing up (though font change from Barlow to Roboto is noticable)
+  theme = bs_theme(
+    version = 3,
+    bootswatch = NULL,
+    # bootswatch = "default",
+    # bootswatch = "lumen",
+    # Controls the default grayscale palette ## note switched background and foreground...
+    # fg = "#394C53",  # - a biohub gray-blue, but doesn't seem to work on shiny server, also not as clean as gray...
+    # bg = "#F0FBFE",
+    bg = "#F1F0F0", # - good but both gray
+    fg = "#3E484C",
+    # Controls the accent (e.g., hyperlink, button, etc) colors
+    primary = "#006BA1",
+    secondary = "#006BA1",
+    # secondary = "#888B8D", first try
+    # secondary = "#004E75",
+    base_font = font_google("Lato"),
+    code_font = c("Monaco", "monospace"),
+    # heading_font = font_google("Barlow"),
+    "input-border-color" = "#00A3E0",
+    heading_font = font_google("Roboto"),
+    # heading_font = font_google("Roboto", wght = "200..900"),
+    # heading_font = c("din 2014", "bold", "uppercase"),
+    # Can also add lower-level customization
+    "input-border-color" = "#F0FBFE"
+      # "input-border-color" = "#00A3E0"
+    # base_font = c("Grandstander", "sans-serif"),
+    # code_font = c("Courier", "monospace"),
+    # heading_font = "'Helvetica Neue', Helvetica, sans-serif",
+  ),
+  ## trying simpler theme, only changing colors?? even just changing to lumen screws up Shiny server...
+  ## update, any changes seem to cause Shiny server version to have strange behavior with pop-ups (shifting position)
+  ## latest idea - change to version = 3!
+  # theme = bs_theme(
+  #     bootswatch = "lumen",
+  #     version = 3,
+  #     # bg = "#F1F0F0",
+  #     # fg = "#3E484C",
+  #     # # Controls the accent (e.g., hyperlink, button, etc) colors
+  #     # primary = "#006BA1",
+  #     # secondary = "#006BA1",
+  #     # secondary = "#888B8D",
+  #     # secondary = "#004E75",
+  #     base_font = font_google("Lato"),
+  #     code_font = c("Monaco", "monospace"),
+  #     heading_font = font_google("Roboto")
+  #     # heading_font = font_google("Roboto", wght = "200..900"),
+  #     # heading_font = c("din 2014", "bold", "uppercase"),
+  #     # Can also add lower-level customization
+  #     # "input-border-color" = "#006BA1"
+  #   ),
   titlePanel("AIRRscape"),
   sidebarLayout(
     sidebarPanel(
       img(src="AIRRscape_logo.png", height = 250, width = 250, align = "center"),
-      selectInput("dataset", "Datasets:",
+      selectInput("dataset", "Select from the following datasets:",
                   c("SARS-CoV2 mAbs - heavy chains & light chains",
                     "SARS-CoV2 mAbs - IgH by binding",
                     "SARS-CoV2 mAbs - IgH by neutralization",
@@ -205,30 +415,21 @@ ui <- fluidPage(
                     "Dengue mAbs vs. Dengue patient bulk repertoires - IgH",
                     "Dengue mAbs vs. Dengue patient bulk repertoires - IgH combined",
                     "SARS-CoV2, HIV, & Dengue datasets - IgH combined",
-                    "Custom datasets - IgH",
-                    "Custom datasets - IgH combined"), selectize = FALSE),
-      fileInput(
-        inputId = "yourfile1", 
-        label = "For viewing 'Custom datasets - IgH', use the Import Data tab and then upload the converted & combined tsv/tab files ('separatepanels')", 
-        multiple = FALSE,
-        accept = c(".tsv",".tab")),
-      fileInput(
-        inputId = "yourfile2", 
-        label = "For viewing 'Custom datasets - IgH combined', use the Import Data tab and then upload the converted & combined tsv/tab files ('singleheatmap')", 
-        multiple = FALSE,
-        accept = c(".tsv",".tab")),
+                    "Custom datasets - IgH or TR (upload using Import Data tab)",
+                    "Custom datasets - IgH or TR combined (upload using Import Data tab)"), selectize = FALSE),
+      selectInput("xaxis", "Cluster sequences into bins by:",
+                  c("V-gene family + J-gene",
+                    "V-gene"), selectize = FALSE),
       selectInput("plotcolors", "Color bins by:",
                   c("Average SHM",
                     "Maximum SHM",
-                    "Percentage of total antibody sequences"), selectize = FALSE), 
-      h4("Import Data tab:"),
-      p("Use only to convert and combine AIRR-seq data for visualization in AIRRscape."),
-      h4("AIRRscape tab:"),
-      p("- Plots appear here. Hover over a bin to view some basic stats."),
-      p("- Click on a bin to display a list of its antibodies in the lower table. Alternatively, create a bounding box encompassing multiple bins to display these antibodies in the upper table."),
-      p("- Select antibodies in the lower table, and then construct CDR3 AA topologies of selected antibodies. For further analysis, download a selection or entire set of antibodies in the chosen bin, or download the distance matrix of all antibodies in the table."),
-      p("- In the topology drop-down menu, the first 2 options will construct a parsimony or NJ topology from the selected set of antibodies in the table. The final 4 options will find the nearest sequences (up to 500) of a single selected antibody, with four possible distance thresholds. Use the height & width sliders to change the window size of the topology."),
-      p("- Finally make sure to check that all antibodies in the table have the same CDR3 length or the topology calculation will fail."),
+                    "Percentage of total antibody or TCR sequences"), selectize = FALSE),
+      h4("Quick guide:"),
+      p("- Heatmaps of repertoires appear on the right panel. Hover over a bin to view some basic stats."),
+      p("- Tables of antibodies or TCR sequences will appear below the heatmap. Create a bounding box around multiple bins to display these sequences in the upper table. Alternatively, click on a bin to display a list of its antibodies or TCR sequences in the lower table."),
+      p("- From the lower table, select sequences to construct CDR3 AA topologies. For further analysis, download all or a selection of sequences in the chosen bin, or download the distance matrix of all sequences in the table."),
+      p("- In the topology drop-down menu, use the first 2 options to construct a parsimony or NJ topology from the selected set of sequences. Use the last 4 options to find the nearest sequences (up to 500) of a single selected sequence, with four possible distance thresholds. Use the sliders to change the window size of the topology."),
+      p("- Finally, be sure to check that all sequences in the table have the same CDR3 length; otherwise the topology calculation will fail. In cases where the heatmap bins are small, particularly when viewing datasets separately, the table may include sequences outside the bin of interest."),
       h4("GitHub repo & citation:"),
       tags$div("To run AIRRscape locally and for more detailed usage instructions, see the ", tags$a(href="https://github.com/czbiohub/AIRRscape", "README", target="_blank"), " on GitHub."),
       # p("To run AIRRscape locally and for more detailed usage instructions, see the ", a("README", href="https://github.com/czbiohub/AIRRscape", target="_blank"), " on GitHub."), #, target="_blank"
@@ -237,89 +438,28 @@ ui <- fluidPage(
       h6("Questions? Please email: eric.waltari at czbiohub.org"),
       width = 4
     ),
-
+    
     mainPanel(
       tabsetPanel(
-        tabPanel("Import Data",
-                 br(),
-                 h4("Import Data instructions:"),
-                 p("- Upload each separate tab/tsv file (maximum 6). AIRR-seq datasets following AIRR Community standards will be automatically converted for viewing in AIRRscape."),
-                 p("- Enter the name of each dataset - these will be used to label each panel."),
-                 p("- Click the combine button (Step 1 below) to make 2 copies of the combined datasets, one with separately labeled panels & one with all labels combined."), # , style = "text-indent: 1em;"
-                 p("- Note the Step 1 processing occurs in the background, so next just click each download button to get the two files (Steps 2 & 3 below)."),
-                 p("- Upload these two files in the left sidebar for viewing in the AIRRscape tab."),
-                 column(4,
-                        br(),
-                        fileInput(
-                          inputId = "calfile1", 
-                          label = "Select AIRR-seq tab/tsv dataset 1", 
-                          multiple = FALSE,
-                          accept = c(".tsv",".tab")),
-                        fileInput(
-                          inputId = "calfile2", 
-                          label = "Select AIRR-seq tab/tsv dataset 2", 
-                          multiple = FALSE,
-                          accept = c(".tsv",".tab")),
-                        fileInput(
-                          inputId = "calfile3", 
-                          label = "Select AIRR-seq tab/tsv dataset 3", 
-                          multiple = FALSE,
-                          accept = c(".tsv",".tab")),
-                        fileInput(
-                          inputId = "calfile4", 
-                          label = "Select AIRR-seq tab/tsv dataset 4", 
-                          multiple = FALSE,
-                          accept = c(".tsv",".tab")),
-                        fileInput(
-                          inputId = "calfile5", 
-                          label = "Select AIRR-seq tab/tsv dataset 5", 
-                          multiple = FALSE,
-                          accept = c(".tsv",".tab")),
-                        fileInput(
-                          inputId = "calfile6", 
-                          label = "Select AIRR-seq tab/tsv dataset 6", 
-                          multiple = FALSE,
-                          accept = c(".tsv",".tab")),
-                        br(),
-                        br(),
-                        actionButton("go0", "Step 1: Click to combine!"),
-                        br(),
-                        downloadButton("downloadfilter01","Step 2: Click to download combined datasets - separate heatmap panels"),
-                        downloadButton("downloadfilter02","Step 3: Click to download combined datasets - single heatmap")
-                        ),
-                 column(4,
-                        br(),
-                        textInput("name1", "Name of dataset 1:"),
-                        br(),
-                        textInput("name2", "Name of dataset 2:"),
-                        br(),
-                        textInput("name3", "Name of dataset 3:"),
-                        br(),
-                        br(),
-                        textInput("name4", "Name of dataset 4:"),
-                        br(),
-                        textInput("name5", "Name of dataset 5:"),
-                        br(),
-                        textInput("name6", "Name of dataset 6:")
-                        )
-                 ),
         tabPanel("AIRRscape",
                  plotOutput("ggplot1", width = "120%", height = "800px", hover = hoverOpts(id = "plot_hover", delay = 400, delayType = c("debounce", "throttle")), click = "plot_click", brush = "plot_brush"),
                  uiOutput("hover_info"),
                  # uiOutput("hover_info", style = "pointer-events: none"),
                  DT::dataTableOutput("brush_info"),
                  DT::dataTableOutput("click_info"),
-                 actionButton("go", "Construct CDR3 AA topology of selected sequences"), 
+                 br(),
+                 actionButton("go", "Construct CDR3 AA topology of selected sequences"),
                  downloadButton("downloadfilter","Download all rows in the selected bin"),
                  downloadButton("downloadfilter2","Download only selected rows in the bin"),
                  downloadButton("downloadfilter3","Download distance matrix of all rows in the selected bin"),
+                 br(),
                  selectInput("plottab", "Topology:",
                              c("Parsimony",
                                "NJ",
-                               "up to 500 nearest sequences to a single selected mAb - Parsimony; 100% CDR3 AA identity (Briney 2019)",
-                               "up to 500 nearest sequences to a single selected mAb - Parsimony; 80% CDR3 AA identity (Soto 2019)",
-                               "up to 500 nearest sequences to a single selected mAb - Parsimony; 70% CDR3 AA identity (Setliff 2018)",
-                               "up to 500 nearest sequences to a single selected mAb - Parsimony; 50% CDR3 AA identity"), selectize = FALSE),
+                               "up to 500 nearest sequences to a single selected sequence - Parsimony; 100% CDR3 AA identity (Briney 2019)",
+                               "up to 500 nearest sequences to a single selected sequence - Parsimony; 80% CDR3 AA identity (Soto 2019)",
+                               "up to 500 nearest sequences to a single selected sequence - Parsimony; 70% CDR3 AA identity (Setliff 2018)",
+                               "up to 500 nearest sequences to a single selected sequence - Parsimony; 50% CDR3 AA identity"), selectize = FALSE),
                  div(style="display: inline-block; width: 300px;",
                      sliderInput("height", "Topology height", min = 200, max = 4200, value = 1000)),
                  div(style="display: inline-block; width: 300px;",
@@ -327,12 +467,106 @@ ui <- fluidPage(
                  # div(style="display: inline-block; width: 300px;",
                  #     sliderInput("width", "Topology width2", min = 100, max = 3000, value = 1600)),
                  div(HTML("<br>")),br(),
-                 plotOutput("phyloPlot", inline = TRUE),
+                 withSpinner(plotOutput("phyloPlot", inline = TRUE)),
                  actionButton("screensht", "Take a screenshot")
+        ),
+        tabPanel("Import Data",
+                 br(),
+                 p("Use only to convert and combine custom AIRR-seq data for visualization in AIRRscape."),
+                 h4("Preprocessing instructions:"),
+                 p("1) Upload each separate tab/tsv file (maximum 6). AIRR-seq datasets following AIRR Community standards will be automatically converted for viewing in AIRRscape."),
+                 p("2) Enter the name of each dataset - these will be used to label each panel."),
+                 p("3) Click the combine button (Step 1 button below - only after 'Upload Complete' is showing for each dataset upload) to preprocess 2 copies of the combined datasets, one with separately labeled panels & one with all labels combined."), # , style = "text-indent: 1em;"
+                 p("     - Note the Step 1 processing occurs in the background"),
+                 p("4) Click each download button to get the two files (Steps 2 & 3 buttons below - wait for step 2 to finish download before pressing step 3 button). For larger datasets with >500,000 sequences processing may take seconds to minutes before the download proceeds."),
+                 fluidRow(
+                   column(4,
+                          br(),
+                          fileInput(
+                            inputId = "calfile1",
+                            label = "Select AIRR-seq tab/tsv dataset 1",
+                            multiple = FALSE,
+                            accept = c(".tsv",".tab")),
+                          fileInput(
+                            inputId = "calfile2",
+                            label = "Select AIRR-seq tab/tsv dataset 2",
+                            multiple = FALSE,
+                            accept = c(".tsv",".tab")),
+                          fileInput(
+                            inputId = "calfile3",
+                            label = "Select AIRR-seq tab/tsv dataset 3",
+                            multiple = FALSE,
+                            accept = c(".tsv",".tab")),
+                          fileInput(
+                            inputId = "calfile4",
+                            label = "Select AIRR-seq tab/tsv dataset 4",
+                            multiple = FALSE,
+                            accept = c(".tsv",".tab")),
+                          fileInput(
+                            inputId = "calfile5",
+                            label = "Select AIRR-seq tab/tsv dataset 5",
+                            multiple = FALSE,
+                            accept = c(".tsv",".tab")),
+                          fileInput(
+                            inputId = "calfile6",
+                            label = "Select AIRR-seq tab/tsv dataset 6",
+                            multiple = FALSE,
+                            accept = c(".tsv",".tab")),
+                   ),
+                   column(4,
+                          br(),
+                          textInput("name1", "Name of dataset 1:"),
+                          br(),
+                          textInput("name2", "Name of dataset 2:"),
+                          br(),
+                          textInput("name3", "Name of dataset 3:"),
+                          br(),
+                          textInput("name4", "Name of dataset 4:"),
+                          br(),
+                          textInput("name5", "Name of dataset 5:"),
+                          br(),
+                          textInput("name6", "Name of dataset 6:")
+                   )
+                 ),
+                 fluidRow(
+                   actionButton("go0", "Step 1: Click to combine!"),
+                   br(),
+                   p(),
+                   downloadButton("downloadfilter01","Step 2: Click to download combined datasets - separate heatmap panels"),
+                   br(),
+                   p(),
+                   downloadButton("downloadfilter02","Step 3: Click to download combined datasets - single heatmap"),
+                   br(),
+                   p(),
+                 ),
+                 fluidRow(
+                   h4("Import Data instructions:")
+                 ),
+                 fluidRow(
+                   p("Upload the two preprocessed files for viewing in the AIRRscape tab:"),
+                   p(),
+                   p()
+                 ),
+                 fluidRow(
+                   fileInput(
+                     inputId = "yourfile1",
+                     label = "For viewing 'Custom datasets - IgH or TR', upload the processed tsv/tab file ending in 'separatepanels'",
+                     width = 600,
+                     multiple = FALSE,
+                     accept = c(".tsv",".tab")),
+                   br(),
+                   p(),
+                   fileInput(
+                     inputId = "yourfile2",
+                     label = "For viewing 'Custom datasets - IgH or TR combined', upload the processed tsv/tab file ending in 'singleheatmap'",
+                     width = 600,
+                     multiple = FALSE,
+                     accept = c(".tsv",".tab"))
+                 )
         )
+      )
     )
   )
-)
 )
 
 ########### all the rest is server code ##########
@@ -341,8 +575,8 @@ server <- function(input, output, session) {
   ## early in server now defining facets here - this is where all of the sidebar dataset options are tied to a dataset
   
   ## ADDING AIRRscapeInput APP (SERVER PART) HERE...
-########################################### INPUT COMPONENT ################################################  
-########### importing/combining data code ##########
+  ########################################### INPUT COMPONENT ################################################
+  ########### importing/combining data code ##########
   
   ## need to add uploads1 <- NULL ???
   ## this only works if you include the if isn't null argument...also another tricky part is below where you specify these if selected (the inputdataset <- reactive({ part...), you need to add parentheses, so uploads1() and uploads2() !!!
@@ -496,7 +730,7 @@ server <- function(input, output, session) {
       upload6afterconv
     }
   })
-
+  
   # toshiny.yourdataset.all.renamed <- reactive({  - changing to eventReactive per example in chapter 3 mastering shiny
   toshiny.yourdataset.all.renamed <- eventReactive(input$go0, {
     
@@ -507,14 +741,14 @@ server <- function(input, output, session) {
     # dataset5 <- input$name5
     # dataset6 <- input$name6
     toshiny.yourdataset.all <- bind_rows(convert1(), convert2(), convert3(), convert4(), convert5(), convert6(), .id = "id")
-    ## removing numbers to better substitute any input  
+    ## removing numbers to better substitute any input
     toshiny.yourdataset.all$id <- gsub("1","1-numberone",toshiny.yourdataset.all$id)
     toshiny.yourdataset.all$id <- gsub("2","2-numbertwo",toshiny.yourdataset.all$id)
     toshiny.yourdataset.all$id <- gsub("3","3-numberthree",toshiny.yourdataset.all$id)
     toshiny.yourdataset.all$id <- gsub("4","4-numberfour",toshiny.yourdataset.all$id)
     toshiny.yourdataset.all$id <- gsub("5","5-numberfive",toshiny.yourdataset.all$id)
     toshiny.yourdataset.all$id <- gsub("6","6-numbersix",toshiny.yourdataset.all$id)
-    ## now here add in user inputs...  
+    ## now here add in user inputs...
     ## ordering doesn't seem to work - instead add numbers to id??
     toshiny.yourdataset.all$id <- gsub("numberone",paste0(input$name1),toshiny.yourdataset.all$id)
     toshiny.yourdataset.all$id <- gsub("numbertwo",paste0(input$name2),toshiny.yourdataset.all$id)
@@ -534,8 +768,15 @@ server <- function(input, output, session) {
     ## adding conversion to standardize light chain naming if necessary...
     toshiny.yourdataset.all$cregion <- gsub("IgK","Kappa",toshiny.yourdataset.all$cregion)
     toshiny.yourdataset.all$cregion <- gsub("IgL","Lambda",toshiny.yourdataset.all$cregion)
-    ## this will filter to heavy chains only...
-    toshiny.yourdataset.all <- toshiny.yourdataset.all %>% filter(cregion == "IgH" | cregion == "IgA" | cregion == "IgD" | cregion == "IgE" | cregion == "IgG" | cregion == "IgM")
+    ## this will filter to heavy chains only...need to add TRs
+    # toshiny.yourdataset.all <- toshiny.yourdataset.all %>% filter(cregion == "IgH" | cregion == "IgA" | cregion == "IgD" | cregion == "IgE" | cregion == "IgG" | cregion == "IgM")
+    # toshiny.yourdataset.all <- toshiny.yourdataset.all %>% filter(cregion == "IgH" | cregion == "IgA" | cregion == "IgD" | cregion == "IgE" | cregion == "IgG" | cregion == "IgM" | cregion == "TRA" | cregion == "TRB")
+    # filter(expr, cell_type %in% c("bj fibroblast", "hesc")) - changing to simpler negation...SHIFTING BACK IN CASE THIS IS CAUSING SHINY SERVER CODE TO FAIL...
+    ## back again to simpler negation, after fixing NAs in cregion in the AIRRscapeprocess function earlier
+    # toshiny.yourdataset.all <- toshiny.yourdataset.all %>% filter(cregion == "IgH" | cregion == "IgA" | cregion == "IgD" | cregion == "IgE" | cregion == "IgG" | cregion == "IgM" | cregion == "IgA1" | cregion == "IgA2" | cregion == "IgG1" | cregion == "IgG2" | cregion == "IgG3" | cregion == "IgG4" | cregion == "IgG2A" | cregion == "IgG2B" | cregion == "IgG2C" | cregion == "TRA" | cregion == "TRB")
+    ## instead of exact matches to kappa or lambda, use grepl...https://stackoverflow.com/questions/22850026/filter-rows-which-contain-a-certain-string
+    # toshiny.yourdataset.all <- toshiny.yourdataset.all %>% filter(!cregion %in% c("Kappa", "Lambda"))
+    toshiny.yourdataset.all <- toshiny.yourdataset.all %>% dplyr::filter(!grepl('Kappa|Lambda', cregion))
     ## add factor?? - note need to add the , exclude=NULL - need to set levels first levels = ordering
     ## doesn't seem to work - instead and numbers to id?
     # ordering <- unique(c(paste0(input$name1),paste0(input$name2),paste0(input$name3),paste0(input$name4),paste0(input$name5),paste0(input$name6)))
@@ -549,22 +790,38 @@ server <- function(input, output, session) {
   toshiny.yourdataset.allc.renamed <- eventReactive(input$go0, {
     toshiny.yourdataset.allc <- toshiny.yourdataset.all.renamed()
     toshiny.yourdataset.allc$ncount <- NULL
+    toshiny.yourdataset.allc$ncount_vgene <- NULL
     toshiny.yourdataset.allc$shm_mean <- NULL
     toshiny.yourdataset.allc$shm_max <- NULL
+    toshiny.yourdataset.allc$shm_byvgene_mean <- NULL
+    toshiny.yourdataset.allc$shm_byvgene_max <- NULL
     toshiny.yourdataset.allc$cregion0 <- toshiny.yourdataset.allc$cregion
-    toshiny.yourdataset.allc$cregion <- "IgH"
+    toshiny.yourdataset.allc$cregion <- "IgH or TR"
     toshiny.yourdataset.allc <- toshiny.yourdataset.allc %>%
       add_count(vgf_jgene,cdr3length_imgt) %>%
       rename(ncount = n) %>%
+      ungroup() %>%
+      add_count(vgene,cdr3length_imgt) %>%
+      rename(ncount_vgene = n) %>%
+      ungroup() %>%
+      group_by(vgene,cdr3length_imgt) %>%
+      mutate(shm_byvgene_mean = mean(shm, na.rm = TRUE)) %>%
+      # NOTE ADDING MAX & MEAN SHM BY V-GENE
+      mutate(shm_byvgene_max = max(shm, na.rm = TRUE)) %>%
+      ungroup() %>%
       group_by(vgf_jgene,cdr3length_imgt) %>%
       mutate(shm_mean = mean(shm, na.rm = TRUE)) %>%
-      # ADD MAX SHM AS WELL..
-      mutate(shm_max = max(shm, na.rm = TRUE)) %>% 
-      mutate(shm_mean = na_if(shm_mean, "NaN")) %>% 
-      mutate(shm_max = na_if(shm_max, "-Inf")) %>% 
-      mutate(across(shm, round, 2)) %>% 
-      mutate(across(shm_max, round, 2)) %>% 
-      mutate(across(shm_mean, round, 2))
+      # NOTE ADDIN MAX SHM AS WELL..
+      mutate(shm_max = max(shm, na.rm = TRUE)) %>%
+      mutate(shm_mean = na_if(shm_mean, "NaN")) %>%
+      mutate(shm_max = na_if(shm_max, "-Inf")) %>%
+      mutate(across(shm, round, 2)) %>%
+      mutate(across(shm_max, round, 2)) %>%
+      mutate(across(shm_mean, round, 2)) %>%
+      mutate(shm_byvgene_mean = na_if(shm_byvgene_mean, "NaN")) %>%
+      mutate(shm_byvgene_max = na_if(shm_byvgene_max, "-Inf")) %>%
+      mutate(across(shm_byvgene_max, round, 2)) %>%
+      mutate(across(shm_byvgene_mean, round, 2))
     toshiny.yourdataset.allc
   })
   
@@ -587,25 +844,25 @@ server <- function(input, output, session) {
       # write.table(toshiny.yourdataset.allc.renamed(),file, sep = "\t", row.names = FALSE)
       write_tsv(toshiny.yourdataset.allc.renamed(),file)
     }
-  )      
+  )
   
-####################################### END INPUT COMPONENT ################################################  
-########### adding importing/combined datasets to AIRRscape ##########
+  ####################################### END INPUT COMPONENT ################################################
+  ########### adding importing/combined datasets to AIRRscape ##########
   
-## more recent addition - where converted/combined datasets are added to AIRRscape  
-## this only works if you include the if isn't null argument...also another tricky part is below where you specify these if selected (the inputdataset <- reactive({ part...), you need to add parentheses, so uploads11() and uploads12() !!!
+  ## more recent addition - where converted/combined datasets are added to AIRRscape
+  ## this only works if you include the if isn't null argument...also another tricky part is below where you specify these if selected (the inputdataset <- reactive({ part...), you need to add parentheses, so uploads11() and uploads12() !!!
   ### to speed things up, moving from read.delim to read_tsv - but note this imports as tibble, not dataframe (https://www.rstudio.com/blog/tibble-1-0-0/)
   # A handful of functions are don’t work with tibbles because they expect df[, 1] to return a vector, not a data frame. If you encounter one of these functions, use as.data.frame() to turn a tibble back to a data frame:
   uploads11 <- reactive({
     if (!is.null(input$yourfile1)) {
-    upload11 <- read_tsv(input$yourfile1$datapath) %>% as.data.frame()
-    # upload11 <- read.delim(input$yourfile1$datapath)
-    upload11$sequence_id <- as.character(upload11$sequence_id)
-    upload11$cdr3_aa_imgt <- as.character(upload11$cdr3_aa_imgt)
-    upload11
+      upload11 <- read_tsv(input$yourfile1$datapath) %>% as.data.frame()
+      # upload11 <- read.delim(input$yourfile1$datapath)
+      upload11$sequence_id <- as.character(upload11$sequence_id)
+      upload11$cdr3_aa_imgt <- as.character(upload11$cdr3_aa_imgt)
+      upload11
     }
   })
-
+  
   uploads12 <- reactive({
     if (!is.null(input$yourfile2)) {
       upload12 <- read_tsv(input$yourfile2$datapath) %>% as.data.frame()
@@ -616,16 +873,16 @@ server <- function(input, output, session) {
     }
   })
   
-## JW idea: add an else if, running the convert function if needed...? but also need to combine datasets, not just convert...
+  ## JW idea: add an else if, running the convert function if needed...? but also need to combine datasets, not just convert...
   ## it turns out best to convert+combine in the first tab, then just input the combined datasest at this stage
   ## if one tries to convert here, sometimes errors will arise...
   convert11 <- NULL
   convert12 <- NULL
   convert11 <- reactive({
     if (!is.null(uploads11())) {
-    uploaded_dataset1 <- uploads11()
-    if (is.null(uploaded_dataset1$vgf_jgene)) {
-      upload11afterconv <- AIRRscapeprocess(uploaded_dataset1)
+      uploaded_dataset1 <- uploads11()
+      if (is.null(uploaded_dataset1$vgf_jgene)) {
+        upload11afterconv <- AIRRscapeprocess(uploaded_dataset1)
       } else {
         upload11afterconv <- uploaded_dataset1
         upload11afterconv$cregion <- gsub('IG','Ig',upload11afterconv$cregion)
@@ -633,42 +890,42 @@ server <- function(input, output, session) {
         upload11afterconv$cregion <- gsub("IgK","Kappa",upload11afterconv$cregion)
         upload11afterconv$cregion <- gsub("IgL","Lambda",upload11afterconv$cregion)
       }
-    if (!("id" %in% names(upload11afterconv))) {
-      upload11afterconv$id <- "Uploaded Dataset"
-      upload11afterconv <- upload11afterconv %>% relocate(id)
-    }
-    upload11afterconv$sequence_id <- as.character(upload11afterconv$sequence_id)
-    upload11afterconv$cdr3_aa_imgt <- as.character(upload11afterconv$cdr3_aa_imgt)
-    upload11afterconv
-    }
-    })
-  convert12 <- reactive({
-    if (!is.null(uploads12())) {
-    uploaded_dataset2 <- uploads12()
-    if (is.null(uploaded_dataset2$vgf_jgene)) {
-      upload12afterconv <- AIRRscapeprocess(uploaded_dataset2)
-    } else {
-      upload12afterconv <- uploaded_dataset2
-      upload12afterconv$cregion <- gsub('IG','Ig',upload12afterconv$cregion)
-      ## adding conversion to standardize light chain naming if necessary...
-      upload12afterconv$cregion <- gsub("IgK","Kappa",upload12afterconv$cregion)
-      upload12afterconv$cregion <- gsub("IgL","Lambda",upload12afterconv$cregion)
-    }
-    if (!("id" %in% names(upload12afterconv))) {
-      upload12afterconv$id <- "Uploaded Dataset"
-      upload12afterconv <- upload12afterconv %>% relocate(id)
-    }
-    upload12afterconv$sequence_id <- as.character(upload12afterconv$sequence_id)
-    upload12afterconv$cdr3_aa_imgt <- as.character(upload12afterconv$cdr3_aa_imgt)
-    upload12afterconv
+      if (!("id" %in% names(upload11afterconv))) {
+        upload11afterconv$id <- "Uploaded Dataset"
+        upload11afterconv <- upload11afterconv %>% relocate(id)
+      }
+      upload11afterconv$sequence_id <- as.character(upload11afterconv$sequence_id)
+      upload11afterconv$cdr3_aa_imgt <- as.character(upload11afterconv$cdr3_aa_imgt)
+      upload11afterconv
     }
   })
-
-########### original AIRRscape visualization code ##########
-## original code for visualizing (but adding users datasets as last 2 dataset options)
+  convert12 <- reactive({
+    if (!is.null(uploads12())) {
+      uploaded_dataset2 <- uploads12()
+      if (is.null(uploaded_dataset2$vgf_jgene)) {
+        upload12afterconv <- AIRRscapeprocess(uploaded_dataset2)
+      } else {
+        upload12afterconv <- uploaded_dataset2
+        upload12afterconv$cregion <- gsub('IG','Ig',upload12afterconv$cregion)
+        ## adding conversion to standardize light chain naming if necessary...
+        upload12afterconv$cregion <- gsub("IgK","Kappa",upload12afterconv$cregion)
+        upload12afterconv$cregion <- gsub("IgL","Lambda",upload12afterconv$cregion)
+      }
+      if (!("id" %in% names(upload12afterconv))) {
+        upload12afterconv$id <- "Uploaded Dataset"
+        upload12afterconv <- upload12afterconv %>% relocate(id)
+      }
+      upload12afterconv$sequence_id <- as.character(upload12afterconv$sequence_id)
+      upload12afterconv$cdr3_aa_imgt <- as.character(upload12afterconv$cdr3_aa_imgt)
+      upload12afterconv
+    }
+  })
+  
+  ########### original AIRRscape visualization code ##########
+  ## original code for visualizing (but adding users datasets as last 2 dataset options)
   
   facetvar1 <- reactive({
-    switch(input$dataset, "SARS-CoV2 mAbs - heavy chains & light chains" = "cregion", "SARS-CoV2 mAbs - IgH by binding" = "binding", "SARS-CoV2 mAbs - IgH by neutralization" = "neutralization", "SARS-CoV2 mAbs vs. COVID-19 patient bulk repertoires vs. Healthy control - IgH" = "id", "SARS-CoV2 mAbs vs. COVID-19 patient bulk repertoires vs. Healthy control - IgH combined" = "cregion", "SARS-CoV2 mAbs vs. HIV mAbs - IgH" = "id", "SARS-CoV2 mAbs vs. HIV mAbs - IgH combined" = "cregion", "HIV mAbs vs. HIV patient bulk repertoires - IgH" = "id", "HIV mAbs vs. HIV patient bulk repertoires - IgH combined" = "cregion", "Dengue mAbs vs. Dengue patient bulk repertoires - IgH" = "id", "Dengue mAbs vs. Dengue patient bulk repertoires - IgH combined" = "cregion", "SARS-CoV2, HIV, & Dengue datasets - IgH combined" = "cregion","Custom datasets - IgH" = "id", "Custom datasets - IgH combined" = "cregion")
+    switch(input$dataset, "SARS-CoV2 mAbs - heavy chains & light chains" = "cregion", "SARS-CoV2 mAbs - IgH by binding" = "binding", "SARS-CoV2 mAbs - IgH by neutralization" = "neutralization", "SARS-CoV2 mAbs vs. COVID-19 patient bulk repertoires vs. Healthy control - IgH" = "id", "SARS-CoV2 mAbs vs. COVID-19 patient bulk repertoires vs. Healthy control - IgH combined" = "cregion", "SARS-CoV2 mAbs vs. HIV mAbs - IgH" = "id", "SARS-CoV2 mAbs vs. HIV mAbs - IgH combined" = "cregion", "HIV mAbs vs. HIV patient bulk repertoires - IgH" = "id", "HIV mAbs vs. HIV patient bulk repertoires - IgH combined" = "cregion", "Dengue mAbs vs. Dengue patient bulk repertoires - IgH" = "id", "Dengue mAbs vs. Dengue patient bulk repertoires - IgH combined" = "cregion", "SARS-CoV2, HIV, & Dengue datasets - IgH combined" = "cregion","Custom datasets - IgH or TR (upload using Import Data tab)" = "id", "Custom datasets - IgH or TR combined (upload using Import Data tab)" = "cregion")
   })
   ## to change x-axis columns vs. leaving fixed (for IgH only datasets) - note if you leave out default is fixed...
   facetvar2 <- reactive({
@@ -677,7 +934,7 @@ server <- function(input, output, session) {
   
   inputdataset <- reactive({
     ## using new names that reduce variables, round
-    switch(input$dataset, "SARS-CoV2 mAbs - heavy chains & light chains" = toshiny.cov2.abdab, "SARS-CoV2 mAbs - IgH by binding" = toshiny.cov2.abdab.h, "SARS-CoV2 mAbs - IgH by neutralization" = toshiny.cov2.abdab.h, "SARS-CoV2 mAbs vs. COVID-19 patient bulk repertoires vs. Healthy control - IgH" = toshiny.cov2.all, "SARS-CoV2 mAbs vs. COVID-19 patient bulk repertoires vs. Healthy control - IgH combined" = toshiny.cov2.allc, "SARS-CoV2 mAbs vs. HIV mAbs - IgH" = toshiny.cov2hiv, "SARS-CoV2 mAbs vs. HIV mAbs - IgH combined" = toshiny.cov2hivc, "HIV mAbs vs. HIV patient bulk repertoires - IgH" = toshiny.hiv.all, "HIV mAbs vs. HIV patient bulk repertoires - IgH combined" = toshiny.hiv.allc, "Dengue mAbs vs. Dengue patient bulk repertoires - IgH" = toshiny.den.all, "Dengue mAbs vs. Dengue patient bulk repertoires - IgH combined" = toshiny.den.allc, "SARS-CoV2, HIV, & Dengue datasets - IgH combined" = toshiny.cov2hivden.allc, "Custom datasets - IgH" = convert11(), "Custom datasets - IgH combined" = convert12())
+    switch(input$dataset, "SARS-CoV2 mAbs - heavy chains & light chains" = toshiny.cov2.abdab, "SARS-CoV2 mAbs - IgH by binding" = toshiny.cov2.abdab.h, "SARS-CoV2 mAbs - IgH by neutralization" = toshiny.cov2.abdab.h, "SARS-CoV2 mAbs vs. COVID-19 patient bulk repertoires vs. Healthy control - IgH" = toshiny.cov2.all, "SARS-CoV2 mAbs vs. COVID-19 patient bulk repertoires vs. Healthy control - IgH combined" = toshiny.cov2.allc, "SARS-CoV2 mAbs vs. HIV mAbs - IgH" = toshiny.cov2hiv, "SARS-CoV2 mAbs vs. HIV mAbs - IgH combined" = toshiny.cov2hivc, "HIV mAbs vs. HIV patient bulk repertoires - IgH" = toshiny.hiv.all, "HIV mAbs vs. HIV patient bulk repertoires - IgH combined" = toshiny.hiv.allc, "Dengue mAbs vs. Dengue patient bulk repertoires - IgH" = toshiny.den.all, "Dengue mAbs vs. Dengue patient bulk repertoires - IgH combined" = toshiny.den.allc, "SARS-CoV2, HIV, & Dengue datasets - IgH combined" = toshiny.cov2hivden.allc, "Custom datasets - IgH or TR (upload using Import Data tab)" = convert11(), "Custom datasets - IgH or TR combined (upload using Import Data tab)" = convert12())
   })
   ## extra filter for downloading
   filteredDS <- reactive({
@@ -698,7 +955,7 @@ server <- function(input, output, session) {
   })
   
   ### added code to allow for trees of subsetted data:
-  # Thanks to @yihui this is now possible using the DT package and input$tableId_rows_all 
+  # Thanks to @yihui this is now possible using the DT package and input$tableId_rows_all
   # where tableID is the id assigned to your table. See the link for details. http://rstudio.github.io/DT/shiny.html
   filteredDSpartial <- reactive({
     ids <- input$click_info_rows_selected
@@ -739,7 +996,7 @@ server <- function(input, output, session) {
     dmalldf = dist.hamming(seqsall, ratio = TRUE)
     dm.matrixall <- as.matrix(dmalldf) %>% as.data.frame()
     dm.matrixall
-  })        
+  })
   
   ### Hover output: popup window
   output$hover_info <- renderUI({
@@ -777,14 +1034,25 @@ server <- function(input, output, session) {
     style <- paste0("position:absolute; z-index:100; pointer-events:none; background-color: rgba(245, 245, 245, 0.85); ",
                     "left:", left_px, "px; top:", top_px + 20, "px;")
     # actual tooltip created as wellPanel - TO ACTUALLY GET COUNTS NEED TO GET FROM STAT_BIN ANALYSIS...
-    wellPanel(
-      style = style,
-      p(HTML(paste0("<b> V-gene & J-gene: </b>", point$vgf_jgene, "<br/>",
-                    "<b> CDR3 Length (aa): </b>", point$cdr3length_imgt, "<br/>",
-                    "<b> Mean Somatic Hypermutation (%): </b>", point$shm_mean, "<br/>",
-                    "<b> Max Somatic Hypermutation (%): </b>", point$shm_max, "<br/>",
-                    "<b> Count: </b>", point$ncount, "<br/>")))
-    )
+    if (input$xaxis == "V-gene") {
+      wellPanel(
+        style = style,
+        p(HTML(paste0("<b> V-gene: </b>", point$vgene, "<br/>",
+                      "<b> CDR3 Length (aa): </b>", point$cdr3length_imgt, "<br/>",
+                      "<b> Mean Somatic Hypermutation by V-gene (%): </b>", point$shm_byvgene_mean, "<br/>",
+                      "<b> Max Somatic Hypermutation by V-gene (%): </b>", point$shm_byvgene_max, "<br/>",
+                      "<b> V-gene Count: </b>", point$ncount_vgene, "<br/>")))
+      )
+    } else {
+      wellPanel(
+        style = style,
+        p(HTML(paste0("<b> V-gene & J-gene: </b>", point$vgf_jgene, "<br/>",
+                      "<b> CDR3 Length (aa): </b>", point$cdr3length_imgt, "<br/>",
+                      "<b> Mean Somatic Hypermutation (%): </b>", point$shm_mean, "<br/>",
+                      "<b> Max Somatic Hypermutation (%): </b>", point$shm_max, "<br/>",
+                      "<b> V-gene & J-gene Count: </b>", point$ncount, "<br/>")))
+      )
+    }
   })
   
   ### the heatmap (now the only plot)
@@ -792,19 +1060,46 @@ server <- function(input, output, session) {
     ## first line for picking among different graphs
     facet_formula <- as.formula(paste("~", facetvar1()))
     dat <- inputdataset()
+    ## adding sort for when more than 10 vgenes or jgenes
+    lvls.vgf_jgene <- stringr::str_sort(unique(dat$vgf_jgene), numeric = TRUE)
+    dat$vgf_jgene <- factor(dat$vgf_jgene, levels = lvls.vgf_jgene)
+    lvls.vgene <- stringr::str_sort(unique(dat$vgene), numeric = TRUE)
+    dat$vgene <- factor(dat$vgene, levels = lvls.vgene)
+    lvls.jgene <- stringr::str_sort(unique(dat$jgene), numeric = TRUE)
+    dat$jgene <- factor(dat$jgene, levels = lvls.jgene)
     #    note at end of the 3 plot commands below has a final geom_point plotting step to add a green square under the hover, currently it disappears after a moment - tried adding an isolate command, didn't solve
-    data2 <- if (input$plotcolors == "Average SHM") {
-      toplot <- ggplot(dat, aes(vgf_jgene,cdr3length_imgt)) + geom_tile(aes(fill = shm_mean)) + scale_y_continuous(limits = c(3, 42)) + theme_bw(base_size = 16) + ylab("CDR3 Length (aa)") + xlab("V-gene & J-gene") + facet_wrap(facet_formula, ncol = 1, scales = facetvar2()) + scale_fill_viridis_c(name = "Mean \nSHM (%)", option = "C") + theme(axis.text.x = element_text(angle=45, hjust=1, size=8)) + ggtitle("Bins of V+J gene families vs. CDR3 length, with Mean Somatic Hypermutation as fill color") + theme(plot.title = element_text(size = 20, face = "bold")) #+ geom_point(data=subset(dat, vgf_jgene ==  highlightedpointsDSx() & cdr3length_imgt == highlightedpointsDSy()), color = "green", shape = "square", size = 4)
-    } else if (input$plotcolors == "Maximum SHM") {
-      toplot <- ggplot(dat, aes(vgf_jgene,cdr3length_imgt)) + geom_tile(aes(fill = shm_max)) + scale_y_continuous(limits = c(3, 42)) + theme_bw(base_size = 16) + ylab("CDR3 Length (aa)") + xlab("V-gene & J-gene") + facet_wrap(facet_formula, ncol = 1, scales = facetvar2()) + scale_fill_viridis_c(name = "Max \nSHM (%)", option = "C") + theme(axis.text.x = element_text(angle=45, hjust=1, size=8)) + ggtitle("Bins of V+J gene families vs. CDR3 length, with Maximum Somatic Hypermutation as fill color") + theme(plot.title = element_text(size = 20, face = "bold")) #+ geom_point(data=subset(dat, vgf_jgene ==  highlightedpointsDSx() & cdr3length_imgt == highlightedpointsDSy()), color = "green", shape = "square", size = 4)
+    ## adding second if statemnt for v-genes only on x-axis "Percentage of total antibody or TCR sequences"
+    ##       selectInput("xaxis", "Bins cluster sequences by:", c("V-gene family + J-gene",  "V-gene"), selectize = FALSE),
+    data2 <- if (input$xaxis == "V-gene family + J-gene" && input$plotcolors == "Average SHM" && substring(dat$vgf[1],1,2) == "IG") {
+      toplot <- ggplot(dat, aes(vgf_jgene,cdr3length_imgt)) + geom_tile(aes(fill = shm_mean)) + scale_y_continuous(limits = c(3, 42)) + theme_bw(base_size = 16) + ylab("CDR3 Length (aa)") + xlab("V-gene & J-gene") + facet_wrap(facet_formula, ncol = 1, scales = facetvar2()) + scale_fill_viridis_c(name = "Mean \nSHM (%)", option = "C") + theme(axis.text.x = element_text(angle=45, hjust=1, size=8)) + ggtitle("Bins of V+J gene families vs. CDR3 length, with Mean Somatic Hypermutation as fill color") + theme(plot.title = element_text(size = 20, face = "plain")) #+ geom_point(data=subset(dat, vgf_jgene ==  highlightedpointsDSx() & cdr3length_imgt == highlightedpointsDSy()), color = "green", shape = "square", size = 4)
+    } else if (input$xaxis == "V-gene family + J-gene" && input$plotcolors == "Maximum SHM" && substring(dat$vgf[1],1,2) == "IG") {
+      toplot <- ggplot(dat, aes(vgf_jgene,cdr3length_imgt)) + geom_tile(aes(fill = shm_max)) + scale_y_continuous(limits = c(3, 42)) + theme_bw(base_size = 16) + ylab("CDR3 Length (aa)") + xlab("V-gene & J-gene") + facet_wrap(facet_formula, ncol = 1, scales = facetvar2()) + scale_fill_viridis_c(name = "Max \nSHM (%)", option = "C") + theme(axis.text.x = element_text(angle=45, hjust=1, size=8)) + ggtitle("Bins of V+J gene families vs. CDR3 length, with Maximum Somatic Hypermutation as fill color") + theme(plot.title = element_text(size = 20, face = "plain")) #+ geom_point(data=subset(dat, vgf_jgene ==  highlightedpointsDSx() & cdr3length_imgt == highlightedpointsDSy()), color = "green", shape = "square", size = 4)
+    } else if (input$xaxis == "V-gene family + J-gene" && input$plotcolors == "Percentage of total antibody or TCR sequences" && substring(dat$vgf[1],1,2) == "IG") {
+      toplot <- ggplot(dat, aes(vgf_jgene,cdr3length_imgt)) + geom_bin2d(bins = 40, aes(fill= (..count..)*100/tapply(..count..,..PANEL..,sum)[..PANEL..])) + scale_y_continuous(limits = c(3, 42)) + theme_bw(base_size = 16) + ylab("CDR3 Length (aa)") + xlab("V-gene & J-gene") + facet_wrap(facet_formula, ncol = 1, scales = facetvar2()) + scale_fill_viridis_c(name = "% of \nReads  ", option = "C") + theme(axis.text.x = element_text(angle=45, hjust=1, size=8)) + ggtitle("Bins of V+J gene families vs. CDR3 length, with Percentage of total sequences as fill color") + theme(plot.title = element_text(size = 20, face = "plain")) #+ geom_point(data=subset(dat, vgf_jgene ==  highlightedpointsDSx() & cdr3length_imgt == highlightedpointsDSy()), color = "green", shape = "square", size = 4)
+    } else if (input$xaxis == "V-gene" && input$plotcolors == "Average SHM" && substring(dat$vgf[1],1,2) == "IG") {
+      toplot <- ggplot(dat, aes(vgene,cdr3length_imgt)) + geom_tile(aes(fill = shm_byvgene_mean)) + scale_y_continuous(limits = c(3, 42)) + theme_bw(base_size = 16) + ylab("CDR3 Length (aa)") + xlab("V-gene") + facet_wrap(facet_formula, ncol = 1, scales = facetvar2()) + scale_fill_viridis_c(name = "Mean \nSHM (%)", option = "C") + theme(axis.text.x = element_text(angle=45, hjust=1, size=8)) + ggtitle("Bins of V-genes vs. CDR3 length, with Mean Somatic Hypermutation as fill color") + theme(plot.title = element_text(size = 20, face = "plain")) #+ geom_point(data=subset(dat, vgf_jgene ==  highlightedpointsDSx() & cdr3length_imgt == highlightedpointsDSy()), color = "green", shape = "square", size = 4)
+    } else if (input$xaxis == "V-gene" && input$plotcolors == "Maximum SHM" && substring(dat$vgf[1],1,2) == "IG") {
+      toplot <- ggplot(dat, aes(vgene,cdr3length_imgt)) + geom_tile(aes(fill = shm_byvgene_max)) + scale_y_continuous(limits = c(3, 42)) + theme_bw(base_size = 16) + ylab("CDR3 Length (aa)") + xlab("V-gene") + facet_wrap(facet_formula, ncol = 1, scales = facetvar2()) + scale_fill_viridis_c(name = "Max \nSHM (%)", option = "C") + theme(axis.text.x = element_text(angle=45, hjust=1, size=8)) + ggtitle("Bins of V-genes vs. CDR3 length, with Maximum Somatic Hypermutation as fill color") + theme(plot.title = element_text(size = 20, face = "plain")) #+ geom_point(data=subset(dat, vgf_jgene ==  highlightedpointsDSx() & cdr3length_imgt == highlightedpointsDSy()), color = "green", shape = "square", size = 4)
+    } else if (input$xaxis == "V-gene" && input$plotcolors == "Percentage of total antibody or TCR sequences" && substring(dat$vgf[1],1,2) == "IG") {
+      toplot <- ggplot(dat, aes(vgene,cdr3length_imgt)) + geom_bin2d(bins = 40, aes(fill= (..count..)*100/tapply(..count..,..PANEL..,sum)[..PANEL..])) + scale_y_continuous(limits = c(3, 42)) + theme_bw(base_size = 16) + ylab("CDR3 Length (aa)") + xlab("V-gene") + facet_wrap(facet_formula, ncol = 1, scales = facetvar2()) + scale_fill_viridis_c(name = "% of \nReads  ", option = "C") + theme(axis.text.x = element_text(angle=45, hjust=1, size=8)) + ggtitle("Bins of V-genes vs. CDR3 length, with Percentage of total sequences as fill color") + theme(plot.title = element_text(size = 20, face = "plain")) #+ geom_point(data=subset(dat, vgf_jgene ==  highlightedpointsDSx() & cdr3length_imgt == highlightedpointsDSy()), color = "green", shape = "square", size = 4)
+    } else if (input$xaxis == "V-gene family + J-gene" && input$plotcolors == "Average SHM" && substring(dat$vgf[1],1,2) == "TR") {
+      toplot <- ggplot(dat, aes(vgf_jgene,cdr3length_imgt)) + geom_tile(aes(fill = shm_max)) + scale_y_continuous(limits = c(3, 22)) + theme_bw(base_size = 16) + ylab("CDR3 Length (aa)") + xlab("V-gene & J-gene") + facet_wrap(facet_formula, ncol = 1, scales = facetvar2()) + scale_fill_viridis_c(name = "Max \nSHM (%)", option = "C") + theme(axis.text.x = element_text(angle=45, hjust=1, size=8)) + ggtitle("Bins of V+J gene families vs. CDR3 length, with Maximum Somatic Hypermutation as fill color") + theme(plot.title = element_text(size = 20, face = "plain")) #+ geom_point(data=subset(dat, vgf_jgene ==  highlightedpointsDSx() & cdr3length_imgt == highlightedpointsDSy()), color = "green", shape = "square", size = 4)
+    } else if (input$xaxis == "V-gene family + J-gene" && input$plotcolors == "Maximum SHM" && substring(dat$vgf[1],1,2) == "TR") {
+      toplot <- ggplot(dat, aes(vgf_jgene,cdr3length_imgt)) + geom_tile(aes(fill = shm_max)) + scale_y_continuous(limits = c(3, 22)) + theme_bw(base_size = 16) + ylab("CDR3 Length (aa)") + xlab("V-gene & J-gene") + facet_wrap(facet_formula, ncol = 1, scales = facetvar2()) + scale_fill_viridis_c(name = "Max \nSHM (%)", option = "C") + theme(axis.text.x = element_text(angle=45, hjust=1, size=8)) + ggtitle("Bins of V+J gene families vs. CDR3 length, with Maximum Somatic Hypermutation as fill color") + theme(plot.title = element_text(size = 20, face = "plain")) #+ geom_point(data=subset(dat, vgf_jgene ==  highlightedpointsDSx() & cdr3length_imgt == highlightedpointsDSy()), color = "green", shape = "square", size = 4)
+    } else if (input$xaxis == "V-gene family + J-gene" && input$plotcolors == "Percentage of total antibody or TCR sequences" && substring(dat$vgf[1],1,2) == "TR") {
+      toplot <- ggplot(dat, aes(vgf_jgene,cdr3length_imgt)) + geom_bin2d(bins = 20, aes(fill= (..count..)*100/tapply(..count..,..PANEL..,sum)[..PANEL..])) + scale_y_continuous(limits = c(3, 22)) + theme_bw(base_size = 16) + ylab("CDR3 Length (aa)") + xlab("V-gene & J-gene") + facet_wrap(facet_formula, ncol = 1, scales = facetvar2()) + scale_fill_viridis_c(name = "% of \nReads  ", option = "C") + theme(axis.text.x = element_text(angle=45, hjust=1, size=8)) + ggtitle("Bins of V+J gene families vs. CDR3 length, with Percentage of total sequences as fill color") + theme(plot.title = element_text(size = 20, face = "plain")) #+ geom_point(data=subset(dat, vgf_jgene ==  highlightedpointsDSx() & cdr3length_imgt == highlightedpointsDSy()), color = "green", shape = "square", size = 4)
+    } else if (input$xaxis == "V-gene" && input$plotcolors == "Average SHM" && substring(dat$vgf[1],1,2) == "TR") {
+      toplot <- ggplot(dat, aes(vgene,cdr3length_imgt)) + geom_tile(aes(fill = shm_byvgene_mean)) + scale_y_continuous(limits = c(3, 22)) + theme_bw(base_size = 16) + ylab("CDR3 Length (aa)") + xlab("V-gene") + facet_wrap(facet_formula, ncol = 1, scales = facetvar2()) + scale_fill_viridis_c(name = "Mean \nSHM (%)", option = "C") + theme(axis.text.x = element_text(angle=45, hjust=1, size=8)) + ggtitle("Bins of V-genes vs. CDR3 length, with Mean Somatic Hypermutation as fill color") + theme(plot.title = element_text(size = 20, face = "plain")) #+ geom_point(data=subset(dat, vgf_jgene ==  highlightedpointsDSx() & cdr3length_imgt == highlightedpointsDSy()), color = "green", shape = "square", size = 4)
+    } else if (input$xaxis == "V-gene" && input$plotcolors == "Maximum SHM" && substring(dat$vgf[1],1,2) == "TR") {
+      toplot <- ggplot(dat, aes(vgene,cdr3length_imgt)) + geom_tile(aes(fill = shm_byvgene_max)) + scale_y_continuous(limits = c(3, 22)) + theme_bw(base_size = 16) + ylab("CDR3 Length (aa)") + xlab("V-gene") + facet_wrap(facet_formula, ncol = 1, scales = facetvar2()) + scale_fill_viridis_c(name = "Max \nSHM (%)", option = "C") + theme(axis.text.x = element_text(angle=45, hjust=1, size=8)) + ggtitle("Bins of V-genes vs. CDR3 length, with Maximum Somatic Hypermutation as fill color") + theme(plot.title = element_text(size = 20, face = "plain")) #+ geom_point(data=subset(dat, vgf_jgene ==  highlightedpointsDSx() & cdr3length_imgt == highlightedpointsDSy()), color = "green", shape = "square", size = 4)
     } else {
-      toplot <- ggplot(dat, aes(vgf_jgene,cdr3length_imgt)) + geom_bin2d(bins = 40, aes(fill= (..count..)*100/tapply(..count..,..PANEL..,sum)[..PANEL..])) + scale_y_continuous(limits = c(3, 42)) + theme_bw(base_size = 16) + ylab("CDR3 Length (aa)") + xlab("V-gene & J-gene") + facet_wrap(facet_formula, ncol = 1, scales = facetvar2()) + scale_fill_viridis_c(name = "% of \nReads  ", option = "C") + theme(axis.text.x = element_text(angle=45, hjust=1, size=8)) + ggtitle("Bins of V+J gene families vs. CDR3 length, with Percentage of total antibody sequences as fill color") + theme(plot.title = element_text(size = 20, face = "bold")) #+ geom_point(data=subset(dat, vgf_jgene ==  highlightedpointsDSx() & cdr3length_imgt == highlightedpointsDSy()), color = "green", shape = "square", size = 4)
-    }     
+      toplot <- ggplot(dat, aes(vgene,cdr3length_imgt)) + geom_bin2d(bins = 20, aes(fill= (..count..)*100/tapply(..count..,..PANEL..,sum)[..PANEL..])) + scale_y_continuous(limits = c(3, 22)) + theme_bw(base_size = 16) + ylab("CDR3 Length (aa)") + xlab("V-gene") + facet_wrap(facet_formula, ncol = 1, scales = facetvar2()) + scale_fill_viridis_c(name = "% of \nReads  ", option = "C") + theme(axis.text.x = element_text(angle=45, hjust=1, size=8)) + ggtitle("Bins of V-genes vs. CDR3 length, with Percentage of total sequences as fill color") + theme(plot.title = element_text(size = 20, face = "plain")) #+ geom_point(data=subset(dat, vgf_jgene ==  highlightedpointsDSx() & cdr3length_imgt == highlightedpointsDSy()), color = "green", shape = "square", size = 4)
+    }
     toplot
   }, width = 1200, height = "auto")
   
   
-  ### datatable under plot 
+  ### datatable under plot
   ## adding changing row font color via https://stackoverflow.com/questions/56568144/r-dt-override-default-selection-color
   # xxxx$cellcolor <- grepl('SARS-CoV2-mAb|HIV-IEDBmAb', xxxx$sequence_id)
   # %>%
@@ -850,7 +1145,7 @@ server <- function(input, output, session) {
       # write.csv(filteredDS()[input[["click_info_rows_selected"]], ],file, row.names = FALSE)
       write_csv(filteredDS()[input[["click_info_rows_selected"]], ],file)
     }
-  )      
+  )
   
   ### adding third download button for matrix of distances...
   output$downloadfilter3 <- downloadHandler(
@@ -861,10 +1156,10 @@ server <- function(input, output, session) {
       # write.csv(matrixDSall2(),file, row.names = FALSE)
       write_csv(matrixDSall2(),file)
     }
-  )          
-
-########### original AIRRscape visualization code -  CDR3 motif toplogy plots ##########
-## alternate phylogenies of CDR3 motifs of selected sequences from datatable
+  )
+  
+  ########### original AIRRscape visualization code -  CDR3 motif toplogy plots ##########
+  ## alternate phylogenies of CDR3 motifs of selected sequences from datatable
   v <- reactiveValues(doPlot = FALSE)
   
   observeEvent(input$go, {
@@ -873,7 +1168,7 @@ server <- function(input, output, session) {
   
   observeEvent(input$plottab, {
     v$doPlot <- FALSE
-  })  
+  })
   
   output$phyloPlot <- renderPlot(
     width = 1200,
@@ -906,7 +1201,7 @@ server <- function(input, output, session) {
           tree <- pratchet(seqs, start = tree1, maxit=500,
                            minit=10, k=10, trace=0)
           tree <- acctran(tree1, seqs) # added
-        } else if (input$plottab == "up to 500 nearest sequences to a single selected mAb - Parsimony; 100% CDR3 AA identity (Briney 2019)") {
+        } else if (input$plottab == "up to 500 nearest sequences to a single selected sequence - Parsimony; 100% CDR3 AA identity (Briney 2019)") {
           filteredDataall <- isolate({filteredDSall2()})
           filteredDataall.y <- t(sapply(strsplit(filteredDataall[,2],""), tolower))
           rownames(filteredDataall.y) <- filteredDataall[,1]
@@ -937,7 +1232,7 @@ server <- function(input, output, session) {
                            minit=10, k=10, trace=0)
           tree <- acctran(tree1, seqs) # added
           filteredData <- isolate({filteredDSpartial2()})  ### added because not in this option but now need for changing title below
-        } else if (input$plottab == "up to 500 nearest sequences to a single selected mAb - Parsimony; 80% CDR3 AA identity (Soto 2019)") {
+        } else if (input$plottab == "up to 500 nearest sequences to a single selected sequence - Parsimony; 80% CDR3 AA identity (Soto 2019)") {
           filteredDataall <- isolate({filteredDSall2()})
           filteredDataall.y <- t(sapply(strsplit(filteredDataall[,2],""), tolower))
           rownames(filteredDataall.y) <- filteredDataall[,1]
@@ -968,7 +1263,7 @@ server <- function(input, output, session) {
                            minit=10, k=10, trace=0)
           tree <- acctran(tree1, seqs) # added
           filteredData <- isolate({filteredDSpartial2()})  ### added because not in this option but now need for changing title below
-        } else if (input$plottab == "up to 500 nearest sequences to a single selected mAb - Parsimony; 70% CDR3 AA identity (Setliff 2018)") {
+        } else if (input$plottab == "up to 500 nearest sequences to a single selected sequence - Parsimony; 70% CDR3 AA identity (Setliff 2018)") {
           filteredDataall <- isolate({filteredDSall2()})
           filteredDataall.y <- t(sapply(strsplit(filteredDataall[,2],""), tolower))
           rownames(filteredDataall.y) <- filteredDataall[,1]
@@ -1039,17 +1334,23 @@ server <- function(input, output, session) {
         add.scale.bar(cex = 1.2, font = 4, lwd = 2)  ## was x = 1, y = -0.1, not sure if this will always work or be meaningful  , x.lim = 15 can also try x.lim = 50 - seems to work only with nearest 50/500 not with NJ or parsimony
         gjcdr3.title <- filteredData
         gjcdr3.title$cdr3length_imgt <- as.numeric(gjcdr3.title$cdr3length_imgt)
-        gjcdr3.title$G_J_CDR3 <- paste("Topology of selected CDR3 motifs:", gjcdr3.title$vgf_jgene, gjcdr3.title$cdr3length_imgt, "aa", sep=" ")
+        ## adding option for either vgf_jgene or vgene in plot title
+        gjcdr3.title.option <- if (input$xaxis == "V-gene") {
+          gjcdr3.title$G_J_CDR3 <- paste("Topology of selected CDR3 motifs:", gjcdr3.title$vgene, gjcdr3.title$cdr3length_imgt, "aa", sep=" ")
+        } else {
+          gjcdr3.title$G_J_CDR3 <- paste("Topology of selected CDR3 motifs:", gjcdr3.title$vgf_jgene, gjcdr3.title$cdr3length_imgt, "aa", sep=" ")
+        }
+        # gjcdr3.title$G_J_CDR3 <- paste("Topology of selected CDR3 motifs:", gjcdr3.title$vgf_jgene, gjcdr3.title$cdr3length_imgt, "aa", sep=" ")
         gjcdr3.title <- gjcdr3.title %>%
           select(G_J_CDR3)
         gjcdr3.titleID <- gjcdr3.title$G_J_CDR3[1]
-        title(gjcdr3.titleID, family = "sans")
+        title(gjcdr3.titleID, family = "sans", face = "plain")
       })
     })
   
   observeEvent(input$screensht, {
     screenshot(filename = "AIRRscape_screenshot", scale = 3)
-  })  
+  })
   
 }
 onStop(function() { print("bye")})
