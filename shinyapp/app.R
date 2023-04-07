@@ -131,7 +131,7 @@ AIRRscapeprocess <- function(x, filter_columns = TRUE, filter_to_HC = TRUE, renu
     # x$vgf <- x$v_subgroup
     # x$jgene <- x$j_subgroup
   }
-  ## this removes columns with all NAs - moving to near bottom - tried moving up but instead back to near bottom and adding statements like this if needed: if (!is.na(mean(x$v_identity))) { 
+  ## this removes columns with all NAs - moving to near bottom - tried moving up but instead back to near bottom and adding statements like this if needed: if (!is.na(mean(x$v_identity))) {
   ## trying here again...latest - using new code
   x <- x %>% select(where(not_all_na))
   # x <- x[!map_lgl(x, ~ all(is.na(.)))]
@@ -238,7 +238,7 @@ AIRRscapeprocess <- function(x, filter_columns = TRUE, filter_to_HC = TRUE, renu
     mutate(shm_byvgene_max = na_if(shm_byvgene_max, "-Inf")) %>%
     mutate(across(shm_byvgene_max, round, 2)) %>%
     mutate(across(shm_byvgene_mean, round, 2))
-  ## this removes columns with all NAs - moving to near bottom - tried moving up but instead back to near bottom and adding statements like this if needed: if (!is.na(mean(x$v_identity))) { 
+  ## this removes columns with all NAs - moving to near bottom - tried moving up but instead back to near bottom and adding statements like this if needed: if (!is.na(mean(x$v_identity))) {
   ## trying further up again...
   # x <- x[!map_lgl(x, ~ all(is.na(.)))]
   ## this will filter the dataset if filter_columns option is set to true - note the any_of which allows columns to be missing - later adding various 10x column outputs
@@ -435,10 +435,15 @@ ui <- fluidPage(
       # p("To run AIRRscape locally and for more detailed usage instructions, see the ", a("README", href="https://github.com/czbiohub/AIRRscape", target="_blank"), " on GitHub."), #, target="_blank"
       # p("The AIRRscape ", a("publication", href="https://doi.org/10.1371/journal.pcbi.1010052", target="_blank"), " is available at PLOS Computational Biology."), # , target="_blank"
       tags$div("The AIRRscape ", tags$a(href="https://doi.org/10.1371/journal.pcbi.1010052", "publication", target="_blank"), " is available at PLOS Computational Biology."),
-      h6("Questions? Please email: eric.waltari at czbiohub.org"),
+      h5("Questions? Please email: eric.waltari at czbiohub.org"),
+      img(src="CZ-Biohub-SF-Color-RGB.png", height = 90, width = 400, align = "left"),
+      br(),
+      br(),
+      br(),
+      br(),
       width = 4
     ),
-    
+
     mainPanel(
       tabsetPanel(
         tabPanel("AIRRscape",
@@ -573,11 +578,11 @@ ui <- fluidPage(
 server <- function(input, output, session) {
   options(width = 180, DT.options = list(pageLength = 10)) # Increase text width for printing table ALSO ADDING DEFAULT NUMBER OF 10 ROWS IN DATATABLE
   ## early in server now defining facets here - this is where all of the sidebar dataset options are tied to a dataset
-  
+
   ## ADDING AIRRscapeInput APP (SERVER PART) HERE...
   ########################################### INPUT COMPONENT ################################################
   ########### importing/combining data code ##########
-  
+
   ## need to add uploads1 <- NULL ???
   ## this only works if you include the if isn't null argument...also another tricky part is below where you specify these if selected (the inputdataset <- reactive({ part...), you need to add parentheses, so uploads1() and uploads2() !!!
   ### to speed things up, moving from read.delim to read_tsv - but note this imports as tibble, not dataframe (https://www.rstudio.com/blog/tibble-1-0-0/)
@@ -636,7 +641,7 @@ server <- function(input, output, session) {
       upload6
     }
   })
-  
+
   ## JW idea: add an else if, running the convert function if needed...? but also need to combine datasets, not just convert...
   convert1 <- NULL
   convert2 <- NULL
@@ -672,7 +677,7 @@ server <- function(input, output, session) {
       upload2afterconv
     }
   })
-  
+
   convert3 <- reactive({
     if (!is.null(uploads3())) {
       uploaded_dataset3 <- uploads3()
@@ -701,7 +706,7 @@ server <- function(input, output, session) {
       upload4afterconv
     }
   })
-  
+
   convert5 <- reactive({
     if (!is.null(uploads5())) {
       uploaded_dataset5 <- uploads5()
@@ -730,10 +735,10 @@ server <- function(input, output, session) {
       upload6afterconv
     }
   })
-  
+
   # toshiny.yourdataset.all.renamed <- reactive({  - changing to eventReactive per example in chapter 3 mastering shiny
   toshiny.yourdataset.all.renamed <- eventReactive(input$go0, {
-    
+
     # dataset1 <- input$name1
     # dataset2 <- input$name2
     # dataset3 <- input$name3
@@ -784,8 +789,8 @@ server <- function(input, output, session) {
     toshiny.yourdataset.all
     # first maybe don't need if using eventReactive rather than just Reactive, on second thought yes do need
   })
-  
-  
+
+
   # toshiny.yourdataset.allc.renamed <- reactive({
   toshiny.yourdataset.allc.renamed <- eventReactive(input$go0, {
     toshiny.yourdataset.allc <- toshiny.yourdataset.all.renamed()
@@ -824,7 +829,7 @@ server <- function(input, output, session) {
       mutate(across(shm_byvgene_mean, round, 2))
     toshiny.yourdataset.allc
   })
-  
+
   ## this allows user to download all sequences in clicked bin (first filter) or only selected rows (second filter)
   output$downloadfilter01 <- downloadHandler(
     filename = function() {
@@ -835,7 +840,7 @@ server <- function(input, output, session) {
       write_tsv(toshiny.yourdataset.all.renamed(),file)
     }
   )
-  
+
   output$downloadfilter02 <- downloadHandler(
     filename = function() {
       paste('yourdata_filteredcombined_singleheatmap', Sys.Date(), '.tsv', sep = '')
@@ -845,10 +850,10 @@ server <- function(input, output, session) {
       write_tsv(toshiny.yourdataset.allc.renamed(),file)
     }
   )
-  
+
   ####################################### END INPUT COMPONENT ################################################
   ########### adding importing/combined datasets to AIRRscape ##########
-  
+
   ## more recent addition - where converted/combined datasets are added to AIRRscape
   ## this only works if you include the if isn't null argument...also another tricky part is below where you specify these if selected (the inputdataset <- reactive({ part...), you need to add parentheses, so uploads11() and uploads12() !!!
   ### to speed things up, moving from read.delim to read_tsv - but note this imports as tibble, not dataframe (https://www.rstudio.com/blog/tibble-1-0-0/)
@@ -862,7 +867,7 @@ server <- function(input, output, session) {
       upload11
     }
   })
-  
+
   uploads12 <- reactive({
     if (!is.null(input$yourfile2)) {
       upload12 <- read_tsv(input$yourfile2$datapath) %>% as.data.frame()
@@ -872,7 +877,7 @@ server <- function(input, output, session) {
       upload12
     }
   })
-  
+
   ## JW idea: add an else if, running the convert function if needed...? but also need to combine datasets, not just convert...
   ## it turns out best to convert+combine in the first tab, then just input the combined datasest at this stage
   ## if one tries to convert here, sometimes errors will arise...
@@ -920,10 +925,10 @@ server <- function(input, output, session) {
       upload12afterconv
     }
   })
-  
+
   ########### original AIRRscape visualization code ##########
   ## original code for visualizing (but adding users datasets as last 2 dataset options)
-  
+
   facetvar1 <- reactive({
     switch(input$dataset, "SARS-CoV2 mAbs - heavy chains & light chains" = "cregion", "SARS-CoV2 mAbs - IgH by binding" = "binding", "SARS-CoV2 mAbs - IgH by neutralization" = "neutralization", "SARS-CoV2 mAbs vs. COVID-19 patient bulk repertoires vs. Healthy control - IgH" = "id", "SARS-CoV2 mAbs vs. COVID-19 patient bulk repertoires vs. Healthy control - IgH combined" = "cregion", "SARS-CoV2 mAbs vs. HIV mAbs - IgH" = "id", "SARS-CoV2 mAbs vs. HIV mAbs - IgH combined" = "cregion", "HIV mAbs vs. HIV patient bulk repertoires - IgH" = "id", "HIV mAbs vs. HIV patient bulk repertoires - IgH combined" = "cregion", "Dengue mAbs vs. Dengue patient bulk repertoires - IgH" = "id", "Dengue mAbs vs. Dengue patient bulk repertoires - IgH combined" = "cregion", "SARS-CoV2, HIV, & Dengue datasets - IgH combined" = "cregion","Custom datasets - IgH or TR (upload using Import Data tab)" = "id", "Custom datasets - IgH or TR combined (upload using Import Data tab)" = "cregion")
   })
@@ -931,7 +936,7 @@ server <- function(input, output, session) {
   facetvar2 <- reactive({
     switch(input$dataset, "SARS-CoV2 mAbs - heavy chains & light chains" = "free_x", "SARS-CoV2 mAbs - IgH by binding" = "fixed", "SARS-CoV2 mAbs - IgH by neutralization" = "fixed")
   })
-  
+
   inputdataset <- reactive({
     ## using new names that reduce variables, round
     switch(input$dataset, "SARS-CoV2 mAbs - heavy chains & light chains" = toshiny.cov2.abdab, "SARS-CoV2 mAbs - IgH by binding" = toshiny.cov2.abdab.h, "SARS-CoV2 mAbs - IgH by neutralization" = toshiny.cov2.abdab.h, "SARS-CoV2 mAbs vs. COVID-19 patient bulk repertoires vs. Healthy control - IgH" = toshiny.cov2.all, "SARS-CoV2 mAbs vs. COVID-19 patient bulk repertoires vs. Healthy control - IgH combined" = toshiny.cov2.allc, "SARS-CoV2 mAbs vs. HIV mAbs - IgH" = toshiny.cov2hiv, "SARS-CoV2 mAbs vs. HIV mAbs - IgH combined" = toshiny.cov2hivc, "HIV mAbs vs. HIV patient bulk repertoires - IgH" = toshiny.hiv.all, "HIV mAbs vs. HIV patient bulk repertoires - IgH combined" = toshiny.hiv.allc, "Dengue mAbs vs. Dengue patient bulk repertoires - IgH" = toshiny.den.all, "Dengue mAbs vs. Dengue patient bulk repertoires - IgH combined" = toshiny.den.allc, "SARS-CoV2, HIV, & Dengue datasets - IgH combined" = toshiny.cov2hivden.allc, "Custom datasets - IgH or TR (upload using Import Data tab)" = convert11(), "Custom datasets - IgH or TR combined (upload using Import Data tab)" = convert12())
@@ -940,7 +945,7 @@ server <- function(input, output, session) {
   filteredDS <- reactive({
     nearPoints(inputdataset(), input$plot_click, threshold = 5, maxpoints = 99999, addDist = FALSE)
   })
-  
+
   ## isolating the hover x & y for highlighting - note works but makes hover pop up window very momentary
   ## tried to below within renderPlot, doesn't change (trying isolate - same issue, then observe & isolate - breaks)
   highlightedpointsDSx <- reactive({
@@ -953,7 +958,7 @@ server <- function(input, output, session) {
     highlightedpoint <- nearPoints(dat, input$plot_hover, threshold = 5, maxpoints = 1, addDist = FALSE)
     highlightedpoint$cdr3length_imgt
   })
-  
+
   ### added code to allow for trees of subsetted data:
   # Thanks to @yihui this is now possible using the DT package and input$tableId_rows_all
   # where tableID is the id assigned to your table. See the link for details. http://rstudio.github.io/DT/shiny.html
@@ -965,26 +970,26 @@ server <- function(input, output, session) {
     ids <- input$click_info_rows_all
     filteredDS()[ids,]
   })
-  
+
   ## then rename sequence_id
   filteredDSpartial2 <- reactive({
     partial2 <- filteredDSpartial() %>% select(sequence_id,cdr3_aa_imgt,vgene,vgf_jgene,cdr3length_imgt)
     partial2$sequence_id <- paste(partial2$sequence_id,partial2$vgene,partial2$cdr3_aa_imgt,sep="_")
     partial2
   })
-  
+
   filteredDSall2 <- reactive({
     all2 <- filteredDSall() %>% select(sequence_id,cdr3_aa_imgt,vgene,vgf_jgene,cdr3length_imgt)
     all2$sequence_id <- paste(all2$sequence_id,all2$vgene,all2$cdr3_aa_imgt,sep="_")
     all2
   })
-  
+
   filteredDSpartial2id <- reactive({
     partial2id <- filteredDSpartial() %>% select(sequence_id,cdr3_aa_imgt,vgene,vgf_jgene,cdr3length_imgt)
     partial2id$sequence_id <- paste(partial2id$sequence_id,partial2id$vgene,partial2id$cdr3_aa_imgt,sep="_")
     partial2id$sequence_id
   })
-  
+
   ### ADDING NEW VARIABLE SEPARATELY CALCULATING DISTANCE MATRIX AS BELOW BUT WITHIN TREE-PLOTTING STEP
   ## THIS SHOULD SEPARATELY BE AVAILABLE FOR DOWNLOADING...
   matrixDSall2 <- reactive({
@@ -997,7 +1002,7 @@ server <- function(input, output, session) {
     dm.matrixall <- as.matrix(dmalldf) %>% as.data.frame()
     dm.matrixall
   })
-  
+
   ### Hover output: popup window
   output$hover_info <- renderUI({
     hover <- input$plot_hover
@@ -1007,7 +1012,7 @@ server <- function(input, output, session) {
     ## first line for picking among different graphs- NOTE CHANGE TO 'DAT'
     point <- nearPoints(dat, input$plot_hover, threshold = 5, maxpoints = 1, addDist = TRUE)
     if (nrow(point) == 0) return(NULL)
-    
+
     # tags$style( '#ggplot1 { cursor: pointer; }')
     ## new bit added to change cursor when hovering: (doesn't seem change the cursor though)
     # if (nrow(point) == 0){
@@ -1020,13 +1025,13 @@ server <- function(input, output, session) {
     #   cursor: crosshair !important; }'
     # }
     # tags$style(HTML(css_string))
-    
+
     # # calculate point position INSIDE the image as percent of total dimensions
     # # from left (horizontal) and from top (vertical)
     ## simplifiying this per https://gitlab.com/-/snippets/16220
     left_px <- hover$coords_css$x
     top_px <- hover$coords_css$y
-    
+
     # create style property for tooltip
     # background color is set so tooltip is a bit transparent
     # z-index is set so we are sure are tooltip will be on top
@@ -1054,7 +1059,7 @@ server <- function(input, output, session) {
       )
     }
   })
-  
+
   ### the heatmap (now the only plot)
   output$ggplot1 <- renderPlot({
     ## first line for picking among different graphs
@@ -1097,14 +1102,14 @@ server <- function(input, output, session) {
     }
     toplot
   }, width = 1200, height = "auto")
-  
-  
+
+
   ### datatable under plot
   ## adding changing row font color via https://stackoverflow.com/questions/56568144/r-dt-override-default-selection-color
   # xxxx$cellcolor <- grepl('SARS-CoV2-mAb|HIV-IEDBmAb', xxxx$sequence_id)
   # %>%
   #   formatStyle("sequence_id", valueColumns = "cellcolor", color = styleEqual(TRUE, "blue"))
-  
+
   output$click_info <- DT::renderDataTable({
     dat <- inputdataset()
     old <- options(width = 1600); on.exit(options(old))
@@ -1114,7 +1119,7 @@ server <- function(input, output, session) {
     datatable(thetable, options = list(search = list(regex = TRUE))) %>%
       formatStyle("shm", valueColumns = "cellcolor", color = styleEqual(TRUE, "blue"))
   }, width = 1600)
-  
+
   ## adding a datatable with all of the points when double-clicking plot_brush brush_info
   output$brush_info <- DT::renderDataTable({
     dat0 <- inputdataset()
@@ -1124,8 +1129,8 @@ server <- function(input, output, session) {
     datatable(thetable0, options = list(search = list(regex = TRUE))) %>%
       formatStyle("shm", valueColumns = "cellcolor", color = styleEqual(TRUE, "blue"))
   }, width = 1600)
-  
-  
+
+
   ## this allows user to download all sequences in clicked bin (first filter) or only selected rows (second filter)
   output$downloadfilter <- downloadHandler(
     filename = function() {
@@ -1136,7 +1141,7 @@ server <- function(input, output, session) {
       write_csv(filteredDS()[input[["click_info_rows_all"]], ],file)
     }
   )
-  
+
   output$downloadfilter2 <- downloadHandler(
     filename = function() {
       paste('Filtered data-', Sys.Date(), '.csv', sep = '')
@@ -1146,7 +1151,7 @@ server <- function(input, output, session) {
       write_csv(filteredDS()[input[["click_info_rows_selected"]], ],file)
     }
   )
-  
+
   ### adding third download button for matrix of distances...
   output$downloadfilter3 <- downloadHandler(
     filename = function() {
@@ -1157,27 +1162,27 @@ server <- function(input, output, session) {
       write_csv(matrixDSall2(),file)
     }
   )
-  
+
   ########### original AIRRscape visualization code -  CDR3 motif toplogy plots ##########
   ## alternate phylogenies of CDR3 motifs of selected sequences from datatable
   v <- reactiveValues(doPlot = FALSE)
-  
+
   observeEvent(input$go, {
     v$doPlot <- input$go
   })
-  
+
   observeEvent(input$plottab, {
     v$doPlot <- FALSE
   })
-  
+
   output$phyloPlot <- renderPlot(
     width = 1200,
     # width = function() input$width, ## can comment this width parameter out, only use width2
     height = function() input$height, {
       par(family = "mono", mar=c(0.3, 0, 0.3, 0) + 2.2)
       if (v$doPlot == FALSE) return()
-      
-      
+
+
       isolate({
         data <- if (input$plottab == "NJ") {
           filteredData <- isolate({filteredDSpartial2()})
@@ -1347,11 +1352,11 @@ server <- function(input, output, session) {
         title(gjcdr3.titleID, family = "sans", face = "plain")
       })
     })
-  
+
   observeEvent(input$screensht, {
     screenshot(filename = "AIRRscape_screenshot", scale = 3)
   })
-  
+
 }
 onStop(function() { print("bye")})
 shinyApp(ui = ui, server = server)
