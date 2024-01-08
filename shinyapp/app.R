@@ -163,6 +163,7 @@ AIRRscapeprocess <- function(x, filter_columns = TRUE, filter_to_HC = TRUE, renu
     filter(is.wholenumber(cdr3length_imgt))
   # if there is a clone_id column this will make a count of reads_per_clone
   if ("clone_id" %in% names(x)) {
+    x$clone_id <- as.character(x$clone_id)
     x <- x %>% add_count(clone_id) %>%
       rename(reads_per_clone = n)
   }
