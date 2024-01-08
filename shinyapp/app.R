@@ -228,14 +228,15 @@ AIRRscapeprocess <- function(x, filter_columns = TRUE, filter_to_HC = TRUE, renu
     group_by(vgf_jgene,cdr3length_imgt) %>%
     mutate(shm_mean = mean(shm, na.rm = TRUE)) %>%
     # NOTE ADDIN MAX SHM AS WELL..
+    ## in 2023 na_if behavior changed, changing 4 lines here
     mutate(shm_max = max(shm, na.rm = TRUE)) %>%
-    mutate(shm_mean = na_if(shm_mean, "NaN")) %>%
-    mutate(shm_max = na_if(shm_max, "-Inf")) %>%
+    mutate(shm_mean = na_if(shm_mean, NaN)) %>%
+    # mutate(shm_max = na_if(shm_max, "-Inf")) %>%
     mutate(across(shm, round, 2)) %>%
     mutate(across(shm_max, round, 2)) %>%
     mutate(across(shm_mean, round, 2)) %>%
-    mutate(shm_byvgene_mean = na_if(shm_byvgene_mean, "NaN")) %>%
-    mutate(shm_byvgene_max = na_if(shm_byvgene_max, "-Inf")) %>%
+    mutate(shm_byvgene_mean = na_if(shm_byvgene_mean, NaN)) %>%
+    # mutate(shm_byvgene_max = na_if(shm_byvgene_max, "-Inf")) %>%
     mutate(across(shm_byvgene_max, round, 2)) %>%
     mutate(across(shm_byvgene_mean, round, 2))
   ## this removes columns with all NAs - moving to near bottom - tried moving up but instead back to near bottom and adding statements like this if needed: if (!is.na(mean(x$v_identity))) {
@@ -817,14 +818,15 @@ server <- function(input, output, session) {
       group_by(vgf_jgene,cdr3length_imgt) %>%
       mutate(shm_mean = mean(shm, na.rm = TRUE)) %>%
       # NOTE ADDIN MAX SHM AS WELL..
+      ## in 2023 na_if behavior changed, changing 4 lines here
       mutate(shm_max = max(shm, na.rm = TRUE)) %>%
-      mutate(shm_mean = na_if(shm_mean, "NaN")) %>%
-      mutate(shm_max = na_if(shm_max, "-Inf")) %>%
+      mutate(shm_mean = na_if(shm_mean, NaN)) %>%
+      # mutate(shm_max = na_if(shm_max, "-Inf")) %>%
       mutate(across(shm, round, 2)) %>%
       mutate(across(shm_max, round, 2)) %>%
       mutate(across(shm_mean, round, 2)) %>%
-      mutate(shm_byvgene_mean = na_if(shm_byvgene_mean, "NaN")) %>%
-      mutate(shm_byvgene_max = na_if(shm_byvgene_max, "-Inf")) %>%
+      mutate(shm_byvgene_mean = na_if(shm_byvgene_mean, NaN)) %>%
+      # mutate(shm_byvgene_max = na_if(shm_byvgene_max, "-Inf")) %>%
       mutate(across(shm_byvgene_max, round, 2)) %>%
       mutate(across(shm_byvgene_mean, round, 2))
     toshiny.yourdataset.allc
